@@ -1,0 +1,2 @@
+recursive-include django_advanced_pdf *
+recursive-exclude django_advanced_pdf *.pyc

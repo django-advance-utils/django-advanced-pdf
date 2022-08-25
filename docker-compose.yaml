@@ -1,0 +1,26 @@
+version: "3"
+services:
+
+ django_pdf:
+  build:
+   context: ./
+  volumes:
+   - ./django_examples/:/app
+   - ./django_advanced_pdf/:/app/django_advanced_pdf
+   - /var/run/docker.sock:/var/run/docker.sock
+  command: bash -c "python manage.py migrate && python manage.py runserver 0.0.0.0:8012"
+  environment:
+   - PYTHONPATH=/django_advanced_pdf
+  ports:
+   - 8012:8012
+  depends_on:
+   - db_pdf
+ db_pdf:
+  image: postgres:13.0-alpine
+  volumes:
+   - ./data/db:/var/lib/postgresql/data
+  environment:
+   - POSTGRES_USER=django_advanced_pdf
+   - POSTGRES_PASSWORD=django_advanced_pdf
+   - POSTGRES_DB=django_advanced_pdf
+

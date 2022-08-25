@@ -1,0 +1,16 @@
+Django==3.2.7
+psycopg2-binary>=2.8
+django-crispy-forms==1.12.0
+#django-tab-menus==0.0.13
+git+https://github.com/jonesim/django-menus.git@badccaee168b3452dca7f39bf91a444106b64cf1
+# django-filtered-datatables==0.0.19
+git+https://github.com/jonesim/django-datatables.git@835fbfcca570616dc7c4cec8b13110118553c585
+
+# django-nested-modals==0.0.17
+git+https://github.com/jonesim/django-modals.git@0624daf0450df3018f5c4d489a3bc70f8e4d0453
+
+django-ajax-helpers==0.0.16
+# git+https://github.com/jonesim/ajax-helpers.git@3ab5d5310398bb213a3dd50edae8813983562f55
+time-stamped-model==0.2.2
+date-offset==0.0.2
+django-debug-toolbar==3.2.4
