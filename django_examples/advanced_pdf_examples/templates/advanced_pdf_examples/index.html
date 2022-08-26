@@ -1,1 +1,30 @@
 {% extends 'base.html' %}
+{% load datatable_tags %}
+
+{% block contents %}
+    <div class="m-1 text-right">
+     <img src="{{ version_img }}">
+    </div>
+    <div class="p-4">
+        {{ description|safe }}
+        <div>
+            {{ menus.print_template.render }}
+    </div>
+        <br>
+        {% block header %}
+        {% endblock %}
+        <div>
+            {{ menus.page_menu.render }}
+        </div>
+        {% block tables %}
+            <div class="d-flex">
+                <div style="min-width:320px">
+                    {% filter_control datatable %}
+                </div>
+                <div class="px-4 d-block float-left">
+                    {{ datatable.render|safe }}
+                </div>
+            </div>
+        {% endblock %}
+    </div>
+{% endblock %}
