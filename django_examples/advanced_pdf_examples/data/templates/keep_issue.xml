@@ -1,0 +1,156 @@
+<document title="My test printout" page_size="A4" page_orientation="portrait" border_left_first="10" border_right_first="10" page_style="blank">
+
+ <style>
+        main {
+            text_color:#0000FF;
+            inner_grid:0.25,#000000;
+            box:0.5,#000000
+        }
+
+
+    </style>
+    <table class="main" min_rows_top="3" min_rows_bottom="5">
+        <header>
+            <tr>
+                <td>head</td><td>1</td>
+            </tr>
+        </header>
+        <footer>
+            <tr height="18">
+                <td>footer</td><td>1</td>
+            </tr>
+        </footer>
+
+
+        <tr><td>1</td><td width="70%">1</td></tr>
+        <tr><td>2</td><td>2</td></tr>
+        <tr><td>3</td><td>2</td></tr>
+        <tr><td>4</td><td>2</td></tr>
+        <tr><td>5</td><td>2</td></tr>
+        <tr><td>6</td><td>2</td></tr>
+        <tr><td>7</td><td>2</td></tr>
+        <tr><td>8</td><td>2</td></tr>
+        <tr><td>9</td><td>2</td></tr>
+        <tr><td>10</td><td>2</td></tr>
+        <tr><td>11</td><td>2</td></tr>
+        <tr><td>12</td><td>2</td></tr>
+        <tr><td>13</td><td>2</td></tr>
+        <tr><td>14</td><td>2</td></tr>
+        <tr><td>15</td><td>2</td></tr>
+        <tr><td>16</td><td>2</td></tr>
+        <tr><td>17</td><td>2</td></tr>
+        <tr><td>18</td><td>2</td></tr>
+       <keep>
+        <tr><td>heading</td><td>2</td></tr>
+        <tr><td>20</td><td>2</td></tr>
+        <tr><td>21</td><td>2</td></tr>
+        <tr><td>22</td><td>2</td></tr>
+        <tr><td>22</td><td>2</td></tr>
+        <tr><td>22</td><td>2</td></tr>
+        <tr><td>22</td><td>2</td></tr>
+       </keep>
+              <keep>
+        <tr><td>heading</td><td>2</td></tr>
+        <tr><td>20</td><td>2</td></tr>
+        <tr><td>21</td><td>2</td></tr>
+        <tr><td>22</td><td>2</td></tr>
+        <tr><td>22</td><td>2</td></tr>
+        <tr><td>22</td><td>2</td></tr>
+        <tr><td>22</td><td>2</td></tr>
+       </keep>
+        <keep>
+        <tr><td>heading</td><td>2</td></tr>
+        <tr><td>20</td><td>2</td></tr>
+        <tr><td>21</td><td>2</td></tr>
+        <tr><td>22</td><td>2</td></tr>
+        <tr><td>22</td><td>2</td></tr>
+        <tr><td>22</td><td>2</td></tr>
+        <tr><td>22</td><td>2</td></tr>
+       </keep>       <keep>
+        <tr><td>heading</td><td>2</td></tr>
+        <tr><td>20</td><td>2</td></tr>
+        <tr><td>21</td><td>2</td></tr>
+        <tr><td>22</td><td>2</td></tr>
+        <tr><td>22</td><td>2</td></tr>
+        <tr><td>22</td><td>2</td></tr>
+        <tr><td>22</td><td>2</td></tr>
+       </keep>       <keep>
+        <tr><td>heading</td><td>2</td></tr>
+        <tr><td>20</td><td>2</td></tr>
+        <tr><td>21</td><td>2</td></tr>
+        <tr><td>22</td><td>2</td></tr>
+        <tr><td>22</td><td>2</td></tr>
+        <tr><td>22</td><td>2</td></tr>
+        <tr><td>22</td><td>2</td></tr>
+       </keep>       <keep>
+        <tr><td>heading</td><td>2</td></tr>
+        <tr><td>20</td><td>2</td></tr>
+        <tr><td>21</td><td>2</td></tr>
+        <tr><td>22</td><td>2</td></tr>
+        <tr><td>22</td><td>2</td></tr>
+        <tr><td>22</td><td>2</td></tr>
+        <tr><td>22</td><td>2</td></tr>
+       </keep>       <keep>
+        <tr><td>heading</td><td>2</td></tr>
+        <tr><td>20</td><td>2</td></tr>
+        <tr><td>21</td><td>2</td></tr>
+        <tr><td>22</td><td>2</td></tr>
+        <tr><td>22</td><td>2</td></tr>
+        <tr><td>22</td><td>2</td></tr>
+        <tr><td>22</td><td>2</td></tr>
+       </keep>       <keep>
+        <tr><td>heading</td><td>2</td></tr>
+        <tr><td>20</td><td>2</td></tr>
+        <tr><td>21</td><td>2</td></tr>
+        <tr><td>22</td><td>2</td></tr>
+        <tr><td>22</td><td>2</td></tr>
+        <tr><td>22</td><td>2</td></tr>
+        <tr><td>22</td><td>2</td></tr>
+       </keep>       <keep>
+        <tr><td>heading</td><td>2</td></tr>
+        <tr><td>20</td><td>2</td></tr>
+        <tr><td>21</td><td>2</td></tr>
+        <tr><td>22</td><td>2</td></tr>
+        <tr><td>22</td><td>2</td></tr>
+        <tr><td>22</td><td>2</td></tr>
+        <tr><td>22</td><td>2</td></tr>
+       </keep>       <keep>
+        <tr><td>heading</td><td>2</td></tr>
+        <tr><td>20</td><td>2</td></tr>
+        <tr><td>21</td><td>2</td></tr>
+        <tr><td>22</td><td>2</td></tr>
+        <tr><td>22</td><td>2</td></tr>
+        <tr><td>22</td><td>2</td></tr>
+        <tr><td>22</td><td>2</td></tr>
+       </keep>       <keep>
+        <tr><td>heading</td><td>2</td></tr>
+        <tr><td>20</td><td>2</td></tr>
+        <tr><td>21</td><td>2</td></tr>
+        <tr><td>22</td><td>2</td></tr>
+        <tr><td>22</td><td>2</td></tr>
+        <tr><td>22</td><td>2</td></tr>
+        <tr><td>22</td><td>2</td></tr>
+       </keep>       <keep>
+        <tr><td>heading</td><td>2</td></tr>
+        <tr><td>20</td><td>2</td></tr>
+        <tr><td>21</td><td>2</td></tr>
+        <tr><td>22</td><td>2</td></tr>
+        <tr><td>22</td><td>2</td></tr>
+        <tr><td>22</td><td>2</td></tr>
+        <tr><td>22</td><td>2</td></tr>
+       </keep>       <keep>
+        <tr><td>heading</td><td>2</td></tr>
+        <tr><td>20</td><td>2</td></tr>
+        <tr><td>21</td><td>2</td></tr>
+        <tr><td>22</td><td>2</td></tr>
+       </keep>       <keep>
+        <tr><td>heading</td><td>2</td></tr>
+        <tr><td>20</td><td>2</td></tr>
+        <tr><td>21</td><td>2</td></tr>
+        <tr><td>22</td><td>2</td></tr>
+       </keep>
+    </table>
+
+
+
+</document>

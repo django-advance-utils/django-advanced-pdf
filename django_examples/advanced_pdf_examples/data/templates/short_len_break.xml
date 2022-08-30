@@ -1,0 +1,252 @@
+<document title="Activity Centres Breakdown - by Machine"
+          page_size="A3"
+          page_orientation="landscape"
+          page_style="default"
+          border_top_first="10"
+          border_bottom_first="10"
+          border_right_first="10"
+          border_left_first="10"
+          border_top_continuation="10"
+          border_bottom_continuation="10"
+          border_right_continuation="10"
+          border_left_continuation="10"
+          footer_field="Job Number JOB:00000001">
+    <style>
+        inner_table {
+        font:Helvetica;
+        font_size:10;
+        }
+        data_table {
+        box:0.5,#000000;
+        inner_grid: 0.5,#000000;
+        hAlign:CENTER;
+        }
+        department_heading {
+        font:Helvetica-Bold;
+        font_size:8;
+        background:#FFCC66;
+        }
+        machine_heading {
+        font:Helvetica-Bold;
+        font_size:8;
+        background:#A9FF95;
+        }
+        parent_heading {
+        font:Helvetica-Bold;
+        font_size:8;
+        background:#CCCCFF;
+        }
+        process_heading {
+        font:Helvetica-Bold;
+        font_size:8;
+        background:#FFC6FF;
+        }
+        process_footing {
+        font:Helvetica-Bold;
+        font_size:8;
+        background:#FFC6FF;
+        }
+        process_data {
+        font:Helvetica;
+        font_size:8;
+        }
+        process_data_heading {
+        font:Helvetica-Bold;
+        font_size:8;
+        align:center;
+        }
+        process_void_data {
+        background:#d3d3d3;
+        }
+        all_component_footing {
+        font:Helvetica-Bold;
+        font_size:8;
+        background:#99ccff;
+        }
+        total_labour {
+        font:Helvetica-Bold;
+        font_size:8;
+        background:#ffff00;
+        }
+        disclaimer {
+        font:Helvetica-Bold;
+        font_size:8;
+        align:center;
+        }
+        number_cell {
+        align:RIGHT;
+        }
+        number_cell_error {
+        align:RIGHT;
+        text_color:#FF0000;
+        }
+        error {
+        text_color:#FF0000;
+        }
+    </style>
+
+
+    <table class="data_table">
+                <tr>
+            <td>aaa</td>
+        </tr>
+        <tr>
+            <td>
+        aaaaa
+            </td>
+        </tr>
+
+
+        <tr>
+            <td>aaa</td>
+        </tr>
+        <tr>
+            <td>aaa</td>
+        </tr>
+        <tr>
+            <td>aaa</td>
+        </tr>
+        <tr>
+            <td>aaa</td>
+        </tr>
+        <tr>
+            <td>aaa</td>
+        </tr>
+
+        <tr>
+            <td>aaa</td>
+        </tr>
+        <tr>
+            <td>aaa</td>
+        </tr>
+        <tr>
+            <td>aaa</td>
+        </tr>
+        <tr>
+            <td>aaa</td>
+        </tr>
+        <tr>
+            <td>aaa</td>
+        </tr>
+        <tr>
+            <td>aaa</td>
+        </tr>
+            <tr>
+            <td width="80%">
+Table 1
+            </td>
+            </tr>
+        <tr>
+            <td>aaa</td>
+        </tr>
+        <tr>
+            <td>aaa</td>
+        </tr>
+        <tr>
+            <td>aaa</td>
+        </tr>
+        <tr>
+            <td>aaa</td>
+        </tr>
+        <tr>
+            <td>aaa</td>
+        </tr>
+        <tr>
+            <td>aaa</td>
+        </tr>
+        <tr>
+            <td>aaa</td>
+        </tr>
+        <tr>
+            <td>aaa</td>
+        </tr>
+        <tr>
+            <td>aaa</td>
+        </tr>
+
+        <tr>
+            <td>aaa</td>
+        </tr>
+        <tr>
+            <td>aaa</td>
+        </tr>
+        <tr>
+            <td>aaa</td>
+        </tr>
+        <tr>
+            <td>aaa</td>
+        </tr>
+        <tr>
+            <td>aaa</td>
+        </tr>
+        <tr>
+            <td>aaa</td>
+        </tr>
+    </table>
+
+    <spacer style="height:8"/>
+
+    <table class="data_table">
+        <tr class="machine_heading">
+            <td>2</td>
+            <td colspan="2">Excepteur sint occaecat cupidatat</td>
+        </tr>
+
+
+        <tr class="parent_heading">
+            <td>voluptate:</td>
+            <td>Facilisi etiam</td>
+        </tr>
+        <keep>
+        <tr>
+            <td class="process_data_heading" rowspan="2">Name</td>
+
+            <td rowspan="2">
+                <span class="process_data_heading">Time Per Op</span>
+            </td>
+
+        </tr>
+        <tr class="process_data_heading">
+            <td>Type</td>
+        </tr>
+        </keep>
+
+        <tr class="process_data">
+            <td width="35">
+                <span>Morbi tincidunt augue interdum velit</span>
+            </td>
+
+
+        </tr>
+
+        <tr class="process_data">
+            <td width="35">
+                <span>Morbi tincidunt augue interdum velit</span>
+            </td>
+
+            <td width="66">
+                <span> Ornare quam</span>
+            </td>
+
+
+        </tr>
+
+
+        <tr class="parent_heading">
+            <td>Total:</td>
+
+        </tr>
+
+
+        <tr class="machine_heading">
+            <td>Total:</td>
+
+        </tr>
+
+
+        <tr><td>0aaa</td></tr>
+
+    </table>
+
+
+</document>

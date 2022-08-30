@@ -1,0 +1,105 @@
+<document title="Pre Profiled Metal List"
+          page_orientation="portrait"
+          page_size="A4"
+          page_style="default"
+
+          border_top_first="7"
+          border_bottom_first="2"
+          border_right_first="10"
+          border_left_first="10"
+          border_top_continuation="7"
+          border_bottom_continuation="2"
+          border_right_continuation="10"
+          border_left_continuation="10"
+
+          footer_field="Job Number Job Not Confirmed"
+          client_field="None(None)"
+          project_field="JH-aliclad - Initial">
+    <style>
+        table_headings {
+        font:Helvetica-Bold;
+        font_size:8;
+        align:left;
+        background:#d3d3d3
+        }
+        large_table_headings {
+        font:Helvetica-Bold;
+        font_size:10;
+        align:left;
+        background:#d3d3d3
+        }
+        table_subheadings {
+        font:Helvetica-Bold;
+        font_size:8;
+        align:center;
+        background:#d3d3d3
+        }
+        table_main {
+        font:Helvetica;
+        font_size:8;
+        align:right;
+        }
+        full_table {
+        inner_grid:0.25,#000000;
+        box:0.5,#000000;
+        hAlign:center;
+        }
+        number_align_system {
+        align:decimal;
+        right_padding:4;
+        }
+        number_align {
+        left_padding:2;
+        right_padding:2;
+        align:center;
+        }
+        rough_background {
+        font:Helvetica;
+        font_size:8;
+        background:#d3d3d3;
+        align:decimal;
+        left_padding:2;
+        right_padding:4;
+        }
+        pse_background {
+        font:Helvetica;
+        font_size:8;
+        background:#c3c3c3;
+        align:decimal;
+        left_padding:2;
+        right_padding:4;
+        }
+        finished_background {
+        font:Helvetica;
+        font_size:8;
+        background:#ffffff;
+        align:decimal;
+        left_padding:2;
+        right_padding:4;
+        }
+    </style>
+    <table class="full_table">
+        <tr class="table_subheadings">
+            <td rowspan="2">Name</td>
+            <td rowspan="2">Qty</td>
+            <td colspan="3"></td>
+        </tr>
+        <tr class="table_subheadings">
+            <td>L</td>
+            <td>W</td>
+            <td>T</td>
+        </tr>
+        <tr>
+            <td colspan="5" class="table_headings">
+                <span>Sub description</span>
+            </td>
+        </tr>
+        <tr>
+            <td>1</td>
+            <td>1</td>
+            <td>1</td>
+            <td>1</td>
+            <td>1</td>
+        </tr>
+    </table>
+</document>

@@ -1,0 +1,31 @@
+<document title="My test printout" page_size="A4" page_orientation="landscape">
+
+<style>
+        main {
+            text_color:#0000FF;
+            inner_grid:0.25,#000000;
+            box:0.5,#000000
+        }
+
+        heading {
+            background:#F0F0F0;
+        }
+    </style>
+
+    <table class="main">
+        <tr>
+            <td width="50">hello world1</td>
+        </tr>
+        <tr style="bottom_padding:0">
+            <td><span>This is really long text that will over flow to lots of rows</span></td>
+        </tr>
+        <tr>
+            <td><table><tr><td>ddddddddd</td></tr><tr><td>ddddddddd</td></tr><tr><td>ddddddddd</td></tr><tr><td>ddddddddd</td></tr></table></td>
+        </tr>
+        <tr>
+            <td style="bottom_padding:0;top_padding:0">hello world4</td>
+        </tr>
+    </table>
+
+
+</document>

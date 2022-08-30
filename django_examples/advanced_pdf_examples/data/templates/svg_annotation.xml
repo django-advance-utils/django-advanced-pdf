@@ -1,0 +1,39 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd" [
+        <!ENTITY lsquo '‘'><!ENTITY rsquo '’'><!ENTITY ldquo '“'><!ENTITY rdquo '”'><!ENTITY quot '"'><!ENTITY frasl '/'><!ENTITY lt '<'><!ENTITY gt '>'><!ENTITY hellip '…'><!ENTITY ndash '–'><!ENTITY mdash '—'><!ENTITY nbsp ' '><!ENTITY not '¬'><!ENTITY iexcl '¡'><!ENTITY cent '¢'><!ENTITY pound '£'><!ENTITY euro '€'><!ENTITY curren '¤'><!ENTITY yen '¥'><!ENTITY brvbar '¦'><!ENTITY sect '§'><!ENTITY uml '¨'><!ENTITY die '¨'><!ENTITY copy '©'><!ENTITY ordf 'ª'><!ENTITY laquo '«'><!ENTITY reg '®'><!ENTITY plusmn '±'><!ENTITY sup2 '²'><!ENTITY sup3 '³'><!ENTITY frac14 '¼'><!ENTITY frac12 '½'><!ENTITY frac34 '¾'>
+        ]><document title="Glass Summary"
+        page_size="A1"
+        page_style="default"
+
+        border_top_first="10"
+        border_bottom_first="4"
+        border_right_first="10"
+        border_left_first="10"
+
+        border_top_continuation="10"
+        border_bottom_continuation="4"
+        border_right_continuation="10"
+        border_left_continuation="10">
+
+
+        <table>
+        <tr>
+        <td class="image_header">Diagram 1</td>
+        </tr>
+        <tr>
+        <td style="align:center;valign:top;bottom_padding:0;">
+        <svg width="800" height="800" viewBox="0 0 800 800" font-family="Helvetica">
+        <path style="fill:none;stroke:black;stroke-width:8px" d="
+        M 0.0 0.0 L 0.0 100.0 L 100.0 100.0 L 100.0 0.0 L 0.0 0.0 z"/>
+        <g fill="grey" transform="
+        rotate(90) translate(0 12)">
+        <text style="font-family:Helvetica" font-size="12" text-anchor="middle"  x="50" y="0">A</text>
+        </g>
+        </svg>
+
+        </td>
+        </tr>
+        </table>
+
+
+        </document>

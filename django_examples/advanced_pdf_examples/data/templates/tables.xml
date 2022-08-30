@@ -1,0 +1,76 @@
+<document title="My test printout" page_size="A5">
+
+    <table style="inner_grid:0.25,#000000">
+        <footer>
+            <tr row_height="20" style="text_color:#FF0000"><td>My footer</td></tr>
+            <tr row_height="20" style="text_color:#FF00FF"><td>My footer %(var1)s</td></tr>
+        </footer>
+
+        <header>
+            <tr row_height="20" style="text_color:#FF00FF"><td>My Header</td></tr>
+            <tr row_height="20" style="text_color:#FF00FF"><td>My Header2 %(var1)s</td></tr>
+        </header>
+        <tr><variables var1="100"/><td>1</td></tr>
+        <tr><variables var1="200"/><td>2</td></tr>
+        <tr><variables var1="300"/><td><table style="valign:top">
+             <tr>
+                <td>Apple</td><td>Monkey</td>
+            </tr>
+            <tr>
+                <td><table style="inner_grid:0.25,#000000">
+                    <tr><td>Orange</td></tr>
+                    <tr><td>Peach</td></tr>
+                </table></td>
+                <td>Hippo</td>
+            </tr>
+        </table></td></tr>
+        <tr><variables var1="400"/><td>4</td></tr>
+        <tr><variables var1="500"/><td>5</td></tr>
+        <tr><variables var1="600"/><td>6</td></tr>
+        <tr><variables var1="700"/><td>7</td></tr>
+        <tr><variables var1="800"/><td>8</td></tr>
+        <tr><variables var1="900"/><td>SVG</td></tr>
+        <tr><variables var1="1000"/><td>10</td></tr>
+        <tr><variables var1="1100"/><td>11</td></tr>
+        <tr><variables var1="1200"/><td>12</td></tr>
+        <tr><variables var1="1300"/><td>13</td></tr>
+        <tr><variables var1="1400"/><td>14</td></tr>
+        <tr><variables var1="1500"/><td>15</td></tr>
+        <tr><variables var1="1600"/><td>16</td></tr>
+        <tr><variables var1="1700"/><td>17</td></tr>
+        <tr><variables var1="1800"/><td>18</td></tr>
+        <tr><variables var1="1900"/><td>19</td></tr>
+        <tr><variables var1="2000"/><td>20</td></tr>
+        <tr><variables var1="2100"/><td>21</td></tr>
+        <tr><variables var1="2200"/><td>22</td></tr>
+        <tr><variables var1="2300"/><td>23</td></tr>
+        <tr><variables var1="2400"/><td>24</td></tr>
+        <tr><variables var1="2500"/><td>25</td></tr>
+        <tr><variables var1="2600"/><td>26</td></tr>
+        <tr><variables var1="2700"/><td>27</td></tr>
+        <tr><variables var1="2800"/><td>28</td></tr>
+        <tr><variables var1="2900"/><td>29</td></tr>
+        <tr><variables var1="3000"/><td>30</td></tr>
+        <tr><variables var1="3100"/><td>31</td></tr>
+        <tr><variables var1="3200"/><td>32</td></tr>
+        <tr><variables var1="3300"/><td>33</td></tr>
+        <tr><variables var1="3400"/><td>34</td></tr>
+        <tr><variables var1="3500"/><td>35</td></tr>
+        <tr><variables var1="3600"/><td>36</td></tr>
+        <tr><variables var1="3700"/><td>37</td></tr>
+        <tr><variables var1="3800"/><td>38</td></tr>
+        <tr><variables var1="3900"/><td>39</td></tr>
+        <tr><variables var1="4000"/><td>40</td></tr>
+        <tr><variables var1="4100"/><td>41</td></tr>
+        <tr><variables var1="4200"/><td>42</td></tr>
+        <tr><variables var1="4300"/><td>43</td></tr>
+        <tr><variables var1="4400"/><td>44</td></tr>
+        <tr><variables var1="4500"/><td>45</td></tr>
+        <tr><variables var1="4600"/><td>46</td></tr>
+        <tr><variables var1="4700"/><td>47</td></tr>
+        <tr><variables var1="4800"/><td>48</td></tr>
+        <tr><variables var1="4900"/><td>49</td></tr>
+        <tr><variables var1="5000"/><td>50</td></tr>
+
+    </table>
+</document>

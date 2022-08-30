@@ -1,12 +1,17 @@
 import csv
 import datetime
+import os
+import pathlib
 import random
 
 from date_offset.date_offset import DateOffset
 from advanced_pdf_examples import models
 
+from django_advanced_pdf.models import PrintingTemplate
+
 
 def import_data(path):
+    import_printing_templates(path)
     import_companies(path)
     import_tallies(path)
 
@@ -33,7 +38,7 @@ def import_companies(path):
     start_date = date_offset.get_offset('-1y', include_time=True)
     end_date = date_offset.get_offset('1m', include_time=True)
     print(start_date)
-    with open(path + '/data/test_data.csv', 'r') as f:
+    with open(os.path.join(path, 'data/test_data.csv'), 'r') as f:
         titles = {c[1]: c[0] for c in models.Person.title_choices}
         csv_reader = csv.DictReader(f)
         for r in csv_reader:
@@ -67,7 +72,7 @@ def import_companies(path):
 
 
 def import_tallies(path):
-    with open(path + '/data/test_tallies_data.csv', 'r') as f:
+    with open(os.path.join(path, 'data/test_tallies_data.csv'), 'r') as f:
         csv_reader = csv.DictReader(f)
         for r in csv_reader:
             models.Tally.objects.get_or_create(date=datetime.datetime.strptime(r['Date'], '%d/%m/%Y'),
@@ -78,3 +83,15 @@ def import_tallies(path):
                                                motor_bikes=int(r['Motor Bikes']),
                                                push_bikes=int(r['Push Bikes']),
                                                tractors=int(r['Tractors']))
+
+
+def import_printing_templates(path):
+    for xml_file in pathlib.Path(os.path.join(path, 'data/templates/')).glob('*.xml'):
+        name = os.path.basename(xml_file).split('.')[0]
+        with open(xml_file, 'r') as reader:
+            print_template = PrintingTemplate.objects.filter(name=name).first()
+            if print_template is None:
+                print_template = PrintingTemplate(name=name)
+            print_template.xml = reader.read()
+            print_template.save()
+

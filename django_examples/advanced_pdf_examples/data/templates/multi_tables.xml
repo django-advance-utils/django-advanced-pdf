@@ -1,0 +1,48 @@
+<document title="My test printout" page_size="A4" page_orientation="landscape">
+
+    <style>
+        red {
+            text_color:#FF0000;
+        }
+        test2 {
+            left_padding:1;
+
+        }
+    </style>
+    <table style="inner_grid:0.25,#000000;box:0.5,#FF0000;text_color:#0000FF;valign:top;left_padding:1;background:#D3D3D3">
+        <tr>
+            <td class="red"><table>
+                <tr>
+                    <td>12345678</td><td>b12345678</td>
+                </tr>
+                <tr>
+                    <td>123456789</td><td>b123456789</td>
+                </tr>
+            </table></td>
+            <td>col 2</td>
+            <td colspan="3" style="text_color:#FF00FF;align:center">col 3</td>
+        </tr>
+        <tr style="text_color:#FF0000">
+            <td>col 1 row 2</td>
+            <td style="text_color:#00FF00">col 2 b</td>
+            <td>col 2 b</td>
+        </tr>
+        <tr>
+            <td>col 1 row 3</td>
+            <td colspan="2" rowspan="2">col 3 b</td>
+        </tr>
+        <tr>
+            <td>col 1 row 3</td>
+            <td colspan="2" rowspan="3">yippeeee</td>
+        </tr>
+        <tr>
+            <td>col 1 row 4</td>
+        </tr>
+        <tr>
+            <td>col 1 row 5</td>
+        </tr>
+        <tr>
+            <td colspan="5" style="background:#D3D3FF">Last row</td>
+        </tr>
+    </table>
+</document>

@@ -1,0 +1,49 @@
+<document title="My test printout" page_size="A4" page_style="borders" page_orientation="portrait" border_top_first="10"
+          border_bottom_first="10"
+          border_right_first="10"
+          border_left_first="10"
+          border_top_continuation="10"
+          border_bottom_continuation="10"
+          border_right_continuation="10"
+          border_left_continuation="10"
+          pager_bottom_text='My Company Name'>
+
+ <style>
+        main {
+            text_color:#0000FF;
+            inner_grid:0.25,#000000,1;
+            box:0.5,#000000
+        }
+
+        heading {
+            background:#F0F0F0;
+        }
+    </style>
+
+    <table class="main">
+         <tr class="heading">
+            <td rowspan="2" colspan="4">My Description</td>
+             <td colspan="2" style="line_below:0.5,#000000"> </td>
+        </tr>
+        <tr class="heading">
+            <td colspan="2">Totals</td>
+        </tr>
+        <tr>
+            <td>Width</td>
+            <td>Height</td>
+            <td width="100">Usage</td>
+            <td>Drawing</td>
+            <td>Qty</td>
+            <td>Area (m2)</td>
+        </tr>
+
+        <tr>
+            <td>948</td>
+            <td>948</td>
+            <td>1 x</td>
+            <td>NA</td>
+            <td>1</td>
+            <td>0.899</td>
+        </tr>
+    </table>
+</document>

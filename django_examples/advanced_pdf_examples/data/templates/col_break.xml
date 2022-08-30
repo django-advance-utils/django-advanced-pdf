@@ -1,0 +1,125 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+            "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd" [
+            <!ENTITY lsquo '‘'><!ENTITY rsquo '’'><!ENTITY ldquo '“'><!ENTITY rdquo '”'><!ENTITY quot '"'><!ENTITY frasl '/'><!ENTITY lt '<'><!ENTITY gt '>'><!ENTITY hellip '…'><!ENTITY ndash '–'><!ENTITY mdash '—'><!ENTITY nbsp ' '><!ENTITY not '¬'><!ENTITY iexcl '¡'><!ENTITY cent '¢'><!ENTITY pound '£'><!ENTITY euro '€'><!ENTITY curren '¤'><!ENTITY yen '¥'><!ENTITY brvbar '¦'><!ENTITY sect '§'><!ENTITY uml '¨'><!ENTITY die '¨'><!ENTITY copy '©'><!ENTITY ordf 'ª'><!ENTITY laquo '«'><!ENTITY reg '®'><!ENTITY plusmn '±'><!ENTITY sup2 '²'><!ENTITY sup3 '³'><!ENTITY frac14 '¼'><!ENTITY frac12 '½'><!ENTITY frac34 '¾'><!ENTITY rsquo '’'>
+            ]>
+<document title="Test" page_size="A4">
+    <style>
+        main {
+        text_color:#0000FF;
+        inner_grid:0.25,#000000,0;
+        box:0.5,#000000
+        }
+
+        heading {
+        background:#F0F0F0;
+        }
+    </style>
+
+
+    <table class="main">
+
+
+        <footer>
+            <tr row_height="25" style="text_color:#FF0000;">
+                <td></td>
+                <td></td>
+                <td><currency variable="total"/></td>
+            </tr>
+        </footer>
+
+        <header>
+            <tr row_height="25" style="text_color:#F00000;">
+                <td></td>
+                <td></td>
+                <td><currency variable="total"/></td>
+            </tr>
+        </header>
+
+
+
+        <tr>
+                    <currency_variables total="0" is_float="0" symbol="£" />
+        <td></td>
+
+
+        </tr>
+        <tr>
+            <td width="40" style="text_color:#00E0FF;left_padding:10">image here</td>
+            <td>abc</td>
+            <td><currency value="1300" add_to="total"/></td>
+        </tr>
+
+
+        <tr>
+            <td width="40">image here</td>
+            <td overflow_gt_length="1000" overflow_length="1000" style="text_color:#00FF00;bottom_padding:0" overflow_middle_style="text_color:#FF00FF;top_padding:0;bottom_padding:0">
+               <span class="header_item">viverra
+
+                                - (V 03)
+
+                        </span>
+                        <br/>
+
+
+
+
+
+                                <span style="line-height: 1.3;">
+        <strong>Eu sem integer vitae justo eget magna</strong><br /><strong>Eu sem integer vitae justo eget magna</strong> Aenean vel elit <strong>mauris pellentesque</strong> - Eleifend donec pretium.</span>
+
+
+
+       Sem integer vitae justo eget.<br/>
+        Luctus venenatis lectus magna fringilla.<br/>
+        Ut tortor pretium viverra suspendisse potenti.<br/>
+        Cursus euismod quis viverra nibh cras pulvinar mattis nunc sed.<br/>
+        Mattis ullamcorper velit sed ullamcorper morbi tincidunt ornare massa eget.<br/>
+        At ultrices mi tempus imperdiet nulla malesuada pellentesque.<br/>
+        Vestibulum morbi blandit cursus risus at ultrices mi tempus.<br/>
+        Nibh ipsum consequat nisl vel pretium lectus quam id leo.<br/>
+        Viverra justo nec ultrices dui sapien eget mi proin sed.<br/>
+        Ultrices mi tempus imperdiet nulla.<br/>
+        Mauris ultrices eros in cursus turpis massa tincidunt.<br/>
+        Mattis pellentesque id nibh tortor id aliquet lectus proin nibh.<br/>
+        Posuere sollicitudin aliquam ultrices sagittis orci a scelerisque purus semper. <br/>
+        Quis blandit turpis cursus in hac habitasse platea. <br/>
+        Amet est placerat in egestas erat imperdiet sed euismod. <br/>
+        Imperdiet dui accumsan sit amet nulla facilisi.<br/>
+        Metus vulputate eu scelerisque felis imperdiet proin. <br/>
+        Cras pulvinar mattis nunc sed blandit libero.<br/>
+        Quis hendrerit dolor magna eget est lorem ipsum dolor.<br/>
+        Pharetra convallis posuere morbi leo.<br/>
+
+
+
+                                        Quam lacus suspendisse faucibus interdum.<br/>
+        Facilisi etiam dignissim diam quis enim.<br/>
+        Morbi tincidunt augue interdum velit.<br/>
+        Ornare quam viverra orci sagittis.<br/>
+        Tempus egestas sed sed risus pretium quam vulputate.<br/>
+        Lobortis elementum nibh tellus molestie. <br/>
+        Sit amet justo donec enim diam vulputate ut pharetra.<br/>
+        Ultrices tincidunt arcu non sodales neque sodales ut etiam sit.<br/>
+        Non sodales neque sodales ut etiam. Viverra orci sagittis eu volutpat odio.<br/>
+        In metus vulputate eu scelerisque felis imperdiet proin fermentum.<br/>
+        Vel pharetra vel turpis nunc eget lorem dolor.<br/>
+        Facilisis magna etiam tempor orci eu lobortis.<br/>
+        Nec feugiat nisl pretium fusce id velit ut tortor pretium.<br/>
+        Eget nunc lobortis mattis aliquam faucibus purus in.<br/>
+        Euismod lacinia at quis risus sed vulputate odio ut enim.<br/>
+        Nulla facilisi morbi tempus iaculis urna.<br/>
+        Auctor elit sed vulputate mi sit amet mau<br/>
+
+            </td>
+            <td><currency value="3000" add_to="total"/></td>
+        </tr>
+        <tr><td>abc</td><td colspan="2" style="text_color:#0FF0F0">abc</td></tr>
+        <tr><td>another</td><td>abc</td><td>abc</td></tr>
+    </table>
+</document>
+
+
+
+
+
+

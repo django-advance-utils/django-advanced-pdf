@@ -1,0 +1,138 @@
+<document title="Report"
+          page_size="A4"
+          page_style="blank"
+          page_orientation="landscape"
+          border_right_first="1"
+          border_left_first="2"
+          border_bottom_first="0"
+          border_right_continuation="1"
+          border_left_continuation="2"
+          border_bottom_continuation="0">
+
+    <style>
+        full_table {
+        inner_grid:0.25,#000000;
+        box:0.5,#000000;
+        font_size:7;
+        row_height:4;
+        vAlign:top;
+        top_padding:0.5;
+        }
+        header_table {
+        font:Helvetica-Bold;
+        font_size:9;
+        vAlign:top;
+        top_padding:0.5;
+        }
+        header {
+        font:Helvetica-Bold;
+        vAlign:top;
+        }
+        header_center {
+        font:Helvetica-Bold;
+        vAlign:top;
+        align:center;
+        }
+        title {
+        font_size:12;
+        vAlign:middle;
+        font:Helvetica-Bold;
+        }
+        grey_header {
+        bottom_padding:0;
+        font:Helvetica-Bold;
+        vAlign:middle;
+        background:#D3D3D3;
+        }
+        data {
+
+        }
+        data_right {
+        align:decimal;
+        right_padding:3;
+        }
+        data_right_large {
+        align:decimal;
+        right_padding:6;
+        }
+        disclaimer {
+        font_size: 6;
+        }
+        sub_assembly_grid {
+        vAlign:top;
+        align:center;
+        }
+        sub_assembly_grid_label {
+        vAlign:top;
+        align:left;
+        left_padding:20;
+        }
+        sub_assembly_label {
+        font_size:8;
+        align:center;
+        row_height:3;
+        }
+        sub_assembly {
+        align:center;
+        bottom_padding:0;
+        }
+        sub_components {
+        font_size:8;
+        row_height:4;
+        vAlign:top;
+        }
+        sub_title {
+        top_padding:2;
+        vAlign:middle;
+        font:Helvetica-Bold;
+        }
+        top_down_table {
+        inner_grid:0.25,#000000;
+        box:0.5,#000000;
+        top_padding:0;
+        bottom_padding:0;
+        }
+        top_down_header {
+        font:Helvetica;
+        font_size:7;
+        row_height:4;
+        }
+        finished_header {
+        font:Helvetica-Bold;
+        vAlign:top;
+        row_height:5;
+        font_size:9;
+        }
+        finished_data_right {
+        align:decimal;
+        right_padding:3;
+        font_size:9;
+        }
+    </style>
+
+    <table class="full_table" layout_widths="80,30,13,13,13,13,50">
+        <tr>
+            <td colspan="2" rowspan="2" class="grey_header">Shed</td>
+            <td class="data" colspan="5">Sizes</td>
+        </tr>
+        <tr>
+            <td class="header_center">W</td>
+            <td class="header_center">RCL</td>
+            <td class="header_center">FCL</td>
+            <td class="header_center">T</td>
+            <td class="header_center">Material</td>
+        </tr>
+        <tr>
+            <td class="header" rowspan="1">
+                <span>Panel Section</span>
+            </td>
+            <td class="data" width="30">Left Panel</td>
+            <td class="data_right">92</td>
+            <td class="data_right">1026.6</td>
+            <td class="data_right">1006.6</td>
+            <td class="data_right">66</td>
+            <td class="data">Redwood</td>
+        </tr>
+
+    </table>
+</document>

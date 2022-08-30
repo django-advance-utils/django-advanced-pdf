@@ -1,0 +1,213 @@
+<document title="My test printout" page_size="A4" page_style="blank" border_top="10" border_bottom="10" border_right="20" border_left="20">
+
+    <style>
+        red {
+            text_color:#FF0000;
+        }
+        top_table {
+            inner_grid:0.25,#000000;
+            box:0.5,#FF0000;
+            leading:12;
+            text_color:#0000FF;
+        }
+        main_table {
+            inner_grid:0.25,#000000;
+            box:0.5,#FF0000;
+            leading:12;
+            text_color:#0000FF;
+            valign:top;
+        }
+        estimate_title {
+            align:center;
+            font_size:20;
+            leading:24;
+            font:Helvetica-Bold;
+
+        }
+        header_top {
+            font:Helvetica-Bold;
+        }
+        quantity {
+            align:right;
+        }
+        amount {
+            align:right;
+        }
+        description {
+            left_padding:0;
+            right_padding:0;
+            bottom_padding:0;
+            top_padding:0;
+        }
+        description_type {
+            font:Helvetica-Bold;
+
+        }
+        currency_extra_digits {
+             text_color:#FF0000;
+            font_size:7;
+        }
+    </style>
+    <table class="top_table">
+        <tr><td colspan="2">Mr James Peach<br/>Apple House<br/>Orange Street<br/>Pineappleshire<br/>FR0 1AA</td></tr>
+        <tr><td colspan="2" class="estimate_title">ESTIMATE</td></tr>
+        <tr><td width="40">Reference</td><td>213312</td></tr>
+        <tr><td>Estimate Number</td><td>34244</td></tr>
+        <tr><td>Date of Estimate</td><td>01 August 2022</td></tr>
+        <tr><td>Validity</td><td>30 days</td></tr>
+        <tr><td colspan="2">Dear Bill,<br/><br/>Further to your enquiry, I have pleasure in estimating the following widgets items as below:</td></tr>
+    </table>
+
+    <table class="main_table">
+        <footer>
+            <tr row_height="25" style="text_color:#FF0000;">
+                <td> </td>
+                <td>Total</td>
+                <td></td>
+                <td></td>
+                <td style="align:right;"><currency variable="total"/></td>
+
+            </tr>
+        </footer>
+
+        <header>
+            <tr row_height="25" style="text_color:#FF00FF"><td>My Header</td></tr>
+            <tr row_height="25" style="text_color:#FF00FF"><td><currency variable="total"/></td></tr>
+        </header>
+        <tr>
+            <currency_variables total="0" is_float="0" symbol="£" />
+            <td width="50">Item (sizes)</td>
+            <td>Description</td>
+            <td width="10">Qty</td>
+            <td width="35">Unit<br/>cost</td>
+            <td width="20">Total<br/>cost</td>
+        </tr>
+
+        <!-- Item -->
+
+        <tr>
+            <td>
+                <svg width="100" height="100">
+                    <circle cx="50" cy="50" r="40" stroke="green" stroke-width="4" fill="yellow" />
+                </svg>
+            </td>
+             <td>Widget</td>
+            <td class="quantity">1</td>
+            <td class="amount"><currency_qty qty="1" value="1000" symbol_from="total"/></td>
+            <td class="amount"><currency value="1000" add_to="total"/></td>
+        </tr>
+
+
+        <!-- Item -->
+
+        <tr>
+            <td>
+                <svg width="100" height="100">
+                    <circle cx="50" cy="50" r="40" stroke="green" stroke-width="4" fill="yellow" />
+                </svg>
+            </td>
+             <td>Widget</td>
+            <td class="quantity">3</td>
+            <td class="amount"><currency_qty qty="3" value="100000" symbol_from="total"/></td>
+            <td class="amount"><currency value="100000" add_to="total"/></td>
+        </tr>
+
+        <!-- Item -->
+
+        <tr>
+            <td>
+                <svg width="100" height="100">
+                    <circle cx="50" cy="50" r="40" stroke="green" stroke-width="4" fill="yellow" />
+                </svg>
+            </td>
+             <td>Widget</td>
+            <td class="quantity">1</td>
+            <td class="amount"><currency_qty qty="1" value="1000" symbol_from="total"/></td>
+            <td class="amount"><currency value="1000" add_to="total"/></td>
+        </tr>
+
+        <!-- Item -->
+
+        <tr>
+            <td>
+                <svg width="100" height="100">
+                    <circle cx="50" cy="50" r="40" stroke="green" stroke-width="4" fill="yellow" />
+                </svg>
+            </td>
+             <td>Widget</td>
+            <td class="quantity">1</td>
+            <td class="amount"><currency_qty qty="1" value="1000" symbol_from="total"/></td>
+            <td class="amount"><currency value="1000" add_to="total"/></td>
+        </tr>
+        <!-- Item -->
+
+        <tr>
+            <td>
+                <svg width="100" height="100">
+                    <circle cx="50" cy="50" r="40" stroke="green" stroke-width="4" fill="yellow" />
+                </svg>
+            </td>
+             <td>Widget</td>
+            <td class="quantity">1</td>
+            <td class="amount"><currency_qty qty="1" value="1000" symbol_from="total"/></td>
+            <td class="amount"><currency value="1500" add_to="total"/></td>
+        </tr>
+         <!-- Item -->
+
+        <tr>
+            <td>
+                <svg width="100" height="100">
+                    <circle cx="50" cy="50" r="40" stroke="green" stroke-width="4" fill="yellow" />
+                </svg>
+            </td>
+             <td>Widget</td>
+            <td class="quantity">1</td>
+            <td class="amount"><currency_qty qty="1" value="1000" symbol_from="total"/></td>
+            <td class="amount"><currency value="1400" add_to="total"/></td>
+        </tr>
+        <!-- Item -->
+
+        <tr>
+            <td>
+                <svg width="100" height="100">
+                    <circle cx="50" cy="50" r="40" stroke="green" stroke-width="4" fill="yellow" />
+                </svg>
+            </td>
+            <td>Widget</td>
+            <td class="quantity">1</td>
+            <td class="amount"><currency_qty qty="1" value="1000" symbol_from="total"/></td>
+            <td class="amount"><currency value="1000" add_to="total"/></td>
+        </tr>
+
+        <!-- Item -->
+
+        <tr>
+            <td>
+                <svg width="100" height="100">
+                    <circle cx="50" cy="50" r="40" stroke="green" stroke-width="4" fill="yellow" />
+                </svg>
+            </td>
+            <td>Widget</td>
+            <td class="quantity">1</td>
+            <td class="amount"><currency_qty qty="1" value="1000" symbol_from="total"/></td>
+            <td class="amount"><currency value="1000" add_to="total"/></td>
+        </tr>
+
+
+        <tr>
+            <td>
+            </td>
+            <td>Total</td>
+            <td></td>
+            <td></td>
+            <td class="amount"><currency variable="total"/></td>
+        </tr>
+
+    </table>
+    <page_break/>
+<p style="textcolor:#FFFF00">
+    hello world
+
+
+</p>
+</document>
