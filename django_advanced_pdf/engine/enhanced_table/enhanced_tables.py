@@ -219,7 +219,7 @@ class EnhancedTable(Table):
             er += n
             self._addCommand((c[0],) + ((sc, sr), (ec, er)) + c[3:])
 
-    def _splitRows(self, availHeight):
+    def _splitRows(self, availHeight, doInRowSplit=0):
 
         n = self._getFirstPossibleSplitRowPosition(availHeight)
         if n <= self.repeatRows:

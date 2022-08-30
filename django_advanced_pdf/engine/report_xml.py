@@ -352,6 +352,9 @@ class ReportXML(object):
         for td_element in tr.iter('td'):
             td_css = row_css + self.get_css_from_style_attribute(td_element)
 
+            # col_span = int(td_element.get('colspan', "1"))
+            # row_span = int(td_element.get('rowspan', "1"))
+
             if len(td_element) > 0 and td_element[0].tag[-8:] == 'currency':
                 variable_name = td_element[0].get('variable')
                 if variable_name is not None:
@@ -373,6 +376,7 @@ class ReportXML(object):
                 row_data.append('')
 
             row_styles.append(self.process_css_for_header_or_footer(td_css))
+
 
         styles.append(row_styles)
         data.append(row_data)
@@ -633,7 +637,7 @@ class ReportXML(object):
         css = self.get_css_from_style_attribute(tag=tag,
                                                 style_tag_name=style_tag_name,
                                                 class_tag_name=class_tag_name)
-        if css is '':
+        if css == '':
             return
 
         self.convert_css_to_style(css, styles, other_styles, start_col, start_row, end_col, end_row)
@@ -882,7 +886,9 @@ class ReportXML(object):
                     m = re.search(r'\w+', tag)
                     tag_name = m.group(0)
                     if tag[1] == '/':
-                        if tag_name == working_tags[-1][0]:
+                        if len(working_tags) == 0:
+                            break
+                        elif tag_name == working_tags[-1][0]:
                             working_tags.pop()
                     else:
                         working_tags.append((tag_name, tag))
