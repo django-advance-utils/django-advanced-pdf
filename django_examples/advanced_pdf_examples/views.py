@@ -1,9 +1,7 @@
 import base64
 
 from ajax_helpers.mixins import AjaxHelpers
-from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
-from django.views.generic import DetailView
 from django_datatables.columns import MenuColumn
 from django_datatables.datatables import DatatableView
 from django_datatables.helpers import DUMMY_ID
@@ -11,6 +9,7 @@ from django_menus.menu import MenuMixin, MenuItem, HtmlMenu, AjaxButtonMenuItem
 from django_modals.modals import ModelFormModal
 
 from django_advanced_pdf.models import PrintingTemplate
+from django_advanced_pdf.views import DatabasePDFView
 
 
 class MainMenu(AjaxHelpers, MenuMixin):
@@ -56,7 +55,7 @@ class ExampleIndex(MainMenu, DatatableView):
                                    menu_display='',
                                    ajax_kwargs={'pk': DUMMY_ID},
                                    font_awesome='fa fa-download'),
-                MenuItem(url='advanced_pdf_examples:view_pdf',
+                MenuItem(url='advanced_pdf_examples:view_example_database_pdf',
                          url_kwargs={'pk': DUMMY_ID},
                          css_classes='btn btn-sm btn-outline-dark',
                          menu_display='',
@@ -77,16 +76,8 @@ class PrintingTemplateModal(ModelFormModal):
     form_fields = ['name', 'xml']
 
 
-class ViewPDF(DetailView):
-    model = PrintingTemplate
+class ExampleDatabasePDFView(DatabasePDFView):
+    def get_pager_kwargs(self):
+        return {'program_name': 'Django Advanced PDF Viewer'}
 
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        # add extra context if needed
-        return context
-
-    def render_to_response(self, context, **kwargs):
-        result = self.object.make_pdf(context=context, program_name="My Program Name")
-        response = HttpResponse(result.getvalue(), content_type='application/pdf')
-        return response
 

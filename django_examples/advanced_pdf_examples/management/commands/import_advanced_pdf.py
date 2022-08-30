@@ -6,4 +6,4 @@ from advanced_pdf_examples.import_data import import_data
 
 class Command(BaseCommand):
     def handle(self, *args, **options):
-        import_data(apps.get_app_config('cards_examples').path)
+        import_data(apps.get_app_config('advanced_pdf_examples').path)
