@@ -7,7 +7,7 @@ setuptools.setup(
     name="django-advanced-pdf",
     version="0.0.1",
     author="Thomas Turner",
-    description="Django app Help one create pdf",
+    description="Django app that helps one create pdf",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/django-advance-utils/django-advanced-pdf",
