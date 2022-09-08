@@ -1,7 +1,15 @@
 import base64
+import os
+import pathlib
 
+from PyPDF2 import PdfFileReader, PdfFileWriter
+from advanced_pdf_examples.models import Company
 from ajax_helpers.mixins import AjaxHelpers
+from django.conf import settings
+from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
+from django.template.loader import get_template
+from django.views import View
 from django_datatables.columns import MenuColumn
 from django_datatables.datatables import DatatableView
 from django_datatables.helpers import DUMMY_ID
@@ -9,6 +17,7 @@ from django_menus.menu import MenuMixin, MenuItem, HtmlMenu, AjaxButtonMenuItem
 from django_modals.modals import ModelFormModal
 
 from django_advanced_pdf.models import PrintingTemplate
+from django_advanced_pdf.utils import make_pdf
 from django_advanced_pdf.views import DatabasePDFView
 
 
@@ -16,15 +25,16 @@ class MainMenu(AjaxHelpers, MenuMixin):
     def setup_menu(self):
         # noinspection PyUnresolvedReferences
         self.add_menu('main_menu').add_items(
-            ('advanced_pdf_examples:index', 'Home'),
+            ('advanced_pdf_examples:from_database_example', 'From Database Example'),
+            ('advanced_pdf_examples:from_file_example', 'From File Example'),
+            ('advanced_pdf_examples:view_companies_pdf', 'View Companies PDF'),
             MenuItem(url='admin:index',
                      menu_display='Admin',
                      visible=self.request.user.is_superuser),
-
         )
 
 
-class ExampleIndex(MainMenu, DatatableView):
+class FromDatabaseExampleIndex(MainMenu, DatatableView):
     template_name = 'advanced_pdf_examples/index.html'
 
     model = PrintingTemplate
@@ -80,4 +90,64 @@ class ExampleDatabasePDFView(DatabasePDFView):
     def get_pager_kwargs(self):
         return {'program_name': 'Django Advanced PDF Viewer'}
 
+
+class FromFileExampleIndex(MainMenu, DatatableView):
+    template_name = 'advanced_pdf_examples/index.html'
+
+    @staticmethod
+    def get_table_query(table, **kwargs):
+        data = []
+        path = os.path.join(settings.BASE_DIR, 'advanced_pdf_examples/templates/file_examples/')
+        for xml_file in pathlib.Path(path).glob('*.xml'):
+            name = os.path.basename(xml_file).split('.')[0]
+            data.append({'id': name, 'name': name})
+        return data
+
+    def setup_table(self, table):
+        table.add_columns(
+            '.id',
+            'name',
+            MenuColumn(column_name='menu', field='id', menu=HtmlMenu(self.request, 'button_group').add_items(
+                MenuItem(url='advanced_pdf_examples:view_example_file_pdf',
+                         url_kwargs={'filename': DUMMY_ID},
+                         css_classes='btn btn-sm btn-outline-dark',
+                         menu_display='',
+                         font_awesome='far fa-file-pdf'),
+            )),
+        )
+
+
+class ExampleFilePDFView(View):
+    def get(self, request, filename):
+        template = get_template(f'file_examples/{filename}.xml')
+        xml = template.render({})
+        result = make_pdf(xml=xml)
+        response = HttpResponse(result.getvalue(), content_type='application/pdf')
+        return response
+
+
+class CompaniesPDFView(View):
+    def get(self, request):
+        template = get_template(f'file_examples/with_context/companies.xml')
+        xml = template.render({'companies': Company.objects.all()})
+        result = make_pdf(xml=xml)   # background_image_remaining=os.path.join(settings.BASE_DIR, 'test.jpg')
+        response = HttpResponse(result.getvalue(), content_type='application/pdf')
+        return response
+
+
+class ReportExampleView(View):
+    def get(self, request):
+        output = PdfFileWriter()
+        template_files = ['basic', 'border']
+        response = HttpResponse(content_type='application/pdf')
+        for template_file in template_files:
+            template = get_template(f'file_examples/{template_file}.xml')
+            xml = template.render({})
+            result = make_pdf(xml=xml)
+            current_pdf = PdfFileReader(result)
+            for x in range(0, current_pdf.getNumPages()):
+                output.addPage(current_pdf.getPage(x))
+
+        output.write(response)
+        return response
 

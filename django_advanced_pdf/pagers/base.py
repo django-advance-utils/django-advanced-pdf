@@ -7,8 +7,6 @@ from django_advanced_pdf.engine.utils import PageUsed
 
 
 class BasePager(canvas.Canvas):
-    def inkAnnotation(self, contents, ink_list=None, rect=None, add_to_page=1, name=None, relative=0, **kw):
-        pass
 
     def __init__(self, heading, filename, pagesize=None, bottom_up=1,
                  page_compression=None, invariant=None, verbosity=0,
@@ -17,15 +15,15 @@ class BasePager(canvas.Canvas):
                  border_top_first=0, border_bottom_first=0,
                  border_left_continuation=0, border_right_continuation=0,
                  border_top_continuation=0, border_bottom_continuation=0,
-                 program_name=None, **kwargs):
+                 program_name=None,
+                 background_image_first=None, background_image_remaining=None,
+                 background_image_footer=None, **kwargs):
 
         self.heading = heading
         self.pagesize = pagesize
         self.drawmethods = []
         self.image2 = None
         self._saved_page_states = []
-
-        self.background_images = None
 
         self.pageused = PageUsed(left=border_left_first,
                                  right=border_right_first,
@@ -40,9 +38,21 @@ class BasePager(canvas.Canvas):
         canvas.Canvas.__init__(self, filename, pagesize, bottom_up, page_compression, invariant, verbosity, encrypt,
                                crop_marks, pdf_version, enforce_color_space)
 
-    def add_background_images(self, background_images):
-        self.background_images = background_images
+        self.background_images = None
+        if (background_image_first is not None or
+                background_image_remaining is not None or
+                background_image_footer is not None):
+            self.add_background_images(first=background_image_first,
+                                       remaining=background_image_remaining,
+                                       footer=background_image_footer)
+
+    def inkAnnotation(self, contents, ink_list=None, rect=None, add_to_page=1, name=None, relative=0, **kw):
+        pass
+
+    def add_background_images(self, first, remaining, footer):
+        self.background_images = {'first': first, 'remaining': remaining, 'footer': footer}
         self.draw_first_page_background()
+        self.draw_footer_image_block()
 
     def add_draw_method(self, method):
 
@@ -158,6 +168,7 @@ class BasePager(canvas.Canvas):
         self._startPage()
 
         self.draw_remaining_page_background()
+        self.draw_footer_image_block()
 
     def save(self):
 

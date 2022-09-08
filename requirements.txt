@@ -11,7 +11,7 @@ django-nested-modals==0.0.20
 
 django-ajax-helpers==0.0.20
 # git+https://github.com/jonesim/ajax-helpers.git@3ab5d5310398bb213a3dd50edae8813983562f55
-tim e-stamped-model==0.2.2
+time-stamped-model==0.2.2
 date-offset==0.0.2
 django-debug-toolbar==3.2.4
 reportlab==3.6.11
@@ -19,3 +19,4 @@ lxml==4.9.1
 six==1.16.0
 cssselect2==0.6.0
 tinycss2==1.1.1
+pypdf2==2.8.1
