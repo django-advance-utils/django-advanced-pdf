@@ -60,6 +60,12 @@ class FromDatabaseExampleIndex(MainMenu, DatatableView):
                          css_classes='btn btn-sm btn-outline-dark',
                          menu_display='',
                          font_awesome='fa fa-edit'),
+
+                AjaxButtonMenuItem(button_name='duplicate_pdf',
+                                   css_classes='btn btn-sm btn-outline-dark',
+                                   menu_display='',
+                                   ajax_kwargs={'pk': DUMMY_ID},
+                                   font_awesome='fa fa-clone'),
                 AjaxButtonMenuItem(button_name='download_pdf',
                                    css_classes='btn btn-sm btn-outline-dark',
                                    menu_display='',
@@ -72,6 +78,13 @@ class FromDatabaseExampleIndex(MainMenu, DatatableView):
                          font_awesome='far fa-file-pdf'),
                 )),
         )
+
+    def button_duplicate_pdf(self, *args, **kwargs):
+        printing_template = get_object_or_404(PrintingTemplate, pk=kwargs['pk'])
+        printing_template.pk = None
+        printing_template.name += ' (Copy)'
+        printing_template.save()
+        return self.command_response('reload')
 
     def button_download_pdf(self, *args, **kwargs):
         printing_template = get_object_or_404(PrintingTemplate, pk=kwargs['pk'])
