@@ -15,6 +15,7 @@ from django_datatables.datatables import DatatableView
 from django_datatables.helpers import DUMMY_ID
 from django_menus.menu import MenuMixin, MenuItem, HtmlMenu, AjaxButtonMenuItem
 from django_modals.modals import ModelFormModal
+from django_modals.processes import PERMISSION_OFF
 
 from django_advanced_pdf.models import PrintingTemplate
 from django_advanced_pdf.utils import make_pdf
@@ -96,6 +97,9 @@ class FromDatabaseExampleIndex(MainMenu, DatatableView):
 class PrintingTemplateModal(ModelFormModal):
     size = 'xl'
     model = PrintingTemplate
+
+    permission_delete = PERMISSION_OFF
+
     form_fields = ['name', 'xml']
 
 
