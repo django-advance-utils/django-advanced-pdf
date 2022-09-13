@@ -17,8 +17,8 @@ from django_menus.menu import MenuMixin, MenuItem, HtmlMenu, AjaxButtonMenuItem
 from django_modals.modals import ModelFormModal
 from django_modals.processes import PERMISSION_OFF
 
+from django_advanced_pdf.engine.report_xml import ReportXML
 from django_advanced_pdf.models import PrintingTemplate
-from django_advanced_pdf.utils import make_pdf
 from django_advanced_pdf.views import DatabasePDFView
 
 
@@ -138,7 +138,8 @@ class ExampleFilePDFView(View):
     def get(self, request, filename):
         template = get_template(f'file_examples/{filename}.xml')
         xml = template.render({})
-        result = make_pdf(xml=xml)
+        report_xml = ReportXML()
+        result = report_xml.load_xml_and_make_pdf(xml)
         response = HttpResponse(result.getvalue(), content_type='application/pdf')
         return response
 
@@ -147,7 +148,9 @@ class CompaniesPDFView(View):
     def get(self, request):
         template = get_template(f'file_examples/with_context/companies.xml')
         xml = template.render({'companies': Company.objects.all()})
-        result = make_pdf(xml=xml)   # background_image_remaining=os.path.join(settings.BASE_DIR, 'test.jpg')
+        xml = template.render({})
+        report_xml = ReportXML()
+        result = report_xml.load_xml_and_make_pdf(xml) # background_image_remaining=os.path.join(settings.BASE_DIR, 'test.jpg')
         response = HttpResponse(result.getvalue(), content_type='application/pdf')
         return response
 
@@ -160,7 +163,8 @@ class ReportExampleView(View):
         for template_file in template_files:
             template = get_template(f'file_examples/{template_file}.xml')
             xml = template.render({})
-            result = make_pdf(xml=xml)
+            report_xml = ReportXML()
+            result = report_xml.load_xml_and_make_pdf(xml)
             current_pdf = PdfFileReader(result)
             for x in range(0, current_pdf.getNumPages()):
                 output.addPage(current_pdf.getPage(x))

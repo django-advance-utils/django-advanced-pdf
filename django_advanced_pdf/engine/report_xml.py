@@ -6,6 +6,7 @@ from lxml import etree
 from reportlab.lib.colors import HexColor, black
 from reportlab.lib.units import mm
 from reportlab.platypus import TableStyle, CellStyle, PageBreak, Spacer
+from io import StringIO, BytesIO
 
 from .enhanced_paragraph.enhanced_paragraph import EnhancedParagraph
 from .enhanced_paragraph.style import EnhancedParagraphStyle
@@ -22,6 +23,43 @@ class ReportXML(object):
 
     pager_types = {'borders': BorderPager}
     default_pager = BasePager
+
+    entities = [
+        (u'lsquo', u'‘'),
+        (u'rsquo', u'’'),
+        (u'ldquo', u'“'),
+        (u'rdquo', u'”'),
+        (u'quot', u'"'),
+        (u'frasl', u'/'),
+        (u'lt', u'<'),
+        (u'gt', u'>'),
+        (u'hellip', u'…'),
+        (u'ndash', u'–'),
+        (u'mdash', u'—'),
+        (u'nbsp', u' '),
+        (u'not', u'¬'),
+        (u'iexcl', u'¡'),
+        (u'cent', u'¢'),
+        (u'pound', u'£'),
+        (u'euro', u'€'),
+        (u'curren', u'¤'),
+        (u'yen', u'¥'),
+        (u'brvbar', u'¦'),
+        (u'sect', u'§'),
+        (u'uml', u'¨'),
+        (u'die', u'¨'),
+        (u'copy', u'©'),
+        (u'ordf', u'ª'),
+        (u'laquo', u'«'),
+        (u'reg', u'®'),
+        (u'plusmn', u'±'),
+        (u'sup2', u'²'),
+        (u'sup3', u'³'),
+        (u'frac14', u'¼'),
+        (u'frac12', u'½'),
+        (u'frac34', u'¾'),
+        (u'rsquo', u'’'),
+    ]
 
     def __init__(self, object_lookup=None, background_images=None, pager_kwargs=None):
         self.styles = {}
@@ -46,6 +84,18 @@ class ReportXML(object):
             self.pager_kwargs = {}
         else:
             self.pager_kwargs = pager_kwargs
+
+    def load_xml_and_make_pdf(self, xml, add_doctype=True):
+        parser = etree.XMLParser(remove_blank_text=True, resolve_entities=False)
+
+        if add_doctype:
+            xml = self.get_doc_type() + xml
+        tree = etree.parse(StringIO(xml), parser)
+        root = tree.getroot()
+        result = BytesIO()
+        self.make_pdf(root, result)
+        result.seek(0)
+        return result
 
     def get_object(self, object_id):
         if object_id in self.object_lookup.keys():
@@ -553,26 +603,29 @@ class ReportXML(object):
                 display_object = '%s%s' % (symbol, intcomma_currency(number_string))
 
             elif len(td_element) > 0:
-                xml = etree.tostring(td_element)
+                xml = etree.tostring(td_element, pretty_print=True)
+
                 overflow_gt_length = int(td_element.get('overflow_gt_length', 0))
                 style = self.process_css_for_table_paragraph_style(styles, row_count, col_count + offset)
 
                 if overflow_gt_length:
-                    xml, style, overflow_row_count = self.overflow_cell(td_element=td_element,
-                                                                        xml=xml,
-                                                                        overflow_gt_length=overflow_gt_length,
-                                                                        styles=styles,
-                                                                        style=style,
-                                                                        offset=offset,
-                                                                        col_count=col_count,
-                                                                        row_count=row_count,
-                                                                        col_span=col_span,
-                                                                        row_span=row_span,
-                                                                        row_data=row_data,
-                                                                        overflow_rows=overflow_rows,
-                                                                        rows_variables=rows_variables)
+                    out_xml, style, overflow_row_count = self.overflow_cell(td_element=td_element,
+                                                                            xml=xml,
+                                                                            overflow_gt_length=overflow_gt_length,
+                                                                            styles=styles,
+                                                                            style=style,
+                                                                            offset=offset,
+                                                                            col_count=col_count,
+                                                                            row_count=row_count,
+                                                                            col_span=col_span,
+                                                                            row_span=row_span,
+                                                                            row_data=row_data,
+                                                                            overflow_rows=overflow_rows,
+                                                                            rows_variables=rows_variables)
+                    display_object = EnhancedParagraph(out_xml, style, css_classes=self.styles)
+                else:
+                    display_object = EnhancedParagraph(xml, style, css_classes=self.styles)
 
-                display_object = EnhancedParagraph(xml, style, css_classes=self.styles)
             else:
                 display_object = td_element.text
                 if display_object is None:
@@ -890,16 +943,20 @@ class ReportXML(object):
                             break
                         elif tag_name == working_tags[-1][0]:
                             working_tags.pop()
+                            if tag_name == 'td' and len(working_tags) == 0:
+                                if len(overflow_rows) > 0:
+                                    return overflow_rows[0], overflow_rows[1:]
+                                else:
+                                    return '', []
                     else:
                         working_tags.append((tag_name, tag))
 
                 for tag in reversed(working_tags):
                     working_xml += ('</' + tag[0] + '>').encode()
-
                 overflow_rows.append(working_xml)
-
                 for tag in working_tags:
                     next_xml += tag[1]
+
             return overflow_rows[0], overflow_rows[1:]
 
         return xml, overflow_rows
@@ -955,3 +1012,10 @@ class ReportXML(object):
 
                 style = self.process_css_for_table_paragraph_style(styles, row_count, col_count + offset)
         return xml, style, len(overflow_rows)
+
+    def get_doc_type(self):
+        entity_string = ''
+        for entity in self.entities:
+            entity_string += u'<!ENTITY %s \'%s\'>' % (entity[0], entity[1])
+        xml = """<!DOCTYPE root SYSTEM "print_engine" [%s]>""" % entity_string
+        return xml

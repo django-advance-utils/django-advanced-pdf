@@ -1,17 +1,18 @@
 from reportlab import rl_config
 from reportlab.lib.rl_accel import fp_str
-from reportlab.lib.utils import annotateException, flatten
+from reportlab.lib.utils import annotateException, flatten, strTypes
 from reportlab.platypus.flowables import Flowable
 from reportlab.platypus.flowables import PageBreak
 from reportlab.platypus.para import handleSpecialCharacters
 from reportlab.platypus.paragraph import Paragraph
-from reportlab.platypus.tables import Table, _calc_pc, spanFixDim
+from reportlab.platypus.tables import Table, _calc_pc, spanFixDim, CellStyle
 from six import string_types
 
 from django_advanced_pdf.engine.enhanced_table.data_paragraph import DataParagraph
 from django_advanced_pdf.engine.utils import DecimalText
 
 OVERFLOW_ROW = -9999
+UNDEFINED_ROW = -8888
 
 
 # noinspection PyPep8Naming
@@ -386,7 +387,9 @@ class EnhancedTable(Table):
         }
 
         r1_row_heights = self._argH[:repeat_rows] + header_row_heights + self._argH[n:]
-        r1_cell_styles = self._cellStyles[:repeat_rows] + header_cell_styles + self._cellStyles[n:]
+        r1_cell_styles = self._merge_cell_styles(first=self._cellStyles[:repeat_rows],
+                                                 headers=header_cell_styles,
+                                                 last=self._cellStyles[n:])
         r1 = EnhancedTable(r1_table_data,
                            col_widths=self._colWidths,
                            row_heights=r1_row_heights,
@@ -431,6 +434,28 @@ class EnhancedTable(Table):
             return [r0, PageBreak(), r1]
         else:
             return [r0, r1]
+
+    def _merge_cell_styles(self, first, headers, last):
+        if len(headers) == 0:
+            return first + last
+
+        if len(first) > 0:
+            col_len = len(first[0])
+        elif len(last) > 0:
+            col_len = len(last[0])
+        else:
+            col_len = 0
+
+        headers_mod = []
+        for row in headers:
+            header_col_len = len(row)
+            if header_col_len != col_len:
+                for x in range(header_col_len, col_len):
+                    row.append(CellStyle('header_footer'))
+
+            headers_mod.append(row)
+
+        return first + headers_mod + last
 
     def _calc_nosplit_positions(self, _calc_row_splits):
         no_split_cmds = []
@@ -480,7 +505,7 @@ class EnhancedTable(Table):
         hmax = lim = len(H)
         longTable = self._longTableOptimize
 
-        if None in H or OVERFLOW_ROW in H:
+        if None in H or OVERFLOW_ROW in H or UNDEFINED_ROW in H:
             canv = getattr(self, 'canv', None)
             saved = None
             # get a handy list of any cells which span rows. should be ignored for sizing
@@ -500,26 +525,24 @@ class EnhancedTable(Table):
             spanCons = {}
             FUZZ = rl_config._FUZZ
 
-            has_overflow = OVERFLOW_ROW in H
+            find_types = []
+            if None in H:
+                find_types.append(None)
+            if OVERFLOW_ROW in H:
+                find_types.append(OVERFLOW_ROW)
+            if UNDEFINED_ROW in H:
+                find_types.append(UNDEFINED_ROW)
 
-            while None in H or OVERFLOW_ROW in H:
-                overflow_row = False
-                if has_overflow:
-                    try:
-                        next_none = H.index(None)
-                    except ValueError:
-                        next_none = None
-                    try:
-                        next_overflow_row = H.index(OVERFLOW_ROW)
-                    except ValueError:
-                        next_overflow_row = None
-                    if next_overflow_row is None or (next_none is not None and next_none < next_overflow_row):
-                        i = next_none
-                    else:
-                        overflow_row = True
-                        i = next_overflow_row
-                else:
-                    i = H.index(None)
+            while None in H or OVERFLOW_ROW in H or UNDEFINED_ROW in H:
+                i = None
+                next_find_type = None
+                for find_type in find_types:
+                    if find_type in H:
+                        find_type_index = H.index(find_type)
+                        if i is None or find_type_index < i:
+                            i = find_type_index
+                            next_find_type = find_type
+
                 V = self._cellvalues[i]  # values for row i
                 S = self._cellStyles[i]  # styles for row i
                 h = 0
@@ -527,7 +550,7 @@ class EnhancedTable(Table):
 
                 for j, (v, s, w) in enumerate(list(zip(V, S, W))):  # value, style, width (lengths must match)
                     ji = j, i
-                    if overflow_row:
+                    if next_find_type == OVERFLOW_ROW:
                         s.leading = 1
                     span = spanRanges.get(ji, None)
                     if ji in rowSpanCells and not span:
@@ -581,8 +604,12 @@ class EnhancedTable(Table):
                         if spanCons:
                             msr = max(x[1] for x in spanCons.keys())  # RS=[endrowspan,.....]
                             if hmax > msr:
+                                while None in H:
+                                    next_none = H.index(None)
+                                    H[next_none] = UNDEFINED_ROW
+                                tom = 100
                                 break
-            if None not in H:
+            if UNDEFINED_ROW not in H and OVERFLOW_ROW not in H:
                 hmax = lim
 
             if spanCons:

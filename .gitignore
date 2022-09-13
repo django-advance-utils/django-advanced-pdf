@@ -132,3 +132,4 @@ dmypy.json
 /data/
 .DS_Store
 
+.run/A PDF.run.xml
