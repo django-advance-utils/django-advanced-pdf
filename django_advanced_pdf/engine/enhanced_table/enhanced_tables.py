@@ -1,6 +1,6 @@
 from reportlab import rl_config
 from reportlab.lib.rl_accel import fp_str
-from reportlab.lib.utils import annotateException, flatten, strTypes
+from reportlab.lib.utils import annotateException, flatten
 from reportlab.platypus.flowables import Flowable
 from reportlab.platypus.flowables import PageBreak
 from reportlab.platypus.para import handleSpecialCharacters
@@ -607,7 +607,6 @@ class EnhancedTable(Table):
                                 while None in H:
                                     next_none = H.index(None)
                                     H[next_none] = UNDEFINED_ROW
-                                tom = 100
                                 break
             if UNDEFINED_ROW not in H and OVERFLOW_ROW not in H:
                 hmax = lim

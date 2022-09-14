@@ -8,6 +8,7 @@ from reportlab.lib.units import mm
 from reportlab.pdfbase.pdfmetrics import stringWidth
 from reportlab.pdfgen import canvas
 from reportlab.platypus import BaseDocTemplate, Frame, PageTemplate, SimpleDocTemplate
+from django.contrib.humanize.templatetags.humanize import intcomma
 
 logger = logging.getLogger("reportlab.platypus")
 
@@ -249,18 +250,6 @@ class PageUsed:
         self.right = right
         self.top = top
         self.bottom = bottom
-
-
-def intcomma(value):
-    """
-    dont copy this as you need to use
-    from django.contrib.humanize.templatetags.humanize import intcomma and
-    def intcomma_currency(value):
-    return intcomma("%.2f" % float(value))
-
-    I can't in this test bed
-    """
-    return value
 
 
 def intcomma_currency(value, show_more_decimal_places=False):
