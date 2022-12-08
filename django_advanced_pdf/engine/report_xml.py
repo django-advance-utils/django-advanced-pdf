@@ -938,10 +938,7 @@ class ReportXML(object):
                         elif tag_name == working_tags[-1][0]:
                             working_tags.pop()
                             if tag_name == 'td' and len(working_tags) == 0:
-                                if len(overflow_rows) > 0:
-                                    return overflow_rows[0], overflow_rows[1:]
-                                else:
-                                    return '', []
+                                break
                     else:
                         working_tags.append((tag_name, tag))
 
