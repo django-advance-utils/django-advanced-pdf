@@ -31,8 +31,6 @@ class ReportXML(object):
         (u'rdquo', u'”'),
         (u'quot', u'"'),
         (u'frasl', u'/'),
-        (u'lt', u'<'),
-        (u'gt', u'>'),
         (u'hellip', u'…'),
         (u'ndash', u'–'),
         (u'mdash', u'—'),
