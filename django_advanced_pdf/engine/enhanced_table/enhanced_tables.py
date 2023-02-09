@@ -138,7 +138,7 @@ class EnhancedTable(Table):
             keep_with_next = self.keep_with_next[i]
             if h + rh > availHeight - footer_height:
                 break
-            if (self.initial or i > number_of_header) and n not in impossible and not keep_with_next == 1:
+            if (self.initial or i > number_of_header) and n not in impossible and keep_with_next in [0, 3]:
                 split_at = n
             h = h + rh
             n += 1

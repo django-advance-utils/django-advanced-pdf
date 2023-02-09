@@ -309,8 +309,9 @@ class ReportXML(object):
 
                     for _ in range(overflow_row_count + 1):
                         local_keep_data.append(2)
-
-                    keep_data += local_keep_data
+                if len(local_keep_data) > 0:
+                    local_keep_data[-1] = 3
+                keep_data += local_keep_data
 
             elif element.tag == 'header':
                 for tr in element:
