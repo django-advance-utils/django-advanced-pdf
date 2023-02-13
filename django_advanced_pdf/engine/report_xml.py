@@ -307,8 +307,11 @@ class ReportXML(object):
                     if min_rows_top > 0:
                         min_rows_top -= 1
 
-                    for _ in range(overflow_row_count + 1):
-                        local_keep_data.append(2)
+                    for index, _ in enumerate(range(overflow_row_count + 1)):
+                        if index == 0:
+                            local_keep_data.append(2)
+                        else:
+                            local_keep_data.append(3)
                 if len(local_keep_data) > 0:
                     local_keep_data[-1] = 3
                 keep_data += local_keep_data
