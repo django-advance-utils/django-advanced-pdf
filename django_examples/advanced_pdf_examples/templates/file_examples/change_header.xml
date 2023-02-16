@@ -22,11 +22,12 @@
 
     </style>
     <table class="main">
-        <header output="1">
+
+        <header output="0">
             <tr row_height="20" class="header">
                 <td>My Header</td>
                 <td>My Header</td>
-                <td colspan="2">My Header</td>
+                <td colspan="2">My Header2 %(var1)s</td>
             </tr>
         </header>
 
@@ -37,6 +38,13 @@
                 <td colspan="2">My Footer</td>
             </tr>
         </footer>
+
+        <tr row_height="20" class="header">
+                    <variable name="var1">Hello</variable>
+                <td>My Header</td>
+                <td>My Header</td>
+                <td colspan="2">My Header</td>
+            </tr>
 
         <tr><td>1</td><td>a</td><td>b</td><td>c</td></tr>
         <tr><td>2</td><td>a</td><td>b</td><td>c</td></tr>

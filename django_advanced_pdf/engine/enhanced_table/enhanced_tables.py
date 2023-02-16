@@ -190,7 +190,6 @@ class EnhancedTable(Table):
 
         return output
 
-
     def _cr_1_1_enhanced(self, n, repeat_rows, header_rows, cmds):
         # Modified version of Table._cr_1_1
         for c in cmds:
@@ -388,7 +387,6 @@ class EnhancedTable(Table):
             header_row_properties = [{'row_type': 'HEADING', 'SPLITTABLE': False} for _ in header_row_data]
             header_row_data = self.normalizeData(header_row_data)
             header_commands = self.header.commands
-
 
         # Construct the R1 row data, heights and cell styles.
         # NB. this should work even if repeatRows is 0 (resulting in empty lists, which collapse to nothing)
@@ -699,4 +697,3 @@ class EnhancedTable(Table):
 
         for x, v in M.items():
             V[x] = v
-

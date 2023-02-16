@@ -346,7 +346,8 @@ class ReportXML(object):
                                     variables=variables,
                                     col_widths=col_widths,
                                     table_width=table_width,
-                                    default_row_height=35)
+                                    default_row_height=35,
+                                    is_header_or_footer=True)
 
             elif element.tag == 'footer':
                 footer_span = {}
@@ -362,7 +363,8 @@ class ReportXML(object):
                                     variables=variables,
                                     col_widths=col_widths,
                                     table_width=table_width,
-                                    default_row_height=35)
+                                    default_row_height=35,
+                                    is_header_or_footer=True)
 
         length = len(keep_data)
         for x in range(1, min_rows_bottom + 1):
@@ -435,7 +437,7 @@ class ReportXML(object):
 
     def process_tr(self, tr_element, data, styles, other_table_styles,
                    row_heights, row_count, span, rows_variables, variables, col_widths, table_width,
-                   default_row_height=None):
+                   default_row_height=None, is_header_or_footer=False):
         row_data = []
         other_styles = {}
 
@@ -452,6 +454,12 @@ class ReportXML(object):
                 value = variables_element.get(variable)
                 variables[variable] = value
                 row_variables[variable] = value
+
+        for variable_element in tr_element.iter('variable'):
+            variable = variable_element.attrib.get('name', '')
+            value = variable_element.text
+            variables[variable] = value
+            row_variables[variable] = value
 
         for variables_element in tr_element.iter('currency_variables'):
             symbol = variables_element.attrib.get('symbol', '')
@@ -575,35 +583,45 @@ class ReportXML(object):
                 display_object = EnhancedParagraph(display_str, style, css_classes=self.styles)
 
             elif len(td_element) > 0 and td_element[0].tag[-8:] == 'currency':
-
                 variable_name = td_element[0].get('variable')
+                if is_header_or_footer:
+                    variable_name = td_element[0].get('variable')
+                    if variable_name is not None:
+                        display_object = '%%(%s__currency)s' % variable_name
+                    else:
+                        value = int(td_element[0].get('value'))
+                        number_string = "%.2f" % (float(value) / 100.0)
+                        display_object = '%s' % (intcomma_currency(number_string))
 
-                if variable_name is not None:
-                    symbol = ''
-                    value = variables[variable_name]
-                    if symbol == '':
-                        symbol = variables.get(variable_name + '__symbol', '')
                 else:
-                    symbol = td_element[0].get('symbol', '')
-                    value = td_element[0].get('value')
+                    if variable_name is not None:
+                        symbol = ''
+                        value = variables.get(variable_name)
+                        if symbol == '':
+                            symbol = variables.get(variable_name + '__symbol', '')
+                    else:
+                        symbol = td_element[0].get('symbol', '')
+                        value = td_element[0].get('value')
 
-                add_to_variable_name = td_element[0].get('add_to')
+                    add_to_variable_name = td_element[0].get('add_to')
 
-                if add_to_variable_name is not None:
-                    if symbol == '':
-                        symbol = variables.get(add_to_variable_name + '__symbol', '')
+                    if add_to_variable_name is not None:
+                        if symbol == '':
+                            symbol = variables.get(add_to_variable_name + '__symbol', '')
 
-                    variables[add_to_variable_name] += float(value)
-                    row_variables[add_to_variable_name] = variables.get(add_to_variable_name)
-                    currency_variable = add_to_variable_name + '__currency'
-                    if currency_variable in variables:
-                        currency_value = symbol + intcomma_currency(float(variables.get(add_to_variable_name)) / 100.0)
+                        variables[add_to_variable_name] += float(value)
+                        row_variables[add_to_variable_name] = variables.get(add_to_variable_name)
+                        currency_variable = add_to_variable_name + '__currency'
+                        if currency_variable in variables:
+                            currency_value = symbol + intcomma_currency(float(variables.get(add_to_variable_name)) / 100.0)
 
-                        row_variables[currency_variable] = currency_value
-                        variables[currency_variable] = currency_value
-
-                number_string = "%.2f" % (float(value) / 100.0)
-                display_object = '%s%s' % (symbol, intcomma_currency(number_string))
+                            row_variables[currency_variable] = currency_value
+                            variables[currency_variable] = currency_value
+                    if value is not None:
+                        number_string = "%.2f" % (float(value) / 100.0)
+                        display_object = '%s%s' % (symbol, intcomma_currency(number_string))
+                    else:
+                        display_object = ''
 
             elif len(td_element) > 0:
                 xml = etree.tostring(td_element, pretty_print=True)
