@@ -1,0 +1,114 @@
+<document title="My test printout" page_size="A5">
+
+    <style>
+        main {
+        text_color:#0000FF;
+        inner_grid:0.25,#000000,1;
+        box:0.5,#000000
+        }
+
+        heading {
+        background:#F0F0F0;
+        text_color:#FF0FFF;
+        inner_grid:0.25,#000000,1;
+        box:0.5,#000000
+        }
+        header {
+        background:#F0F0F0;
+        text_color:#FF0F00;
+        inner_grid:0.25,#000000,1;
+        box:0.5,#000000
+        }
+
+    </style>
+    <table class="main">
+        <header>
+            <tr row_height="20" class="header">
+                <td colspan="2">My Header</td>
+                <td>My Header</td>
+            </tr>
+        </header>
+
+        <tr class="heading"><td>My Header</td><td>a</td><td>b</td><td>c</td></tr>
+        <tr><td>1</td><td>a</td><td>b</td><td>c</td></tr>
+        <tr><td>2</td><td>a</td><td>b</td><td>c</td></tr>
+        <tr><td>3</td><td>a</td><td>b</td><td>c</td></tr>
+        <tr><td>4</td><td>a</td><td>b</td><td>c</td></tr>
+        <tr><td>5</td><td>a</td><td>b</td><td>c</td></tr>
+        <tr><td>6</td><td>a</td><td>b</td><td>c</td></tr>
+        <tr><td>7</td><td>a</td><td>b</td><td>c</td></tr>
+        <tr><td>8</td><td>a</td><td>b</td><td>c</td></tr>
+        <tr><td>9</td><td>a</td><td>b</td><td>c</td></tr>
+        <tr><td>10</td><td>a</td><td>b</td><td>c</td></tr>
+        <tr><td>11</td><td>a</td><td>b</td><td>c</td></tr>
+        <tr><td>12</td><td>a</td><td>b</td><td>c</td></tr>
+        <tr><td>13</td><td>a</td><td>b</td><td>c</td></tr>
+        <tr><td>14</td><td>a</td><td>b</td><td>c</td></tr>
+        <tr><td>15</td><td>a</td><td>b</td><td>c</td></tr>
+        <tr><td>16</td><td>a</td><td>b</td><td>c</td></tr>
+        <tr><td>17</td><td>a</td><td>b</td><td>c</td></tr>
+        <tr><td>18</td><td>a</td><td>b</td><td>c</td></tr>
+        <tr><td>19</td><td>a</td><td>b</td><td>c</td></tr>
+        <tr><td>20</td><td>a</td><td>b</td><td>c</td></tr>
+        <tr><td>21</td><td>a</td><td>b</td><td>c</td></tr>
+        <tr><td>22</td><td>a</td><td>b</td><td>c</td></tr>
+        <tr><td>23</td><td>a</td><td>b</td><td>c</td></tr>
+        <tr><td>24</td><td>a</td><td>b</td><td>c</td></tr>
+        <tr><td>25</td><td>a</td><td>b</td><td>c</td></tr>
+        <tr><td>26</td><td>a</td><td>b</td><td>c</td></tr>
+        <tr><td>27</td><td>a</td><td>b</td><td>c</td></tr>
+        <tr><td>28</td><td>a</td><td>b</td><td>c</td></tr>
+        <tr><td>29</td><td>a</td><td>b</td><td>c</td></tr>
+        <tr><td>30</td><td>a</td><td>b</td><td>c</td></tr>
+        <tr><td>31</td><td>a</td><td>b</td><td>c</td></tr>
+        <tr><td>32</td><td>a</td><td>b</td><td>c</td></tr>
+        <tr><td>33</td><td>a</td><td>b</td><td>c</td></tr>
+        <tr><td>34</td><td>a</td><td>b</td><td>c</td></tr>
+        <tr><td>35</td><td>a</td><td>b</td><td>c</td></tr>
+        <tr><td>36</td><td>a</td><td>b</td><td>c</td></tr>
+        <tr><td>37</td><td>a</td><td>b</td><td>c</td></tr>
+        <tr><td>38</td><td>a</td><td>b</td><td>c</td></tr>
+        <tr><td>39</td><td>a</td><td>b</td><td>c</td></tr>
+
+{#        <header>#}
+{#            <tr row_height="20" class="heading">#}
+{#                <td>My Header changed</td>#}
+{#            </tr>#}
+{#        </header>#}
+
+
+
+        <tr><td>40</td><td>a</td><td>b</td><td>c</td></tr>
+        <tr><td>41</td><td>a</td><td>b</td><td>c</td></tr>
+        <tr><td>42</td><td>a</td><td>b</td><td>c</td></tr>
+        <tr><td>43</td><td>a</td><td>b</td><td>c</td></tr>
+        <tr><td>44</td><td>a</td><td>b</td><td>c</td></tr>
+        <tr><td>45</td><td>a</td><td>b</td><td>c</td></tr>
+        <tr><td>46</td><td>a</td><td>b</td><td>c</td></tr>
+        <tr><td>47</td><td>a</td><td>b</td><td>c</td></tr>
+        <tr><td>48</td><td>a</td><td>b</td><td>c</td></tr>
+        <tr><td>49</td><td>a</td><td>b</td><td>c</td></tr>
+        <tr><td>50</td><td>a</td><td>b</td><td>c</td></tr>
+        <tr><td>51</td><td>a</td><td>b</td><td>c</td></tr>
+        <tr><td>52</td><td>a</td><td>b</td><td>c</td></tr>
+        <tr><td>53</td><td>a</td><td>b</td><td>c</td></tr>
+        <tr><td>54</td><td>a</td><td>b</td><td>c</td></tr>
+        <tr><td>55</td><td>a</td><td>b</td><td>c</td></tr>
+        <tr><td>56</td><td>a</td><td>b</td><td>c</td></tr>
+        <tr><td>57</td><td>a</td><td>b</td><td>c</td></tr>
+        <tr><td>58</td><td>a</td><td>b</td><td>c</td></tr>
+        <tr><td>59</td><td>a</td><td>b</td><td>c</td></tr>
+        <tr><td>60</td><td>a</td><td>b</td><td>c</td></tr>
+        <tr><td>61</td><td>a</td><td>b</td><td>c</td></tr>
+        <tr><td>62</td><td>a</td><td>b</td><td>c</td></tr>
+        <tr><td>63</td><td>a</td><td>b</td><td>c</td></tr>
+        <tr><td>64</td><td>a</td><td>b</td><td>c</td></tr>
+        <tr><td>65</td><td>a</td><td>b</td><td>c</td></tr>
+        <tr><td>66</td><td>a</td><td>b</td><td>c</td></tr>
+        <tr><td>67</td><td>a</td><td>b</td><td>c</td></tr>
+        <tr><td>68</td><td>a</td><td>b</td><td>c</td></tr>
+        <tr><td>69</td><td>a</td><td>b</td><td>c</td></tr>
+
+
+    </table>
+</document>
