@@ -3,7 +3,7 @@
     <style>
         main {
         text_color:#0000FF;
-        inner_grid:0.25,#000000,1;
+        inner_grid:0.25,#000000,0;
         box:0.5,#000000
         }
 
@@ -13,23 +13,15 @@
         inner_grid:0.25,#000000,1;
         box:0.5,#000000
         }
-        header {
-        background:#F0F0F0;
-        text_color:#FF0F00;
-        inner_grid:0.25,#000000,1;
-        box:0.5,#000000
-        }
 
     </style>
     <table class="main">
-        <header>
+        <header output="1">
             <tr row_height="20" class="header">
                 <td colspan="2">My Header</td>
                 <td>My Header</td>
             </tr>
         </header>
-
-        <tr class="heading"><td>My Header</td><td>a</td><td>b</td><td>c</td></tr>
         <tr><td>1</td><td>a</td><td>b</td><td>c</td></tr>
         <tr><td>2</td><td>a</td><td>b</td><td>c</td></tr>
         <tr><td>3</td><td>a</td><td>b</td><td>c</td></tr>
