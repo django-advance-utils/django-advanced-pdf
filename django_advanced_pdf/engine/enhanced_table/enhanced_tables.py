@@ -12,6 +12,7 @@ from django_advanced_pdf.engine.enhanced_table.data_paragraph import DataParagra
 from django_advanced_pdf.engine.utils import DecimalText
 
 OVERFLOW_ROW = -9999
+HEADER_FOOTER = 7777
 UNDEFINED_ROW = -8888
 
 
@@ -85,7 +86,6 @@ class EnhancedTable(Table):
         self.variables = table_data.get('row_variables', [{} for x in range(len(self.data))])
         self.properties = table_data.get('row_properties', [{} for x in range(len(self.data))])
         self.keep_with_next = table_data.get('keep_with_next', [False for x in range(len(self.data))])
-
         self.min_rows_after_header = min_rows_after_header
         self.min_rows_before_total = min_rows_before_total
         self.pos_x = pos_x
@@ -114,7 +114,7 @@ class EnhancedTable(Table):
                        normalizedData=normalized_data,
                        cellStyles=cell_styles)
 
-    def _getFirstPossibleSplitRowPosition(self, availHeight):
+    def _getFirstPossibleSplitRowPosition(self, availHeight, ignoreSpans=0):
         # Note - this is actually looking for the BEST available split position, which is not necessarily the first.
         impossible = {}
         if self._spanCmds:
@@ -190,6 +190,7 @@ class EnhancedTable(Table):
 
         return output
 
+
     def _cr_1_1_enhanced(self, n, repeat_rows, header_rows, cmds):
         # Modified version of Table._cr_1_1
         for c in cmds:
@@ -222,7 +223,7 @@ class EnhancedTable(Table):
 
     def _splitRows(self, availHeight, doInRowSplit=0):
 
-        n = self._getFirstPossibleSplitRowPosition(availHeight)
+        n = self._getFirstPossibleSplitRowPosition(availHeight, ignoreSpans=doInRowSplit)
         if n <= self.repeatRows:
             return []
         lim = len(self._rowHeights)
@@ -253,24 +254,30 @@ class EnhancedTable(Table):
 
         footer_row_data = []
         footer_row_heights = []
-        footer_row_styles = []
         footer_cell_styles = []
         footer_row_variables = []
         footer_row_properties = []
         footer_keep_with_next = []
+        footer_commands = []
 
         if self.footer is not None:
             try:
                 footer_row_data = self.merge_variables_into_data(self.footer.row_data, self.variables[r0_end - 1])
             except (IndexError, KeyError):
                 footer_row_data = self.footer.row_data
+
             footer_row_heights = self.footer.row_heights
-            footer_row_styles = self.footer.row_styles
-            footer_cell_styles = self.footer.cell_styles
             footer_row_variables = [{} for _ in footer_row_data]
             footer_keep_with_next = [False for _ in footer_row_data]
             footer_row_properties = [{'row_type': 'HEADING', 'SPLITTABLE': False} for _ in footer_row_data]
             footer_row_data = self.normalizeData(footer_row_data)
+            footer_commands = self.footer.commands
+            for i in range(self.footer.row_length):
+                ncols = len(footer_row_data[i])
+                cellcols = []
+                for j in range(ncols):
+                    cellcols.append(CellStyle('header_footer'))
+                footer_cell_styles.append(cellcols)
 
         r0_table_data = {
             'row_data': data[:r0_end] + footer_row_data,
@@ -344,14 +351,16 @@ class EnhancedTable(Table):
                 A.append((op, (sc, sr), (ec, er), weight, color, cap, dash, join, count, space))
 
         # The following add back all the row commands (munged above) for the first n rows
+
         r0._cr_0(n, A, self._nrows)
+
         r0._cr_0(n, self._bkgrndcmds, self._nrows)
         r0._cr_0(n, self._spanCmds, self._nrows)
         r0._cr_0(n, self._nosplitCmds, self._nrows)
+        # r0._cr_0_footer(n, footer_commands)
+        r0._cr_1_0(HEADER_FOOTER-n, footer_commands)
 
         # Now we need to add any footer styles back on to the end (with all their cell ranges shifted)
-        r0._add_offset_commands(n, footer_row_styles)
-
         header_row_data = []
         header_row_heights = []
         header_row_styles = []
@@ -359,6 +368,7 @@ class EnhancedTable(Table):
         header_row_variables = []
         header_row_properties = []
         header_keep_with_next = []
+        header_commands = []
         if self.header is not None:
             try:
                 header_row_data = self.merge_variables_into_data(self.header.row_data, self.variables[n - 1])
@@ -366,12 +376,19 @@ class EnhancedTable(Table):
                 # If there are no variables supplied (i.e. its a static header)
                 header_row_data = self.header.row_data
             header_row_heights = self.header.row_heights
-            header_row_styles = self.header.row_styles
-            header_cell_styles = self.header.cell_styles
+
+            for i in range(self.header.row_length):
+                ncols = len(header_row_data[i])
+                cellcols = []
+                for j in range(ncols):
+                    cellcols.append(CellStyle('header_footer'))
+                header_cell_styles.append(cellcols)
             header_row_variables = [{} for _ in header_row_data]
             header_keep_with_next = [False for _ in header_row_data]
             header_row_properties = [{'row_type': 'HEADING', 'SPLITTABLE': False} for _ in header_row_data]
             header_row_data = self.normalizeData(header_row_data)
+            header_commands = self.header.commands
+
 
         # Construct the R1 row data, heights and cell styles.
         # NB. this should work even if repeatRows is 0 (resulting in empty lists, which collapse to nothing)
@@ -410,6 +427,7 @@ class EnhancedTable(Table):
         if repeat_rows > 0 or header_rows > 0:
             # the method _cr_1_1_enhaced moves all table row commands (styles) down by adjusting their ranges
             # It leaves styles affecting rows 0 - repeat_rows
+            r1._cr_1_0(HEADER_FOOTER, header_commands)
             r1._cr_1_1_enhanced(n, repeat_rows, header_rows, A)
             r1._cr_1_1_enhanced(n, repeat_rows, header_rows, self._bkgrndcmds)
             r1._cr_1_1_enhanced(n, repeat_rows, header_rows, self._spanCmds)
@@ -681,3 +699,4 @@ class EnhancedTable(Table):
 
         for x, v in M.items():
             V[x] = v
+

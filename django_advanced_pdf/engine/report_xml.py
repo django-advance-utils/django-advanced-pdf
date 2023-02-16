@@ -11,7 +11,7 @@ from io import StringIO, BytesIO
 from .enhanced_paragraph.enhanced_paragraph import EnhancedParagraph
 from .enhanced_paragraph.style import EnhancedParagraphStyle
 from .enhanced_table.data import EnhancedTableData
-from .enhanced_table.enhanced_tables import OVERFLOW_ROW, EnhancedTable
+from .enhanced_table.enhanced_tables import OVERFLOW_ROW, EnhancedTable, HEADER_FOOTER
 from .png_images import insert_image, insert_obj
 from .svglib.svglib import SvgRenderer
 from .utils import DocTemplate, get_page_size_from_string, intcomma_currency, ColumnWidthPercentage
@@ -232,11 +232,11 @@ class ReportXML(object):
         main_span = {}
 
         header_data = []
-        header_styles = []
+        header_commands = []
         header_row_height = []
 
         footer_data = []
-        footer_styles = []
+        footer_commands = []
         footer_row_height = []
         row_heights = []
         keep_data = []
@@ -317,11 +317,52 @@ class ReportXML(object):
                 keep_data += local_keep_data
 
             elif element.tag == 'header':
-                for tr in element:
-                    self.process_header_or_footer_tr(tr, header_data, header_styles, header_row_height)
+
+                if int(element.get('output', "0")) == 1:
+                    for tr in element:
+                        row_count += 1
+                        _, overflow_row_count = self.process_tr(tr_element=tr,
+                                                                data=main_data,
+                                                                styles=main_styles,
+                                                                other_table_styles=other_styles,
+                                                                row_heights=row_heights,
+                                                                row_count=row_count,
+                                                                span=main_span,
+                                                                rows_variables=rows_variables,
+                                                                variables=variables,
+                                                                col_widths=col_widths,
+                                                                table_width=table_width)
+
+                header_span = {}
+                for row_index, tr in enumerate(element, HEADER_FOOTER):
+                    self.process_tr(tr_element=tr,
+                                    data=header_data,
+                                    styles=header_commands,
+                                    other_table_styles=other_styles,
+                                    row_heights=header_row_height,
+                                    row_count=row_index,
+                                    span=header_span,
+                                    rows_variables=rows_variables,
+                                    variables=variables,
+                                    col_widths=col_widths,
+                                    table_width=table_width,
+                                    default_row_height=35)
+
             elif element.tag == 'footer':
-                for tr in element:
-                    self.process_header_or_footer_tr(tr, footer_data, footer_styles, footer_row_height)
+                footer_span = {}
+                for row_index, tr in enumerate(element, HEADER_FOOTER):
+                    self.process_tr(tr_element=tr,
+                                    data=footer_data,
+                                    styles=footer_commands,
+                                    other_table_styles=other_styles,
+                                    row_heights=footer_row_height,
+                                    row_count=row_index,
+                                    span=footer_span,
+                                    rows_variables=rows_variables,
+                                    variables=variables,
+                                    col_widths=col_widths,
+                                    table_width=table_width,
+                                    default_row_height=35)
 
         length = len(keep_data)
         for x in range(1, min_rows_bottom + 1):
@@ -331,11 +372,11 @@ class ReportXML(object):
 
         header = EnhancedTableData(row_data=header_data,
                                    row_heights=header_row_height,
-                                   cell_styles=header_styles)
+                                   commands=header_commands)
 
         footer = EnhancedTableData(row_data=footer_data,
                                    row_heights=footer_row_height,
-                                   cell_styles=footer_styles)
+                                   commands=footer_commands)
 
         h_align, v_align = self.get_alignment_details(main_styles)
 
@@ -392,43 +433,9 @@ class ReportXML(object):
         x, y = x * mm, 222 - y * mm
         return x, y
 
-    def process_header_or_footer_tr(self, tr, data, styles, row_heights):
-        row_data = []
-        row_styles = []
-
-        row_css = self.get_css_from_style_attribute(tr)
-
-        row_heights.append(int(tr.get('row_height', 35)))
-        other_styles = {}
-
-        for td_element in tr.iter('td'):
-            td_css = row_css + self.get_css_from_style_attribute(td_element)
-
-            if len(td_element) > 0 and td_element[0].tag[-8:] == 'currency':
-                variable_name = td_element[0].get('variable')
-                if variable_name is not None:
-                    value = '%%(%s__currency)s' % variable_name
-                    row_data.append(value)
-                else:
-                    value = int(td_element[0].get('value'))
-                    number_string = "%.2f" % (float(value) / 100.0)
-                    row_data.append('%s' % (intcomma_currency(number_string)))
-            elif len(td_element) > 0:
-                new_styles = copy.deepcopy(styles)
-                self.convert_css_to_style(td_css, new_styles, other_styles)
-                style = self.process_css_for_table_paragraph_style(new_styles, None, None)
-                xml = etree.tostring(td_element)
-                row_data.append(EnhancedParagraph(xml, style, css_classes=self.styles))
-            elif td_element.text is not None:
-                row_data.append(td_element.text)
-            else:
-                row_data.append('')
-            row_styles.append(self.process_css_for_header_or_footer(td_css))
-        styles.append(row_styles)
-        data.append(row_data)
-
     def process_tr(self, tr_element, data, styles, other_table_styles,
-                   row_heights, row_count, span, rows_variables, variables, col_widths, table_width):
+                   row_heights, row_count, span, rows_variables, variables, col_widths, table_width,
+                   default_row_height=None):
         row_data = []
         other_styles = {}
 
@@ -651,7 +658,13 @@ class ReportXML(object):
 
         data.append(row_data)
 
-        row_heights.append(self.get_row_height(other_table_styles, other_styles))
+        row_height = self.get_row_height(other_table_styles, other_styles)
+        if row_height is None:
+            row_height = tr_element.get('row_height', default_row_height)
+            if row_height is not None:
+                row_height = float(row_height)
+
+        row_heights.append(row_height)
 
         for overflow_row in overflow_rows:
             data.append(overflow_row)
@@ -781,49 +794,6 @@ class ReportXML(object):
         if style_tag is not None:
             css += style_tag
         return css
-
-    @staticmethod
-    def process_css_for_header_or_footer(css):
-        cell_style = CellStyle('header_footer')
-        css = css.replace('\r', '').replace('\n', '')
-
-        styles_list = css.split(';')
-        for style in styles_list:
-            if style == '':
-                continue
-            style_type, style_detail = style.split(':')
-            style_type = style_type.lower().lstrip().rstrip()
-            if style_type in ('font_name',
-                              'face',
-                              'font'):
-                cell_style.fontname = style_detail
-            elif style_type in ('size',
-                                'font_size'):
-                cell_style.fontsize = float(style_detail)
-            elif style_type == 'leading':
-                cell_style.leading = style_detail
-            elif style_type == 'text_color':
-                cell_style.color = HexColor(style_detail)
-            elif style_type in ('align',
-                                'alignment'):
-                cell_style.alignment = style_detail.upper()
-            elif style_type == 'valign':
-                cell_style.valign = style_detail.upper()
-
-            elif style_type == 'halign':
-                cell_style.halign = style_detail
-            elif style_type == 'left_padding':
-                cell_style.leftPadding = int(style_detail)
-            elif style_type == 'right_padding':
-                cell_style.rightPadding = int(style_detail)
-            elif style_type == 'top_padding':
-                cell_style.topPadding = int(style_detail)
-            elif style_type == 'bottom_padding':
-                cell_style.bottomPadding = int(style_detail)
-            elif style_type == 'background':
-                cell_style.background = HexColor(style_detail)
-
-        return cell_style
 
     @staticmethod
     def process_css_for_table_paragraph_style(css, row_count, col_count):

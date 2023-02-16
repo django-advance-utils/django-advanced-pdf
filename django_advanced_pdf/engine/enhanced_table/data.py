@@ -6,7 +6,7 @@ class EnhancedTableData(object):
     A helper class for passing data to the EnhancedTable class.
     """
 
-    def __init__(self, row_data=None, cell_styles=None, row_heights=None, row_styles=None):
+    def __init__(self, row_data=None, commands=None, row_heights=None):
         """
         Class Constructor.
 
@@ -22,25 +22,22 @@ class EnhancedTableData(object):
         self.row_data = []
         self.row_variables = []
         self.row_properties = []
-        self.row_styles = []
-        self.cell_styles = []
+        self.commands = []
         self.row_heights = []
         if row_data and isinstance(row_data, list):
             self.row_data = row_data
-        if cell_styles and isinstance(cell_styles, list):
-            self.cell_styles = cell_styles
+        if commands and isinstance(commands, list):
+            self.commands = commands
         if row_heights and isinstance(row_heights, list):
             self.row_heights = row_heights
-        if row_styles and isinstance(row_styles, list):
-            self.row_styles = row_styles
+        self.row_length = len(self.row_data)
 
     def reset(self):
         self.row_data = []
         self.row_variables = []
         self.row_properties = []
         self.row_styles = []
-        self.cell_styles = []
-        self.row_heights = []
+        self.commands = []
 
     def append_row_data(self, data, used_columns_fn, variables=None, datafn=None, properties=None):
 
