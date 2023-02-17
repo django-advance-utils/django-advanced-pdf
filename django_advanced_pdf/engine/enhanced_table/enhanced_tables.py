@@ -280,7 +280,7 @@ class EnhancedTable(Table):
 
             footer_row_heights = footer_data.row_heights
             footer_row_variables = [{} for _ in footer_row_data]
-            footer_keep_with_next = [False for _ in footer_row_data]
+            footer_keep_with_next = [0 for _ in footer_row_data]
             footer_row_properties = [{'row_type': 'HEADING', 'SPLITTABLE': False} for _ in footer_row_data]
             footer_row_data = self.normalizeData(footer_row_data)
             footer_commands = footer_data.commands
@@ -296,9 +296,6 @@ class EnhancedTable(Table):
             'row_variables': self.variables[:r0_end] + footer_row_variables,
             'row_properties': self.properties[:r0_end] + footer_row_properties,
             'keep_with_next': self.keep_with_next[:r0_end] + footer_keep_with_next,
-            'headers_index': self.headers_index[:r0_end],
-            'footers_index': self.footers_index[:r0_end],
-
         }
 
         r0 = EnhancedTable(r0_table_data,
@@ -469,7 +466,7 @@ class EnhancedTable(Table):
         self.onSplit(r0)
         self.onSplit(r1)
 
-        if insert_pagebreak:
+        if insert_pagebreak or True:
             return [r0, PageBreak(), r1]
         else:
             return [r0, r1]
