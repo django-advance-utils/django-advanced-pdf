@@ -174,4 +174,12 @@
         <tr><td>99</td><td>a</td><td>b</td><td>c</td></tr>
 
     </table>
+
+
+    <table>
+        <tr>
+            <td>test</td>
+        </tr>
+    </table>
+
 </document>

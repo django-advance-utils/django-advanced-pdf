@@ -272,6 +272,7 @@ class EnhancedTable(Table):
         footer_commands = []
 
         if footer_index is not None:
+            insert_pagebreak = True
             footer_data = self.footers[footer_index]
             try:
                 footer_row_data = self.merge_variables_into_data(footer_data.row_data, self.variables[r0_end - 1])
@@ -383,6 +384,7 @@ class EnhancedTable(Table):
         blank_header_data = []
 
         if header_index is not None:
+            insert_pagebreak = True
             header_data = self.headers[header_index]
             try:
                 header_row_data = self.merge_variables_into_data(header_data.row_data, self.variables[n - 1])
@@ -466,7 +468,7 @@ class EnhancedTable(Table):
         self.onSplit(r0)
         self.onSplit(r1)
 
-        if insert_pagebreak or True:
+        if insert_pagebreak:
             return [r0, PageBreak(), r1]
         else:
             return [r0, r1]
