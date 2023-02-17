@@ -1,12 +1,11 @@
 import copy
 import re
-
+from io import StringIO, BytesIO
 
 from lxml import etree
 from reportlab.lib.colors import HexColor, black
 from reportlab.lib.units import mm
-from reportlab.platypus import TableStyle, CellStyle, PageBreak, Spacer
-from io import StringIO, BytesIO
+from reportlab.platypus import TableStyle, PageBreak, Spacer
 
 from .enhanced_paragraph.enhanced_paragraph import EnhancedParagraph
 from .enhanced_paragraph.style import EnhancedParagraphStyle
@@ -231,13 +230,14 @@ class ReportXML(object):
         main_styles = []
         main_span = {}
 
-        header_data = []
-        header_commands = []
-        header_row_height = []
+        headers = []
+        footers = []
 
-        footer_data = []
-        footer_commands = []
-        footer_row_height = []
+        headers_index = []
+        footers_index = []
+        current_header_index = None
+        current_footer_index = None
+
         row_heights = []
         keep_data = []
         other_styles = {}
@@ -283,14 +283,19 @@ class ReportXML(object):
                 if held_row_span > 1 or min_rows_top > 0:
                     for _ in range(overflow_row_count + 1):
                         keep_data.append(1)
+                        headers_index.append(current_header_index)
+                        footers_index.append(current_footer_index)
                     min_rows_top -= 1
                 else:
                     for _ in range(overflow_row_count + 1):
                         keep_data.append(0)
+                        headers_index.append(current_header_index)
+                        footers_index.append(current_footer_index)
                 held_row_span -= 1
                 row_count += overflow_row_count
             elif element.tag == 'keep':
                 local_keep_data = []
+
                 for tr in element:
                     row_count += 1
                     _, overflow_row_count = self.process_tr(tr_element=tr,
@@ -308,6 +313,8 @@ class ReportXML(object):
                         min_rows_top -= 1
 
                     for index, _ in enumerate(range(overflow_row_count + 1)):
+                        headers_index.append(current_header_index)
+                        footers_index.append(current_footer_index)
                         if index == 0:
                             local_keep_data.append(2)
                         else:
@@ -316,9 +323,16 @@ class ReportXML(object):
                     local_keep_data[-1] = 3
                 keep_data += local_keep_data
 
-            elif element.tag == 'header':
+            elif element.tag == 'no_headers':
+                current_header_index = None
 
-                if int(element.get('output', "0")) == 1:
+            elif element.tag == 'no_footers':
+                current_footer_index = None
+
+            elif element.tag in ['header', 'footer']:
+                is_header = element.tag == 'header'
+
+                if is_header and int(element.get('output', "0")) == 1:
                     for tr in element:
                         row_count += 1
                         _, overflow_row_count = self.process_tr(tr_element=tr,
@@ -332,16 +346,19 @@ class ReportXML(object):
                                                                 variables=variables,
                                                                 col_widths=col_widths,
                                                                 table_width=table_width)
+                header_footer_span = {}
+                header_footer_data = []
+                header_footer_commands = []
+                header_footer_row_height = []
 
-                header_span = {}
                 for row_index, tr in enumerate(element, HEADER_FOOTER):
                     self.process_tr(tr_element=tr,
-                                    data=header_data,
-                                    styles=header_commands,
+                                    data=header_footer_data,
+                                    styles=header_footer_commands,
                                     other_table_styles=other_styles,
-                                    row_heights=header_row_height,
+                                    row_heights=header_footer_row_height,
                                     row_count=row_index,
-                                    span=header_span,
+                                    span=header_footer_span,
                                     rows_variables=rows_variables,
                                     variables=variables,
                                     col_widths=col_widths,
@@ -349,22 +366,16 @@ class ReportXML(object):
                                     default_row_height=35,
                                     is_header_or_footer=True)
 
-            elif element.tag == 'footer':
-                footer_span = {}
-                for row_index, tr in enumerate(element, HEADER_FOOTER):
-                    self.process_tr(tr_element=tr,
-                                    data=footer_data,
-                                    styles=footer_commands,
-                                    other_table_styles=other_styles,
-                                    row_heights=footer_row_height,
-                                    row_count=row_index,
-                                    span=footer_span,
-                                    rows_variables=rows_variables,
-                                    variables=variables,
-                                    col_widths=col_widths,
-                                    table_width=table_width,
-                                    default_row_height=35,
-                                    is_header_or_footer=True)
+                enhanced_table_data = EnhancedTableData(row_data=header_footer_data,
+                                                        row_heights=header_footer_row_height,
+                                                        commands=header_footer_commands)
+
+                if is_header:
+                    current_header_index = len(headers)
+                    headers.append(enhanced_table_data)
+                else:
+                    current_footer_index = len(footers)
+                    footers.append(enhanced_table_data)
 
         length = len(keep_data)
         for x in range(1, min_rows_bottom + 1):
@@ -372,24 +383,20 @@ class ReportXML(object):
                 break
             keep_data[length - x] = 1
 
-        header = EnhancedTableData(row_data=header_data,
-                                   row_heights=header_row_height,
-                                   commands=header_commands)
-
-        footer = EnhancedTableData(row_data=footer_data,
-                                   row_heights=footer_row_height,
-                                   commands=footer_commands)
-
         h_align, v_align = self.get_alignment_details(main_styles)
 
         new_column_widths = self.process_column_widths(col_widths, table_width)
 
         if main_data:
-            t = EnhancedTable({'row_data': main_data, 'row_variables': rows_variables, 'keep_with_next': keep_data},
+            t = EnhancedTable(table_data={'row_data': main_data,
+                                          'row_variables': rows_variables,
+                                          'keep_with_next': keep_data,
+                                          'headers_index': headers_index,
+                                          'footers_index': footers_index},
                               row_heights=row_heights,
                               repeat_rows=0,
-                              header=header,
-                              footer=footer,
+                              headers=headers,
+                              footers=footers,
                               h_align=h_align,
                               v_align=v_align,
                               col_widths=new_column_widths,
@@ -783,7 +790,6 @@ class ReportXML(object):
     @staticmethod
     def get_padding_for_cell(styles, start_col=0, start_row=0, end_col=-1, end_row=-1):
         start_tuple = (start_col, start_row)
-        end_tuple = (end_col, end_row)
         padding = 0
         found_padding = False
         for style in styles:

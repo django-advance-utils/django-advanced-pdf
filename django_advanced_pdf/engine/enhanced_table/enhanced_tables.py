@@ -5,6 +5,7 @@ from reportlab.platypus.flowables import Flowable
 from reportlab.platypus.flowables import PageBreak
 from reportlab.platypus.para import handleSpecialCharacters
 from reportlab.platypus.paragraph import Paragraph
+# noinspection PyProtectedMember
 from reportlab.platypus.tables import Table, _calc_pc, spanFixDim, CellStyle
 from six import string_types
 
@@ -26,7 +27,7 @@ class EnhancedTable(Table):
     or blank row. This information is used to help fine-tune where a table can be split should the need arise.
     """
 
-    def __init__(self, table_data, header=None, footer=None, min_rows_after_header=1, min_rows_before_total=1,
+    def __init__(self, table_data, headers=None, footers=None, min_rows_after_header=1, min_rows_before_total=1,
                  col_widths=None, row_heights=None, style=None,
                  repeat_rows=0, repeat_cols=0, split_by_row=1, empty_table_action=None, ident=None,
                  h_align=None, v_align=None, normalized_data=0, cell_styles=None,
@@ -42,10 +43,10 @@ class EnhancedTable(Table):
                              and 'properties' respectively). Each contains a list of data, one entry per row.
                              Variables contains the substitution values for continuation headers and footers.
                              Properties are used primarily to indicate whether a row is a header, total, data or blank.
-        @type   header : django_advanced_pdf.engine.enhanced_table.data.EnhancedTableData
-        @param  header : row data and styles for a continuation header, if required
-        @type   footer : django_advanced_pdf.engine.enhanced_table.data.EnhancedTableData
-        @param  footer : row data and styles for a continuation footer, if required
+        @type   headers : list
+        @param  headers : list of row data and styles for a continuation header, if required
+        @type   footers : list
+        @param  footers : list of row row data and styles for a continuation footer, if required
         @type   min_rows_after_header : int
         @param  min_rows_after_header : The number of rows to mark as non-splittable after any row marked with a
                                         property of 'HEADER'
@@ -78,14 +79,17 @@ class EnhancedTable(Table):
         @rtype  : EnhancedTable
         @return : An Enhanced Table object, based on ReportLab Table
         """
-
+        self._height = 0
+        self.availWidth = 0
         self.initial = initial
-        self.header = header
-        self.footer = footer
+        self.headers = headers
+        self.footers = footers
         self.data = table_data.get('row_data', [])
-        self.variables = table_data.get('row_variables', [{} for x in range(len(self.data))])
-        self.properties = table_data.get('row_properties', [{} for x in range(len(self.data))])
-        self.keep_with_next = table_data.get('keep_with_next', [False for x in range(len(self.data))])
+        self.variables = table_data.get('row_variables', [{} for _ in range(len(self.data))])
+        self.properties = table_data.get('row_properties', [{} for _ in range(len(self.data))])
+        self.keep_with_next = table_data.get('keep_with_next', [False for _ in range(len(self.data))])
+        self.headers_index = table_data.get('headers_index', [False for _ in range(len(self.data))])
+        self.footers_index = table_data.get('footers_index', [False for _ in range(len(self.data))])
         self.min_rows_after_header = min_rows_after_header
         self.min_rows_before_total = min_rows_before_total
         self.pos_x = pos_x
@@ -125,16 +129,23 @@ class EnhancedTable(Table):
         h = 0
         n = 1
 
-        footer_height = 0
-        if self.footer is not None:
-            footer_height = sum(self.footer.row_heights)
-
-        number_of_header = 0
-        if self.header is not None:
-            number_of_header = len(self.header.row_heights)
+        header_index = None
+        footer_index = None
 
         split_at = 0  # from this point of view 0 is the first position where the table may *always* be split
-        for i, rh in enumerate(self._rowHeights):
+
+        for i, (rh, header_index, footer_index) in enumerate(zip(self._rowHeights,
+                                                                 self.headers_index,
+                                                                 self.footers_index)):
+
+            number_of_header = 0
+            if header_index is not None:
+                number_of_header = self.headers[header_index].row_length
+
+            footer_height = 0
+            if footer_index is not None:
+                footer_height = self.footers[footer_index].rows_height
+
             keep_with_next = self.keep_with_next[i]
             if h + rh > availHeight - footer_height:
                 break
@@ -143,7 +154,7 @@ class EnhancedTable(Table):
             h = h + rh
             n += 1
 
-        return split_at
+        return split_at, header_index, footer_index
 
     @staticmethod
     def merge_variables_into_data(data, variables):
@@ -220,9 +231,10 @@ class EnhancedTable(Table):
             er += n
             self._addCommand((c[0],) + ((sc, sr), (ec, er)) + c[3:])
 
+    # noinspection DuplicatedCode
     def _splitRows(self, availHeight, doInRowSplit=0):
 
-        n = self._getFirstPossibleSplitRowPosition(availHeight, ignoreSpans=doInRowSplit)
+        n, header_index, footer_index = self._getFirstPossibleSplitRowPosition(availHeight, ignoreSpans=doInRowSplit)
         if n <= self.repeatRows:
             return []
         lim = len(self._rowHeights)
@@ -259,19 +271,20 @@ class EnhancedTable(Table):
         footer_keep_with_next = []
         footer_commands = []
 
-        if self.footer is not None:
+        if footer_index is not None:
+            footer_data = self.footers[footer_index]
             try:
-                footer_row_data = self.merge_variables_into_data(self.footer.row_data, self.variables[r0_end - 1])
+                footer_row_data = self.merge_variables_into_data(footer_data.row_data, self.variables[r0_end - 1])
             except (IndexError, KeyError):
-                footer_row_data = self.footer.row_data
+                footer_row_data = footer_data.row_data
 
-            footer_row_heights = self.footer.row_heights
+            footer_row_heights = footer_data.row_heights
             footer_row_variables = [{} for _ in footer_row_data]
             footer_keep_with_next = [False for _ in footer_row_data]
             footer_row_properties = [{'row_type': 'HEADING', 'SPLITTABLE': False} for _ in footer_row_data]
             footer_row_data = self.normalizeData(footer_row_data)
-            footer_commands = self.footer.commands
-            for i in range(self.footer.row_length):
+            footer_commands = footer_data.commands
+            for i in range(footer_data.row_length):
                 ncols = len(footer_row_data[i])
                 cellcols = []
                 for j in range(ncols):
@@ -283,6 +296,8 @@ class EnhancedTable(Table):
             'row_variables': self.variables[:r0_end] + footer_row_variables,
             'row_properties': self.properties[:r0_end] + footer_row_properties,
             'keep_with_next': self.keep_with_next[:r0_end] + footer_keep_with_next,
+            'headers_index': self.headers_index[:r0_end],
+            'footers_index': self.footers_index[:r0_end],
 
         }
 
@@ -368,15 +383,18 @@ class EnhancedTable(Table):
         header_row_properties = []
         header_keep_with_next = []
         header_commands = []
-        if self.header is not None:
-            try:
-                header_row_data = self.merge_variables_into_data(self.header.row_data, self.variables[n - 1])
-            except (IndexError, KeyError):
-                # If there are no variables supplied (i.e. its a static header)
-                header_row_data = self.header.row_data
-            header_row_heights = self.header.row_heights
+        blank_header_data = []
 
-            for i in range(self.header.row_length):
+        if header_index is not None:
+            header_data = self.headers[header_index]
+            try:
+                header_row_data = self.merge_variables_into_data(header_data.row_data, self.variables[n - 1])
+            except (IndexError, KeyError):
+                # If there are no variables supplied (i.e. it's a static header)
+                header_row_data = header_data.row_data
+            header_row_heights = header_data.row_heights
+
+            for i in range(header_data.row_length):
                 ncols = len(header_row_data[i])
                 cellcols = []
                 for j in range(ncols):
@@ -384,21 +402,26 @@ class EnhancedTable(Table):
                 header_cell_styles.append(cellcols)
             header_row_variables = [{} for _ in header_row_data]
             header_keep_with_next = [False for _ in header_row_data]
+            blank_header_data = [None for _ in header_row_data]
             header_row_properties = [{'row_type': 'HEADING', 'SPLITTABLE': False} for _ in header_row_data]
             header_row_data = self.normalizeData(header_row_data)
-            header_commands = self.header.commands
+            header_commands = header_data.commands
 
         # Construct the R1 row data, heights and cell styles.
         # NB. this should work even if repeatRows is 0 (resulting in empty lists, which collapse to nothing)
 
         r1_table_data = {
             'row_data': data[:repeat_rows] + header_row_data + data[n:],
-            'row_variables': [{} for _ in range(0, len(data[:repeat_rows]))] +
-                             header_row_variables + self.variables[n:],
-            'row_properties': [{} for _ in range(0, len(data[:repeat_rows]))] +
-                              header_row_properties + self.properties[n:],
-            'keep_with_next': [{} for _ in range(0, len(data[:repeat_rows]))] +
-                              header_keep_with_next + self.keep_with_next[n:],
+            'row_variables': ([{} for _ in range(0, len(data[:repeat_rows]))] +
+                              header_row_variables + self.variables[n:]),
+            'row_properties': ([{} for _ in range(0, len(data[:repeat_rows]))] +
+                               header_row_properties + self.properties[n:]),
+            'keep_with_next': ([{} for _ in range(0, len(data[:repeat_rows]))] +
+                               header_keep_with_next + self.keep_with_next[n:]),
+            'headers_index': ([None for _ in range(0, len(data[:repeat_rows]))] +
+                              blank_header_data + self.headers_index[n:]),
+            'footers_index': ([None for _ in range(0, len(data[:repeat_rows]))] +
+                              blank_header_data + self.footers_index[n:]),
         }
 
         r1_row_heights = self._argH[:repeat_rows] + header_row_heights + self._argH[n:]
@@ -412,8 +435,8 @@ class EnhancedTable(Table):
                            split_by_row=split_by_row, normalized_data=1,
                            cell_styles=r1_cell_styles,
                            ident=ident,
-                           header=self.header,
-                           footer=self.footer,
+                           headers=self.headers,
+                           footers=self.footers,
                            min_rows_after_header=self.min_rows_after_header,
                            min_rows_before_total=self.min_rows_before_total,
                            _calc_row_splits=False)
@@ -451,7 +474,8 @@ class EnhancedTable(Table):
         else:
             return [r0, r1]
 
-    def _merge_cell_styles(self, first, headers, last):
+    @staticmethod
+    def _merge_cell_styles(first, headers, last):
         if len(headers) == 0:
             return first + last
 
@@ -513,7 +537,9 @@ class EnhancedTable(Table):
 
         return self._width, self._height
 
+    # noinspection PyProtectedMember
     def calc_height_of_table(self, availHeight, availWidth, H=None, W=None):
+        _ = H  # remove pep8
         H = self._argH
         if not W:
             W = _calc_pc(self._argW, availWidth)  # widths array
@@ -531,6 +557,7 @@ class EnhancedTable(Table):
                 spanRanges = self._spanRanges
                 colpositions = self._colpositions
             else:
+                colpositions = None
                 rowSpanCells = colSpanCells = ()
                 spanRanges = {}
             if canv:
@@ -539,7 +566,6 @@ class EnhancedTable(Table):
             H = H[:]  # make a copy as we'll change it
             self._rowHeights = H
             spanCons = {}
-            FUZZ = rl_config._FUZZ
 
             find_types = []
             if None in H:
@@ -562,7 +588,6 @@ class EnhancedTable(Table):
                 V = self._cellvalues[i]  # values for row i
                 S = self._cellStyles[i]  # styles for row i
                 h = 0
-                j = 0
 
                 for j, (v, s, w) in enumerate(list(zip(V, S, W))):  # value, style, width (lengths must match)
                     ji = j, i
