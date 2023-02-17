@@ -1,7 +1,3 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
-            "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd" [
-            <!ENTITY lsquo '‘'><!ENTITY rsquo '’'><!ENTITY ldquo '“'><!ENTITY rdquo '”'><!ENTITY quot '"'><!ENTITY frasl '/'><!ENTITY lt '<'><!ENTITY gt '>'><!ENTITY hellip '…'><!ENTITY ndash '–'><!ENTITY mdash '—'><!ENTITY nbsp ' '><!ENTITY not '¬'><!ENTITY iexcl '¡'><!ENTITY cent '¢'><!ENTITY pound '£'><!ENTITY euro '€'><!ENTITY curren '¤'><!ENTITY yen '¥'><!ENTITY brvbar '¦'><!ENTITY sect '§'><!ENTITY uml '¨'><!ENTITY die '¨'><!ENTITY copy '©'><!ENTITY ordf 'ª'><!ENTITY laquo '«'><!ENTITY reg '®'><!ENTITY plusmn '±'><!ENTITY sup2 '²'><!ENTITY sup3 '³'><!ENTITY frac14 '¼'><!ENTITY frac12 '½'><!ENTITY frac34 '¾'><!ENTITY rsquo '’'>
-            ]>
 <document title="Test" page_size="A4">
     <style>
         main {
