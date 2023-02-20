@@ -350,6 +350,7 @@ class ReportXML(object):
                 header_footer_data = []
                 header_footer_commands = []
                 header_footer_row_height = []
+                temp_rows_variables = []
 
                 for row_index, tr in enumerate(element, HEADER_FOOTER):
                     self.process_tr(tr_element=tr,
@@ -359,7 +360,7 @@ class ReportXML(object):
                                     row_heights=header_footer_row_height,
                                     row_count=row_index,
                                     span=header_footer_span,
-                                    rows_variables=rows_variables,
+                                    rows_variables=temp_rows_variables,
                                     variables=variables,
                                     col_widths=col_widths,
                                     table_width=table_width,
