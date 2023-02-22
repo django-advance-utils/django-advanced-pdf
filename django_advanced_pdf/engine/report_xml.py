@@ -58,13 +58,15 @@ class ReportXML(object):
         (u'rsquo', u'’'),
     ]
 
-    def __init__(self, object_lookup=None, background_images=None, pager_kwargs=None):
+    def __init__(self, object_lookup=None, pager_kwargs=None):
         self.styles = {}
         if object_lookup is not None:
             self.object_lookup = object_lookup
         else:
             self.object_lookup = {}
-        self.background_images = background_images
+        self.background_image_first = None
+        self.background_image_remaining = None
+        self.background_image_footer = None
 
         self.styles = {}
         self.border_left_first = 0
@@ -82,7 +84,13 @@ class ReportXML(object):
         else:
             self.pager_kwargs = pager_kwargs
 
-    def load_xml_and_make_pdf(self, xml, add_doctype=True):
+    def load_xml_and_make_pdf(self, xml, add_doctype=True, background_image_first=None,
+                              background_image_remaining=None, background_image_footer=None):
+
+        self.background_image_first = background_image_first
+        self.background_image_remaining = background_image_remaining
+        self.background_image_footer = background_image_footer
+
         parser = etree.XMLParser(remove_blank_text=True, resolve_entities=False)
 
         if add_doctype:
@@ -165,6 +173,9 @@ class ReportXML(object):
                               border_right_continuation=self.border_right_continuation * mm,
                               border_top_continuation=self.border_top_continuation * mm,
                               border_bottom_continuation=self.border_bottom_continuation * mm,
+                              background_image_first=self.background_image_first,
+                              background_image_remaining=self.background_image_remaining,
+                              background_image_footer=self.background_image_footer,
                               **self.pager_kwargs)
 
     def canvasmaker(self, *args, **kwargs):
@@ -178,6 +189,9 @@ class ReportXML(object):
                               border_right_continuation=self.border_right_continuation * mm,
                               border_top_continuation=self.border_top_continuation * mm,
                               border_bottom_continuation=self.border_bottom_continuation * mm,
+                              background_image_first=self.background_image_first,
+                              background_image_remaining=self.background_image_remaining,
+                              background_image_footer=self.background_image_footer,
                               **self.pager_kwargs,
                               **kwargs)
 

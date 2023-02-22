@@ -35,24 +35,22 @@ class BasePager(canvas.Canvas):
                                   bottom=border_bottom_continuation)
         self.program_name = program_name
 
+        self.background_image_first = background_image_first
+        self.background_image_remaining = background_image_remaining
+        self.background_image_footer = background_image_footer
+
         canvas.Canvas.__init__(self, filename, pagesize, bottom_up, page_compression, invariant, verbosity, encrypt,
                                crop_marks, pdf_version, enforce_color_space)
 
-        self.background_images = None
-        if (background_image_first is not None or
-                background_image_remaining is not None or
-                background_image_footer is not None):
-            self.add_background_images(first=background_image_first,
-                                       remaining=background_image_remaining,
-                                       footer=background_image_footer)
+        self.add_background_images()
 
     def inkAnnotation(self, contents, ink_list=None, rect=None, add_to_page=1, name=None, relative=0, **kw):
         pass
 
-    def add_background_images(self, first, remaining, footer):
-        self.background_images = {'first': first, 'remaining': remaining, 'footer': footer}
-        self.draw_first_page_background()
-        self.draw_footer_image_block()
+    def add_background_images(self):
+        if self.background_image_first is not None or self.background_image_remaining is not None:
+            self.draw_first_page_background()
+            self.draw_footer_image_block()
 
     def add_draw_method(self, method):
 
@@ -187,25 +185,27 @@ class BasePager(canvas.Canvas):
 
         canvas.Canvas.save(self)
 
+    def draw_background(self, image):
+        if image is not None:
+            self.drawImage(ImageReader(image), 0, 0, self.page_width(), self.page_height())
+
     def draw_first_page_background(self):
         """
         Adds the first page background image to the printout
         """
-        if self.background_images is not None and self.background_images['first'] is not None:
-            self.drawImage(ImageReader(self.background_images['first']), 0, 0, self.page_width(), self.page_height())
+        self.draw_background(self.background_image_first)
 
     def draw_remaining_page_background(self):
         """
         Adds the background image for the remaining pages in the printout
         """
-        if self.background_images is not None and self.background_images['remaining'] is not None:
-            self.drawImage(ImageReader(self.background_images['remaining']), 0, 0, self.page_width(), self.page_height())
+        self.draw_background(self.background_image_remaining)
 
     def draw_footer_image_block(self):
         """
         Adds the footer image to the printout
         """
-        border_bottom = self.border_bottom(True)
-        page_width = self.page_width()
-        if self.background_images is not None and self.background_images['footer'] is not None:
-            self.drawImage(ImageReader(self.background_images['footer']), 0, 0, page_width, border_bottom)
+        if self.background_image_footer is not None:
+            border_bottom = self.border_bottom(True)
+            page_width = self.page_width()
+            self.drawImage(ImageReader(self.background_image_footer), 0, 0, page_width, border_bottom)

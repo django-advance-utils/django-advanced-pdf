@@ -1,7 +1,7 @@
 from django.urls import path
 
 from advanced_pdf_examples.views import FromDatabaseExampleIndex, FromFileExampleIndex, PrintingTemplateModal,\
-    ExampleDatabasePDFView, ExampleFilePDFView, CompaniesPDFView, ReportExampleView
+    ExampleDatabasePDFView, ExampleFilePDFView, CompaniesPDFView, ReportExampleView, HeadedNotepaperView
 
 app_name = 'advanced_pdf_examples'
 
@@ -14,5 +14,6 @@ urlpatterns = [
     path('view/file/<str:filename>/', ExampleFilePDFView.as_view(), name='view_example_file_pdf'),
     path('view/companies/', CompaniesPDFView.as_view(), name='view_companies_pdf'),
     path('report/example/', ReportExampleView.as_view(), name='view_report_pdf'),
+    path('report/headed-notepaper/', HeadedNotepaperView.as_view(), name='view_headed_notepaper_pdf'),
 
 ]

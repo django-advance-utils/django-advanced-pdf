@@ -19,7 +19,7 @@ from django.views.generic import RedirectView, TemplateView
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('favicon.ico', RedirectView.as_view(url='/static/cards_examples/favicon.ico', permanent=True)),
+    path('favicon.ico', RedirectView.as_view(url='/static/pdf_examples/favicon.ico', permanent=True)),
     path('', include('advanced_pdf_examples.urls', namespace='advanced_pdf_examples')),
     path('__debug__/', include('debug_toolbar.urls')),
 ]

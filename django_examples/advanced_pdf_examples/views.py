@@ -1,8 +1,7 @@
 import base64
 import os
 import pathlib
-
-from PyPDF2 import PdfFileReader, PdfFileWriter
+from PyPDF2 import PdfWriter, PdfReader
 from advanced_pdf_examples.models import Company
 from ajax_helpers.mixins import AjaxHelpers
 from django.conf import settings
@@ -29,6 +28,8 @@ class MainMenu(AjaxHelpers, MenuMixin):
             ('advanced_pdf_examples:from_database_example', 'From Database Example'),
             ('advanced_pdf_examples:from_file_example', 'From File Example'),
             ('advanced_pdf_examples:view_companies_pdf', 'View Companies PDF'),
+            ('advanced_pdf_examples:view_report_pdf', 'View Report'),
+            ('advanced_pdf_examples:view_headed_notepaper_pdf', 'View Headed Notepaper PDF'),
             MenuItem(url='admin:index',
                      menu_display='Admin',
                      visible=self.request.user.is_superuser),
@@ -148,16 +149,15 @@ class CompaniesPDFView(View):
     def get(self, request):
         template = get_template(f'file_examples/with_context/companies.xml')
         xml = template.render({'companies': Company.objects.all()})
-        xml = template.render({})
         report_xml = ReportXML()
-        result = report_xml.load_xml_and_make_pdf(xml) # background_image_remaining=os.path.join(settings.BASE_DIR, 'test.jpg')
+        result = report_xml.load_xml_and_make_pdf(xml)
         response = HttpResponse(result.getvalue(), content_type='application/pdf')
         return response
 
 
 class ReportExampleView(View):
     def get(self, request):
-        output = PdfFileWriter()
+        output = PdfWriter()
         template_files = ['basic', 'border']
         response = HttpResponse(content_type='application/pdf')
         for template_file in template_files:
@@ -165,10 +165,28 @@ class ReportExampleView(View):
             xml = template.render({})
             report_xml = ReportXML()
             result = report_xml.load_xml_and_make_pdf(xml)
-            current_pdf = PdfFileReader(result)
-            for x in range(0, current_pdf.getNumPages()):
-                output.addPage(current_pdf.getPage(x))
+            current_pdf = PdfReader(result)
+            for x in range(0, len(current_pdf.pages)):
+                output.add_page(current_pdf.pages[x])
 
         output.write(response)
         return response
 
+
+class HeadedNotepaperView(View):
+
+    @staticmethod
+    def get_image_path(filename):
+        return os.path.join(settings.BASE_DIR, 'advanced_pdf_examples/static/pdf_examples', filename)
+
+    def get(self, request):
+        template = get_template(f'file_examples/headed_notepaper/headed_notepaper.xml')
+        xml = template.render({'companies': Company.objects.all()})
+        report_xml = ReportXML()
+        result = report_xml.load_xml_and_make_pdf(
+            xml,
+            background_image_first=self.get_image_path('headed_paper.jpg'),
+            background_image_remaining=self.get_image_path('headed_paper_remaining.jpg'),
+        )
+        response = HttpResponse(result.getvalue(), content_type='application/pdf')
+        return response

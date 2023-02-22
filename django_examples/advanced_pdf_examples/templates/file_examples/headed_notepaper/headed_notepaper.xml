@@ -1,0 +1,40 @@
+<document title="My Test Printout"
+          page_size="A4"
+          border_right_first="20"
+          border_left_first="20"
+          border_bottom_first="20"
+          border_top_first="40"
+          border_right_continuation="20"
+          border_left_continuation="20"
+          border_bottom_continuation="20"
+          border_top_continuation="20">
+
+ <style>
+        main {
+            text_color:#0000FF;
+            inner_grid:0.25,#000000,1;
+            box:0.5,#000000
+        }
+
+        heading {
+            background:#F0F0F0;
+        }
+    </style>
+
+ <table class="main">
+         <tr class="heading">
+            <td colspan="2">Companies</td>
+        </tr>
+        <tr>
+            <td>Name</td>
+            <td>Number</td>
+        </tr>
+
+        {% for company in companies %}
+        <tr>
+            <td>{{ company.name }}</td>
+            <td>{{ company.number }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+</document>
