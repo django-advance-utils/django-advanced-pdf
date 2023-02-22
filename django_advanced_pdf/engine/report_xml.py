@@ -19,7 +19,6 @@ from ..pagers.border import BorderPager
 
 
 class ReportXML(object):
-
     pager_types = {'borders': BorderPager}
     default_pager = BasePager
 
@@ -279,6 +278,7 @@ class ReportXML(object):
 
         for element in table:
             if element.tag == 'tr':
+
                 row_count += 1
                 max_row_span, overflow_row_count = self.process_tr(tr_element=element,
                                                                    data=main_data,
@@ -294,48 +294,56 @@ class ReportXML(object):
 
                 if max_row_span > held_row_span:
                     held_row_span = max_row_span
+
                 if held_row_span > 1 or min_rows_top > 0:
-                    for _ in range(overflow_row_count + 1):
-                        keep_data.append(1)
-                        headers_index.append(current_header_index)
-                        footers_index.append(current_footer_index)
                     min_rows_top -= 1
+                    keep_type = 1
                 else:
-                    for _ in range(overflow_row_count + 1):
-                        keep_data.append(0)
-                        headers_index.append(current_header_index)
-                        footers_index.append(current_footer_index)
+                    keep_type = 0
+                for _ in range(overflow_row_count + 1):
+                    keep_data.append(keep_type)
+                    headers_index.append(current_header_index)
+                    footers_index.append(current_footer_index)
+
                 held_row_span -= 1
                 row_count += overflow_row_count
             elif element.tag == 'keep':
                 local_keep_data = []
 
-                for tr in element:
-                    row_count += 1
-                    _, overflow_row_count = self.process_tr(tr_element=tr,
-                                                            data=main_data,
-                                                            styles=main_styles,
-                                                            other_table_styles=other_styles,
-                                                            row_heights=row_heights,
-                                                            row_count=row_count,
-                                                            span=main_span,
-                                                            rows_variables=rows_variables,
-                                                            variables=variables,
-                                                            col_widths=col_widths,
-                                                            table_width=table_width)
-                    if min_rows_top > 0:
-                        min_rows_top -= 1
+                for child_element in element:
+                    if child_element.tag == 'tr':
+                        row_count += 1
+                        max_row_span, overflow_row_count = self.process_tr(tr_element=child_element,
+                                                                           data=main_data,
+                                                                           styles=main_styles,
+                                                                           other_table_styles=other_styles,
+                                                                           row_heights=row_heights,
+                                                                           row_count=row_count,
+                                                                           span=main_span,
+                                                                           rows_variables=rows_variables,
+                                                                           variables=variables,
+                                                                           col_widths=col_widths,
+                                                                           table_width=table_width)
+                        if max_row_span > held_row_span:
+                            held_row_span = max_row_span
+                        if held_row_span > 1 or min_rows_top > 0:
+                            min_rows_top -= 1
 
-                    for index, _ in enumerate(range(overflow_row_count + 1)):
-                        headers_index.append(current_header_index)
-                        footers_index.append(current_footer_index)
-                        if index == 0:
-                            local_keep_data.append(2)
-                        else:
-                            local_keep_data.append(3)
-                if len(local_keep_data) > 0:
-                    local_keep_data[-1] = 3
-                keep_data += local_keep_data
+                        for index in range(overflow_row_count + 1):
+                            headers_index.append(current_header_index)
+                            footers_index.append(current_footer_index)
+                            if index == 0:
+                                keep_type = 2
+                            else:
+                                keep_type = 3
+                            local_keep_data.append(keep_type)
+
+                        held_row_span -= 1
+                        row_count += overflow_row_count
+
+                    if len(local_keep_data) > 0:
+                        local_keep_data[-1] = 3
+                    keep_data += local_keep_data
 
             elif element.tag == 'no_headers':
                 current_header_index = None
@@ -635,7 +643,8 @@ class ReportXML(object):
                         row_variables[add_to_variable_name] = variables.get(add_to_variable_name)
                         currency_variable = add_to_variable_name + '__currency'
                         if currency_variable in variables:
-                            currency_value = symbol + intcomma_currency(float(variables.get(add_to_variable_name)) / 100.0)
+                            currency_value = symbol + intcomma_currency(
+                                float(variables.get(add_to_variable_name)) / 100.0)
 
                             row_variables[currency_variable] = currency_value
                             variables[currency_variable] = currency_value
@@ -688,7 +697,7 @@ class ReportXML(object):
                 for x in range(1, overflow_row_count):
                     styles.append(('SPAN',
                                    (col_count + offset, x + row_count),
-                                   (col_count + offset + col_span-1, x + row_count + row_span-1)))
+                                   (col_count + offset + col_span - 1, x + row_count + row_span - 1)))
 
                 if row_span > 1:
                     for r in range(1, row_span):
@@ -926,12 +935,12 @@ class ReportXML(object):
     def split_cell(xml, overflow_length):
         overflow_rows = []
         offset = xml.find('>'.encode())
-        m = re.search("<br\s?/>".encode(), xml[overflow_length+offset:])
+        m = re.search("<br\s?/>".encode(), xml[overflow_length + offset:])
         if m:
             pos = m.start() + overflow_length + offset
             span = m.span()
             match_len = span[1] - span[0]
-            xml_parts = re.split("<br\s?/>".encode(), xml[pos+match_len:])
+            xml_parts = re.split("<br\s?/>".encode(), xml[pos + match_len:])
             next_xml = ''
             # this makes the xml valid again after it has been split
 
@@ -963,7 +972,7 @@ class ReportXML(object):
 
         return xml, overflow_rows
 
-    def overflow_cell(self, td_element, xml, overflow_gt_length, styles, style,  offset, col_count, row_count, col_span,
+    def overflow_cell(self, td_element, xml, overflow_gt_length, styles, style, offset, col_count, row_count, col_span,
                       row_span, row_data, overflow_rows, rows_variables):
         text = re.sub('<.*?>', '', str(xml))
         if len(text) > overflow_gt_length:
