@@ -10,7 +10,8 @@ from reportlab.platypus import TableStyle, PageBreak, Spacer
 from .enhanced_paragraph.enhanced_paragraph import EnhancedParagraph
 from .enhanced_paragraph.style import EnhancedParagraphStyle
 from .enhanced_table.data import EnhancedTableData
-from .enhanced_table.enhanced_tables import OVERFLOW_ROW, EnhancedTable, HEADER_FOOTER
+from .enhanced_table.enhanced_tables import OVERFLOW_ROW, EnhancedTable, HEADER_FOOTER, KEEP_TYPE_END, KEEP_TYPE_START, \
+    KEEP_TYPE_MIDDLE, KEEP_TYPE_SPAN, KEEP_TYPE_NA
 from .png_images import insert_image, insert_obj
 from .svglib.svglib import SvgRenderer
 from .utils import DocTemplate, get_page_size_from_string, intcomma_currency, ColumnWidthPercentage
@@ -297,9 +298,9 @@ class ReportXML(object):
 
                 if held_row_span > 1 or min_rows_top > 0:
                     min_rows_top -= 1
-                    keep_type = 1
+                    keep_type = KEEP_TYPE_SPAN
                 else:
-                    keep_type = 0
+                    keep_type = KEEP_TYPE_NA
                 for _ in range(overflow_row_count + 1):
                     keep_data.append(keep_type)
                     headers_index.append(current_header_index)
@@ -309,7 +310,7 @@ class ReportXML(object):
                 row_count += overflow_row_count
             elif element.tag == 'keep':
                 local_keep_data = []
-
+                keep_type = KEEP_TYPE_START
                 for child_element in element:
                     if child_element.tag == 'tr':
                         row_count += 1
@@ -332,18 +333,15 @@ class ReportXML(object):
                         for index in range(overflow_row_count + 1):
                             headers_index.append(current_header_index)
                             footers_index.append(current_footer_index)
-                            if index == 0:
-                                keep_type = 2
-                            else:
-                                keep_type = 3
                             local_keep_data.append(keep_type)
+                            keep_type = KEEP_TYPE_MIDDLE
 
                         held_row_span -= 1
                         row_count += overflow_row_count
 
-                    if len(local_keep_data) > 0:
-                        local_keep_data[-1] = 3
-                    keep_data += local_keep_data
+                if len(local_keep_data) > 0:
+                    local_keep_data[-1] = KEEP_TYPE_END
+                keep_data += local_keep_data
 
             elif element.tag == 'no_headers':
                 current_header_index = None
@@ -404,7 +402,7 @@ class ReportXML(object):
         for x in range(1, min_rows_bottom + 1):
             if length - x < 0:
                 break
-            keep_data[length - x] = 1
+            keep_data[length - x] = KEEP_TYPE_SPAN
 
         h_align, v_align = self.get_alignment_details(main_styles)
 

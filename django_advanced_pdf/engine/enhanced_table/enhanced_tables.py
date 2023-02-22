@@ -16,6 +16,12 @@ OVERFLOW_ROW = -9999
 HEADER_FOOTER = 7777
 UNDEFINED_ROW = -8888
 
+KEEP_TYPE_NA = 0
+KEEP_TYPE_SPAN = 1
+KEEP_TYPE_START = 2
+KEEP_TYPE_MIDDLE = 3
+KEEP_TYPE_END = 4
+
 
 # noinspection PyPep8Naming
 class EnhancedTable(Table):
@@ -87,7 +93,7 @@ class EnhancedTable(Table):
         self.data = table_data.get('row_data', [])
         self.variables = table_data.get('row_variables', [{} for _ in range(len(self.data))])
         self.properties = table_data.get('row_properties', [{} for _ in range(len(self.data))])
-        self.keep_with_next = table_data.get('keep_with_next', [False for _ in range(len(self.data))])
+        self.keep_with_next = table_data.get('keep_with_next', [KEEP_TYPE_NA for _ in range(len(self.data))])
         self.headers_index = table_data.get('headers_index', [False for _ in range(len(self.data))])
         self.footers_index = table_data.get('footers_index', [False for _ in range(len(self.data))])
         self.min_rows_after_header = min_rows_after_header
@@ -133,10 +139,11 @@ class EnhancedTable(Table):
         footer_index = None
 
         split_at = 0  # from this point of view 0 is the first position where the table may *always* be split
-
-        for i, (rh, header_index, footer_index) in enumerate(zip(self._rowHeights,
-                                                                 self.headers_index,
-                                                                 self.footers_index)):
+        use_middle = True
+        for i, (rh, header_index, footer_index, keep_with_next) in enumerate(zip(self._rowHeights,
+                                                                                 self.headers_index,
+                                                                                 self.footers_index,
+                                                                                 self.keep_with_next)):
 
             number_of_header = 0
             if header_index is not None:
@@ -146,11 +153,17 @@ class EnhancedTable(Table):
             if footer_index is not None:
                 footer_height = self.footers[footer_index].rows_height
 
-            keep_with_next = self.keep_with_next[i]
             if h + rh > availHeight - footer_height:
                 break
-            if (self.initial or i > number_of_header) and n not in impossible and keep_with_next in [0, 3]:
-                split_at = n
+
+            if (self.initial or i > number_of_header) and n not in impossible and\
+                    keep_with_next in [KEEP_TYPE_NA, KEEP_TYPE_END, KEEP_TYPE_MIDDLE]:
+
+                if keep_with_next in [KEEP_TYPE_NA, KEEP_TYPE_END]:
+                    use_middle = False
+                    split_at = n
+                elif use_middle:
+                    split_at = n
             h = h + rh
             n += 1
 
