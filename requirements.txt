@@ -20,3 +20,6 @@ six==1.16.0
 cssselect2==0.7.0
 tinycss2==1.2.1
 pypdf2==3.0.1
+twisted==22.10.0
+PyMuPDF==1.21.1
+Pillow==9.4.0

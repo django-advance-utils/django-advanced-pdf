@@ -94,6 +94,8 @@ ipython_config.py
 # PEP 582; used by e.g. github.com/David-OConnor/pyflow
 __pypackages__/
 
+
+
 # Celery stuff
 celerybeat-schedule
 celerybeat.pid
@@ -137,3 +139,7 @@ django_examples/advanced_pdf_examples/templates/file_examples/2841.xml
 django_examples/advanced_pdf_examples/templates/file_examples/2846.xml
 django_examples/advanced_pdf_examples/templates/file_examples/2856.xml
 django_examples/advanced_pdf_examples/templates/file_examples/2856_keep.xml
+django_advanced_pdf/_trial_temp/_trial_marker
+django_advanced_pdf/test_data/temp
+
+
