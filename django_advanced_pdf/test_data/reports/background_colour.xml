@@ -1,0 +1,13 @@
+<document title="My test printout" page_size="A4" page_orientation="landscape">
+
+
+    <table>
+
+        <tr style="background:#FF0000">
+            <td>hello</td>
+        </tr>
+    </table>
+
+
+
+</document>

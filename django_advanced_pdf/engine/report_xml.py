@@ -58,7 +58,7 @@ class ReportXML(object):
         (u'rsquo', u'’'),
     ]
 
-    def __init__(self, object_lookup=None, pager_kwargs=None):
+    def __init__(self, object_lookup=None, pager_kwargs=None, test_mode=False):
         self.styles = {}
         if object_lookup is not None:
             self.object_lookup = object_lookup
@@ -78,6 +78,7 @@ class ReportXML(object):
         self.border_top_continuation = 0
         self.border_bottom_continuation = 0
         self.page_style = None
+        self.test_mode = test_mode
 
         if pager_kwargs is None:
             self.pager_kwargs = {}
@@ -176,6 +177,7 @@ class ReportXML(object):
                               background_image_first=self.background_image_first,
                               background_image_remaining=self.background_image_remaining,
                               background_image_footer=self.background_image_footer,
+                              test_mode=self.test_mode,
                               **self.pager_kwargs)
 
     def canvasmaker(self, *args, **kwargs):
@@ -192,6 +194,7 @@ class ReportXML(object):
                               background_image_first=self.background_image_first,
                               background_image_remaining=self.background_image_remaining,
                               background_image_footer=self.background_image_footer,
+                              test_mode=self.test_mode,
                               **self.pager_kwargs,
                               **kwargs)
 

@@ -10,11 +10,13 @@ from django_advanced_pdf.pagers.base import BasePager
 class BorderPager(BasePager):
     def __init__(self, heading, filename, footer_field=None, pagesize=None, bottom_up=1, page_compression=None,
                  invariant=None, verbosity=0, encrypt=None, crop_marks=None, pdf_version=None, enforce_color_space=None,
-                 bottom_text=None,
-                 **kwargs):
-        BasePager.__init__(self,
-                           heading, filename, pagesize, bottom_up, page_compression, invariant, verbosity, encrypt,
-                           crop_marks, pdf_version, enforce_color_space, **kwargs)
+                 bottom_text=None, test_mode=False, **kwargs):
+        BasePager.__init__(self, heading=heading, filename=filename, pagesize=pagesize,
+                           bottom_up=bottom_up, page_compression=page_compression,
+                           invariant=invariant, verbosity=verbosity, encryp=encrypt,
+                           crop_marks=crop_marks, pdf_version=pdf_version,
+                           enforce_color_space=enforce_color_space, test_mode=test_mode,
+                           **kwargs)
 
         self._saved_page_states = []
         self.bottom_text = bottom_text
@@ -78,7 +80,8 @@ class BorderPager(BasePager):
         self.drawString(border_right - mid_point + (of_width / 2), bottom_centre, "%d" % page_count)
 
         self.setFont("Helvetica", 10)
-        time_str = strftime("%H:%M %d-%m-%y", localtime())
+
+        time_str = self.get_time_string()
         time_width = stringWidth(time_str, "Helvetica", 10) + 4 * mm
 
         self.line(border_right - total_width, border_bottom, border_right - total_width, bottom_base)  # mid line
@@ -99,3 +102,10 @@ class BorderPager(BasePager):
             self.drawString(border_left + 2 * mm, bottom_centre, self.bottom_text)
 
         self.display_program_name()
+
+    def get_time_string(self):
+
+        if self.test_mode:
+            return "12:28 23-02-23"
+
+        return strftime("%H:%M %d-%m-%y", localtime())

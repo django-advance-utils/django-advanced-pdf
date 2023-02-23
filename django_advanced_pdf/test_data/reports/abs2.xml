@@ -1,0 +1,422 @@
+<document title="Report"
+          page_size="A4"
+          page_style="blank"
+          page_orientation="landscape"
+          border_right_first="1"
+          border_left_first="2"
+          border_top_first2="0"
+          border_bottom_first="10"
+          border_right_continuation="1"
+          border_left_continuation="2"
+          border_bottom_continuation="0">
+
+    <style>
+        full_table {
+        inner_grid:0.25,#000000;
+        box:0.5,#000000;
+        font_size:7;
+        vAlign:top;
+        top_padding:0;
+        }
+        header_table {
+        font:Helvetica-Bold;
+        font_size:9;
+        vAlign:top;
+        top_padding:0.5;
+        }
+        header {
+        font:Helvetica-Bold;
+        vAlign:top;
+        }
+        header_center {
+        font:Helvetica-Bold;
+        vAlign:top;
+        align:center;
+        }
+        title {
+        font_size:12;
+        vAlign:middle;
+        font:Helvetica-Bold;
+        }
+        grey_header {
+        bottom_padding:0;
+        font:Helvetica-Bold;
+        vAlign:middle;
+        background:#D3D3D3;
+        }
+        data {
+
+        }
+        data_bold {
+        font:Helvetica-Bold;
+        }
+        data_right {
+        align:decimal;
+        right_padding:3;
+        }
+        data_right_large {
+        align:decimal;
+        right_padding:6;
+        }
+        disclaimer {
+        font_size: 6;
+        }
+        assembly_grid {
+        vAlign:top;
+        align:center;
+        }
+        assembly_grid_label {
+        vAlign:top;
+        align:left;
+        left_padding:20;
+        }
+        assembly_label {
+        font_size:8;
+        align:center;
+        row_height:3;
+        }
+        assembly {
+        align:center;
+        bottom_padding:0;
+        }
+        sub_components {
+        font_size:8;
+        row_height:4;
+        vAlign:top;
+        }
+        sub_title {
+        top_padding:2;
+        vAlign:middle;
+        font:Helvetica-Bold;
+        }
+        top_down_table {
+        inner_grid:0.25,#000000;
+        box:0.5,#000000;
+        top_padding:0;
+        bottom_padding:0;
+        }
+        top_down_header {
+        font:Helvetica;
+        font_size:7;
+        row_height:4;
+        }
+        finished_header {
+        font:Helvetica-Bold;
+        vAlign:top;
+        row_height:5;
+        font_size:9;
+        }
+        finished_data_right {
+        align:decimal;
+        right_padding:3;
+        font_size:9;
+        }
+    </style>
+
+
+    <table class="full_table" pos_x="0" pos_y="0" pos_y_ref="top" pos_x_ref="right">
+        <tr class="grey_header">
+            <td width="25">Name</td>
+            <td width="72">Glazing</td>
+            <td width="10">No.</td>
+            <td width="20">Dims</td>
+        </tr>
+
+
+        <tr class="data">
+            <td>
+                <span>Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur</span>
+            </td>
+            <td>voluptate velit esse cillum dolore eu fugiat nulla pariatur</td>
+            <td class="data_right">3</td>
+            <td>438.3 x 987.0</td>
+        </tr>
+        <tr class="data">
+            <td>
+                <span>Duis aute irure dolor in reprehenderit in voluptate velit</span>
+            </td>
+            <td> esse cillum dolore eu fugiat nulla pariatur</td>
+            <td class="data_right">3</td>
+            <td>438.3 x 987.0</td>
+        </tr>
+        <tr class="data">
+            <td>dolore eu</td>
+            <td>Excepteur sint occaecat cupidatat</td>
+            <td class="data_right">3</td>
+            <td>438.3 x 987.0</td>
+        </tr>
+
+
+    </table>
+
+
+    <table class="full_table">
+        <tr class="grey_header">
+            <td width="25">Heading</td>
+        </tr>
+        <tr>
+            <td>1</td>
+        </tr>
+        <tr>
+            <td>2</td>
+        </tr>
+        <tr>
+            <td>3</td>
+        </tr>
+        <tr>
+            <td>4</td>
+        </tr>
+        <tr>
+            <td>5</td>
+        </tr>
+        <tr>
+            <td>6</td>
+        </tr>
+        <tr>
+            <td>7</td>
+        </tr>
+        <tr>
+            <td>8</td>
+        </tr>
+        <tr>
+            <td>9</td>
+        </tr>
+        <tr>
+            <td>10</td>
+        </tr>
+
+
+        <tr>
+            <td>1</td>
+        </tr>
+        <tr>
+            <td>2</td>
+        </tr>
+        <tr>
+            <td>3</td>
+        </tr>
+        <tr>
+            <td>4</td>
+        </tr>
+        <tr>
+            <td>5</td>
+        </tr>
+        <tr>
+            <td>6</td>
+        </tr>
+        <tr>
+            <td>7</td>
+        </tr>
+        <tr>
+            <td>8</td>
+        </tr>
+        <tr>
+            <td>9</td>
+        </tr>
+        <tr>
+            <td>10</td>
+        </tr>
+
+
+        <tr>
+            <td>1</td>
+        </tr>
+        <tr>
+            <td>2</td>
+        </tr>
+        <tr>
+            <td>3</td>
+        </tr>
+        <tr>
+            <td>4</td>
+        </tr>
+        <tr>
+            <td>5</td>
+        </tr>
+        <tr>
+            <td>6</td>
+        </tr>
+        <tr>
+            <td>7</td>
+        </tr>
+        <tr>
+            <td>8</td>
+        </tr>
+        <tr>
+            <td>9</td>
+        </tr>
+        <tr>
+            <td>10</td>
+        </tr>
+
+
+        <tr>
+            <td>1</td>
+        </tr>
+        <tr>
+            <td>2</td>
+        </tr>
+        <tr>
+            <td>3</td>
+        </tr>
+        <tr>
+            <td>4</td>
+        </tr>
+        <tr>
+            <td>5</td>
+        </tr>
+        <tr>
+            <td>6</td>
+        </tr>
+        <tr>
+            <td>7</td>
+        </tr>
+        <tr>
+            <td>8</td>
+        </tr>
+        <tr>
+            <td>9</td>
+        </tr>
+        <tr>
+            <td>10</td>
+        </tr>
+                <tr>
+            <td>1</td>
+        </tr>
+        <tr>
+            <td>2</td>
+        </tr>
+        <tr>
+            <td>3</td>
+        </tr>
+        <tr>
+            <td>4</td>
+        </tr>
+        <tr>
+            <td>5</td>
+        </tr>
+        <tr>
+            <td>6</td>
+        </tr>
+        <tr>
+            <td>7</td>
+        </tr>
+        <tr>
+            <td>8</td>
+        </tr>
+        <tr>
+            <td>9</td>
+        </tr>
+        <tr>
+            <td>10</td>
+        </tr>
+
+                <tr>
+            <td>1</td>
+        </tr>
+        <tr>
+            <td>2</td>
+        </tr>
+        <tr>
+            <td>3</td>
+        </tr>
+        <tr>
+            <td>4</td>
+        </tr>
+        <tr>
+            <td>5</td>
+        </tr>
+        <tr>
+            <td>6</td>
+        </tr>
+        <tr>
+            <td>7</td>
+        </tr>
+        <tr>
+            <td>8</td>
+        </tr>
+        <tr>
+            <td>9</td>
+        </tr>
+        <tr>
+            <td>10</td>
+        </tr>
+    </table>
+
+
+    <table class="full_table" pos_x="475" pos_y="0" pos_y_ref="top">
+        <tr class="grey_header">
+            <td width="25">Name</td>
+            <td width="72">Type</td>
+            <td width="10">No.</td>
+            <td width="20">Dims</td>
+        </tr>
+
+
+        <tr class="data">
+            <td>
+                <span>Lorem ipsum dolor sit amet, consectetur adipiscing elit</span>
+            </td>
+            <td>Incididunt</td>
+            <td class="data_right">3</td>
+            <td>438.3 x 987.0</td>
+        </tr>
+        <tr class="data">
+             <td>
+                <span>Lorem ipsum dolor sit amet, consectetur adipiscing elit</span>
+            </td>
+            <td>Sed do eiusmod tempor incididunt</td>
+            <td class="data_right">3</td>
+            <td>438.3 x 987.0</td>
+        </tr>
+                <tr class="data">
+            <td>Incididunt</td>
+            <td>labore et dolore magna aliqua</td>
+            <td class="data_right">3</td>
+            <td>438.3 x 987.0</td>
+        </tr>
+
+
+    </table>
+
+
+
+    <table class="full_table" pos_x="475" pos_y="0" pos_y_ref="bottom">
+        <tr class="grey_header">
+            <td width="25">Name</td>
+            <td width="72">Type</td>
+            <td width="10">No.</td>
+            <td width="20">Dims</td>
+        </tr>
+
+
+        <tr class="data">
+            <td>
+                <span>Lorem ipsum dolor sit amet, consectetur adipiscing elit</span>
+            </td>
+            <td>Sed do eiusmod tempor incididunt</td>
+            <td class="data_right">3</td>
+            <td>438.3 x 987.0</td>
+        </tr>
+        <tr class="data">
+             <td>
+                <span>Lorem ipsum dolor sit amet, consectetur adipiscing elit</span>
+            </td>
+            <td>labore et dolore magna aliqua. </td>
+            <td class="data_right">3</td>
+            <td>438.3 x 987.0</td>
+        </tr>
+                <tr class="data">
+         <td>
+                <span>Lorem ipsum dolor sit amet, consectetur adipiscing elit</span>
+            </td>
+            <td>tempor incididunt ut labore</td>
+        <td class="data_right">3</td>
+            <td>438.3 x 987.0</td>
+        </tr>
+
+
+    </table>
+
+
+</document>

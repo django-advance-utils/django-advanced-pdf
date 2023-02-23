@@ -30,7 +30,7 @@ class PDFTests(unittest.TestCase):
         with open(Path(test_folder, 'reports', f'{name}.xml')) as f:
             xml = f.read()
 
-        report_xml = ReportXML()
+        report_xml = ReportXML(test_mode=True)
         result = report_xml.load_xml_and_make_pdf(xml=xml)
         matrix = fitz.Matrix(300 / 72, 300 / 72)
 
@@ -86,3 +86,12 @@ class PDFTests(unittest.TestCase):
 
     def test_border(self):
         self.run_report(name='border')
+
+    def test_background_colour(self):
+        self.run_report(name='background_colour')
+
+    def test_abs2(self):
+        self.run_report(name='abs2')
+
+    def test_abs3(self):
+        self.run_report(name='abs3')

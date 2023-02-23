@@ -17,13 +17,14 @@ class BasePager(canvas.Canvas):
                  border_top_continuation=0, border_bottom_continuation=0,
                  program_name=None,
                  background_image_first=None, background_image_remaining=None,
-                 background_image_footer=None, **kwargs):
+                 background_image_footer=None, test_mode=False, **kwargs):
 
         self.heading = heading
         self.pagesize = pagesize
         self.drawmethods = []
         self.image2 = None
         self._saved_page_states = []
+        self.test_mode = test_mode
 
         self.pageused = PageUsed(left=border_left_first,
                                  right=border_right_first,
