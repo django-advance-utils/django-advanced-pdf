@@ -5,7 +5,7 @@ from io import StringIO, BytesIO
 from lxml import etree
 from reportlab.lib.colors import HexColor, black
 from reportlab.lib.units import mm
-from reportlab.platypus import TableStyle, PageBreak, Spacer
+from reportlab.platypus import TableStyle, PageBreak, Spacer, Table
 
 from .enhanced_paragraph.enhanced_paragraph import EnhancedParagraph
 from .enhanced_paragraph.style import EnhancedParagraphStyle
@@ -258,6 +258,7 @@ class ReportXML(object):
         row_heights = []
         keep_data = []
         other_styles = {}
+        held_cells = {}
 
         self.process_css_for_table(table, main_styles, other_styles)
 
@@ -294,7 +295,8 @@ class ReportXML(object):
                                                                    rows_variables=rows_variables,
                                                                    variables=variables,
                                                                    col_widths=col_widths,
-                                                                   table_width=table_width)
+                                                                   table_width=table_width,
+                                                                   held_cells=held_cells)
 
                 if max_row_span > held_row_span:
                     held_row_span = max_row_span
@@ -327,7 +329,8 @@ class ReportXML(object):
                                                                            rows_variables=rows_variables,
                                                                            variables=variables,
                                                                            col_widths=col_widths,
-                                                                           table_width=table_width)
+                                                                           table_width=table_width,
+                                                                           held_cells=held_cells)
                         if max_row_span > held_row_span:
                             held_row_span = max_row_span
                         if held_row_span > 1 or min_rows_top > 0:
@@ -367,6 +370,7 @@ class ReportXML(object):
                                                                 span=main_span,
                                                                 rows_variables=rows_variables,
                                                                 variables=variables,
+                                                                held_cells=held_cells,
                                                                 col_widths=col_widths,
                                                                 table_width=table_width)
                 header_footer_span = {}
@@ -467,7 +471,7 @@ class ReportXML(object):
         return x, y
 
     def process_tr(self, tr_element, data, styles, other_table_styles,
-                   row_heights, row_count, span, rows_variables, variables, col_widths, table_width,
+                   row_heights, row_count, span, rows_variables, variables, col_widths, table_width, held_cells=None,
                    default_row_height=None, is_header_or_footer=False):
         row_data = []
         other_styles = {}
@@ -658,10 +662,32 @@ class ReportXML(object):
             elif len(td_element) > 0:
                 xml = etree.tostring(td_element, pretty_print=True)
 
+                overflow_gt_height = td_element.get('overflow_gt_height')
                 overflow_gt_length = int(td_element.get('overflow_gt_length', 0))
                 style = self.process_css_for_table_paragraph_style(styles, row_count, col_count + offset)
 
-                if overflow_gt_length:
+                if overflow_gt_height is not None:
+
+                    display_object, overflow_row_count = self.process_overflow_height(
+                        td_element=td_element,
+                        index=index,
+                        overflow_gt_height=overflow_gt_height,
+                        xml=xml,
+                        style=style,
+                        col_widths=col_widths,
+                        table_width=table_width,
+                        col_span=col_span,
+                        styles=styles,
+                        offset=offset,
+                        col_count=col_count,
+                        row_count=row_count,
+                        row_span=row_span,
+                        row_data=row_data,
+                        overflow_rows=overflow_rows,
+                        rows_variables=rows_variables,
+                        held_cells=held_cells)
+
+                elif overflow_gt_length:
                     out_xml, style, overflow_row_count = self.overflow_cell(td_element=td_element,
                                                                             xml=xml,
                                                                             overflow_gt_length=overflow_gt_length,
@@ -683,6 +709,10 @@ class ReportXML(object):
                 display_object = td_element.text
                 if display_object is None:
                     display_object = ''
+
+            hold_cell = td_element.get('hold_cell')
+            if hold_cell is not None:
+                held_cells[hold_cell] = {'display_object': display_object, 'index': index, 'colspan': col_span}
             row_data.append(display_object)
 
             width = self.set_column_width(td_element.get('width'))
@@ -695,7 +725,7 @@ class ReportXML(object):
                 styles.append(('SPAN',
                                (col_count + offset, row_count),
                                (col_count + offset + col_span - 1, row_count + row_span - 1)))
-                for x in range(1, overflow_row_count):
+                for x in range(1, overflow_row_count+1):
                     styles.append(('SPAN',
                                    (col_count + offset, x + row_count),
                                    (col_count + offset + col_span - 1, x + row_count + row_span - 1)))
@@ -935,6 +965,8 @@ class ReportXML(object):
     @staticmethod
     def split_cell(xml, overflow_length):
         overflow_rows = []
+        held_working_tags = []
+        raw_parts = None
         offset = xml.find('>'.encode())
         m = re.search("<br\s?/>".encode(), xml[overflow_length + offset:])
         if m:
@@ -943,6 +975,7 @@ class ReportXML(object):
             match_len = span[1] - span[0]
             xml_parts = re.split("<br\s?/>".encode(), xml[pos + match_len:])
             next_xml = ''
+            raw_parts = []
             # this makes the xml valid again after it has been split
 
             for xml_part in [xml[:pos]] + xml_parts:
@@ -962,56 +995,27 @@ class ReportXML(object):
                                 break
                     else:
                         working_tags.append((tag_name, tag))
+                raw_parts.append(xml_part)
 
+                held_working_tags.append(working_tags)
                 for tag in reversed(working_tags):
                     working_xml += ('</' + tag[0] + '>').encode()
                 overflow_rows.append(working_xml)
                 for tag in working_tags:
                     next_xml += tag[1]
 
-            return overflow_rows[0], overflow_rows[1:]
+            return overflow_rows[0], overflow_rows[1:], raw_parts, held_working_tags
 
-        return xml, overflow_rows
+        return xml, overflow_rows, raw_parts, held_working_tags
 
     def overflow_cell(self, td_element, xml, overflow_gt_length, styles, style, offset, col_count, row_count, col_span,
                       row_span, row_data, overflow_rows, rows_variables):
         text = re.sub('<.*?>', '', str(xml))
         if len(text) > overflow_gt_length:
             overflow_length = int(td_element.get('overflow_length', 0))
-            xml, overflow_rows_xml = self.split_cell(xml, overflow_length)
+            xml, overflow_rows_xml, _, _ = self.split_cell(xml, overflow_length)
+
             if overflow_rows_xml:
-                for overflow_row_offset, row_xml in enumerate(overflow_rows_xml, 1):
-                    if row_xml == overflow_rows_xml[-1]:
-                        style_tag_name = 'bottom'
-                    else:
-                        style_tag_name = 'middle'
-
-                    self.process_css_for_table(tag=td_element,
-                                               styles=styles,
-                                               other_styles={},
-                                               start_col=col_count + offset,
-                                               start_row=row_count + overflow_row_offset,
-                                               end_col=col_count + offset + col_span - 1,
-                                               end_row=row_count + overflow_row_offset + row_span - 1)
-                    self.process_css_for_table(tag=td_element,
-                                               styles=styles,
-                                               other_styles={},
-                                               start_col=col_count + offset,
-                                               start_row=row_count + overflow_row_offset,
-                                               end_col=col_count + offset + col_span - 1,
-                                               end_row=row_count + overflow_row_offset + row_span - 1,
-                                               style_tag_name='overflow_%s_style' % style_tag_name,
-                                               class_tag_name='overflow_%s_class' % style_tag_name)
-                    style = self.process_css_for_table_paragraph_style(
-                        css=styles,
-                        row_count=row_count + overflow_row_offset,
-                        col_count=col_count + offset)
-                    overflow_object = EnhancedParagraph(row_xml, style, css_classes=self.styles)
-                    overflow_row = ['' for _ in range(len(row_data))]
-                    overflow_row.append(overflow_object)
-                    overflow_rows.append(overflow_row)
-                    rows_variables.append(rows_variables[-1])
-
                 self.process_css_for_table(tag=td_element,
                                            styles=styles,
                                            other_styles={},
@@ -1022,8 +1026,20 @@ class ReportXML(object):
                                            style_tag_name='overflow_top_style',
                                            class_tag_name='overflow_top_class')
 
+                self.process_over_flow_xml(overflow_rows_xml=overflow_rows_xml,
+                                           overflow_rows=overflow_rows,
+                                           rows_variables=rows_variables,
+                                           td_element=td_element,
+                                           styles=styles,
+                                           row_count=row_count,
+                                           col_count=col_count,
+                                           row_span=row_span,
+                                           col_span=col_span,
+                                           row_data=row_data,
+                                           offset=offset)
+
                 style = self.process_css_for_table_paragraph_style(styles, row_count, col_count + offset)
-        return xml, style, len(overflow_rows)
+        return xml, style, len(overflow_rows) + 1
 
     def get_doc_type(self):
         entity_string = ''
@@ -1031,3 +1047,120 @@ class ReportXML(object):
             entity_string += u'<!ENTITY %s \'%s\'>' % (entity[0], entity[1])
         xml = """<!DOCTYPE root SYSTEM "print_engine" [%s]>""" % entity_string
         return xml
+
+    def get_overflow_overflow_gt_height(self, raw_overflow_gt_height, held_cells, widths):
+        if raw_overflow_gt_height.startswith('#'):
+            held_cell_data = held_cells.get(raw_overflow_gt_height[1:])
+            display_object = held_cell_data['display_object']
+            index = held_cell_data['index']
+            col_span = held_cell_data['colspan']
+            avail_width = sum(widths[index:index + col_span])
+
+            if isinstance(display_object, EnhancedParagraph):
+                return display_object.calc_text_height(avail_width=avail_width)
+            elif isinstance(display_object, Table):
+                _, h = display_object.wrap(0, 0)
+                return h
+        else:
+            return float(raw_overflow_gt_height) * mm
+
+    def process_overflow_height(self, td_element, index, overflow_gt_height, xml, style,
+                                col_widths, table_width, col_span,
+                                styles, offset, col_count, row_count, row_span, row_data, overflow_rows,
+                                rows_variables, held_cells):
+        widths = self.process_column_widths(col_widths, table_width)
+        overflow_gt_height = self.get_overflow_overflow_gt_height(raw_overflow_gt_height=overflow_gt_height,
+                                                                  held_cells=held_cells,
+                                                                  widths=widths)
+
+        avail_width = sum(widths[index:index+col_span])
+        display_object = EnhancedParagraph(xml, style, css_classes=self.styles)
+        height = display_object.calc_text_height(avail_width=avail_width)
+
+        if height <= overflow_gt_height:
+            return display_object, 1
+
+        xml, overflow_rows_xml, raw_parts, held_working_tags = self.split_cell(xml=xml, overflow_length=0)
+
+        working_height = 0
+        working_xml = b''
+        found_break = False
+        overflow_row_offset = 0
+        for overflow_row_offset, (row_xml, raw_part, working_tags) in\
+                enumerate(zip([xml] + overflow_rows_xml, raw_parts, held_working_tags), 1):
+            working_xml += raw_part + '<br/>'.encode()
+            if raw_part == b'\n':
+                row_xml = row_xml.replace(b'\n', b'M')
+            p = EnhancedParagraph(row_xml, style, css_classes=self.styles)
+            height = p.calc_text_height(avail_width=avail_width)
+            working_height += height
+            if working_height > overflow_gt_height:
+                for tag in reversed(working_tags):
+                    working_xml += ('</' + tag[0] + '>').encode()
+                    found_break = True
+                break
+        overflow_len = len(overflow_rows_xml[overflow_row_offset-1:])
+        if not found_break or overflow_len == 0:
+            return display_object, 1
+
+        display_object = EnhancedParagraph(working_xml, style, css_classes=self.styles)
+
+        self.process_css_for_table(tag=td_element,
+                                   styles=styles,
+                                   other_styles={},
+                                   start_col=col_count + offset,
+                                   start_row=row_count,
+                                   end_col=col_count + offset + col_span - 1,
+                                   end_row=row_count + row_span - 1,
+                                   style_tag_name='overflow_top_style',
+                                   class_tag_name='overflow_top_class')
+
+        over_flow_len = self.process_over_flow_xml(overflow_rows_xml=overflow_rows_xml[overflow_row_offset - 1:],
+                                                   overflow_rows=overflow_rows,
+                                                   rows_variables=rows_variables,
+                                                   td_element=td_element,
+                                                   styles=styles,
+                                                   row_count=row_count,
+                                                   col_count=col_count,
+                                                   row_span=row_span,
+                                                   col_span=col_span,
+                                                   row_data=row_data,
+                                                   offset=offset)
+        return display_object, over_flow_len
+
+    def process_over_flow_xml(self, overflow_rows_xml, overflow_rows, rows_variables, td_element, styles, row_count, col_count, row_span, col_span, row_data, offset):
+
+        for overflow_row_offset, row_xml in enumerate(overflow_rows_xml, 1):
+            if row_xml == overflow_rows_xml[-1]:
+                style_tag_name = 'bottom'
+            else:
+                style_tag_name = 'middle'
+
+            self.process_css_for_table(tag=td_element,
+                                       styles=styles,
+                                       other_styles={},
+                                       start_col=col_count + offset,
+                                       start_row=row_count + overflow_row_offset,
+                                       end_col=col_count + offset + col_span - 1,
+                                       end_row=row_count + overflow_row_offset + row_span - 1)
+            self.process_css_for_table(tag=td_element,
+                                       styles=styles,
+                                       other_styles={},
+                                       start_col=col_count + offset,
+                                       start_row=row_count + overflow_row_offset,
+                                       end_col=col_count + offset + col_span - 1,
+                                       end_row=row_count + overflow_row_offset + row_span - 1,
+                                       style_tag_name='overflow_%s_style' % style_tag_name,
+                                       class_tag_name='overflow_%s_class' % style_tag_name)
+            style = self.process_css_for_table_paragraph_style(
+                css=styles,
+                row_count=row_count + overflow_row_offset,
+                col_count=col_count + offset)
+            overflow_object = EnhancedParagraph(row_xml, style, css_classes=self.styles)
+            overflow_row = ['' for _ in range(len(row_data))]
+            # noinspection PyTypeChecker
+            overflow_row.append(overflow_object)
+            overflow_rows.append(overflow_row)
+            rows_variables.append(rows_variables[-1])
+
+        return len(overflow_rows_xml)

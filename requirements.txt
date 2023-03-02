@@ -14,7 +14,7 @@ django-ajax-helpers==0.0.20
 time-stamped-model==0.2.2
 date-offset==0.0.2
 django-debug-toolbar==3.2.4
-reportlab==3.6.11
+reportlab==3.6.12
 lxml==4.9.1
 six==1.16.0
 cssselect2==0.7.0

@@ -37,7 +37,7 @@ class EnhancedTable(Table):
                  col_widths=None, row_heights=None, style=None,
                  repeat_rows=0, repeat_cols=0, split_by_row=1, empty_table_action=None, ident=None,
                  h_align=None, v_align=None, normalized_data=0, cell_styles=None,
-                 _calc_row_splits=True, initial=False, pos_x=None, pos_y=None):
+                 _calc_row_splits=True, initial=False, pos_x=None, pos_y=None, colpositions=None):
         """
         Class Constructor.
 
@@ -100,6 +100,7 @@ class EnhancedTable(Table):
         self.min_rows_before_total = min_rows_before_total
         self.pos_x = pos_x
         self.pos_y = pos_y
+        self._colpositions = colpositions
 
         no_split_cmds = self._calc_nosplit_positions(_calc_row_splits)
 
@@ -321,7 +322,8 @@ class EnhancedTable(Table):
                            ident=ident,
                            min_rows_after_header=self.min_rows_after_header,
                            min_rows_before_total=self.min_rows_before_total,
-                           _calc_row_splits=False)
+                           _calc_row_splits=False,
+                           colpositions=self._colpositions)
 
         # copy the commands
 
@@ -451,7 +453,8 @@ class EnhancedTable(Table):
                            footers=self.footers,
                            min_rows_after_header=self.min_rows_after_header,
                            min_rows_before_total=self.min_rows_before_total,
-                           _calc_row_splits=False)
+                           _calc_row_splits=False,
+                           colpositions=self._colpositions)
 
         # Need to account for any header rows added when we call the following otherwise the row
         # styles will get out of step

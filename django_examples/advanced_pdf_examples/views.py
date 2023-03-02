@@ -1,6 +1,9 @@
 import base64
 import os
 import pathlib
+from reportlab.lib import colors
+from reportlab.platypus import Table, TableStyle
+
 from PyPDF2 import PdfWriter, PdfReader
 from advanced_pdf_examples.models import Company
 from ajax_helpers.mixins import AjaxHelpers
@@ -139,10 +142,49 @@ class ExampleFilePDFView(View):
     def get(self, request, filename):
         template = get_template(f'file_examples/{filename}.xml')
         xml = template.render({})
-        report_xml = ReportXML()
+
+        object_lookup = self.get_sample_objects()
+        report_xml = ReportXML(object_lookup=object_lookup)
         result = report_xml.load_xml_and_make_pdf(xml)
         response = HttpResponse(result.getvalue(), content_type='application/pdf')
         return response
+
+    @staticmethod
+    def get_sample_objects():
+        # Define the data for the table
+        data = [['Name', 'Age'],
+                ['John', 25],
+                ['Mary', 30],
+                ['Bob', 20],
+                ]
+
+        # Define the table style
+        table_style = TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.gray),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+            ('ALIGN', (0, 0), (-1, 0), 'CENTER'),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, 0), 14),
+            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+            ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+            ('TEXTCOLOR', (0, 1), (-1, -1), colors.black),
+            ('ALIGN', (0, 1), (-1, -1), 'CENTER'),
+            ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
+            ('FONTSIZE', (0, 1), (-1, -1), 12),
+            ('BOTTOMPADDING', (0, 1), (-1, -1), 6),
+            ('TOPPADDING', (0, 1), (-1, -1), 6),
+            ('GRID', (0, 0), (-1, -1), 1, colors.black),
+            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+            ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.whitesmoke, colors.white])
+        ])
+
+        # Create the table object
+        table = Table(data)
+
+        # Apply the table style
+        table.setStyle(table_style)
+
+        return {'sample': table}
 
 
 class CompaniesPDFView(View):

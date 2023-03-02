@@ -2,6 +2,9 @@ import pathlib
 import unittest
 from pathlib import Path
 import fitz
+from reportlab.lib import colors
+from reportlab.platypus import TableStyle, Table
+
 from django_advanced_pdf.engine.report_xml import ReportXML
 from PIL import Image, ImageChops
 
@@ -15,7 +18,7 @@ class PDFTests(unittest.TestCase):
     def get_test_folder():
         return Path(Path(__file__).resolve().parent, 'test_data')
 
-    def run_report(self, name):
+    def run_report(self, name, object_lookup=None):
         test_folder = self.get_test_folder()
         temp_folder = Path(test_folder, 'temp', name)
 
@@ -30,7 +33,7 @@ class PDFTests(unittest.TestCase):
         with open(Path(test_folder, 'reports', f'{name}.xml')) as f:
             xml = f.read()
 
-        report_xml = ReportXML(test_mode=True)
+        report_xml = ReportXML(test_mode=True, object_lookup=object_lookup)
         result = report_xml.load_xml_and_make_pdf(xml=xml)
         matrix = fitz.Matrix(300 / 72, 300 / 72)
 
@@ -95,3 +98,43 @@ class PDFTests(unittest.TestCase):
 
     def test_abs3(self):
         self.run_report(name='abs3')
+
+    def test_overflow_gt_height(self):
+        self.run_report(name='overflow_gt_height', object_lookup=self.get_sample_objects())
+
+    @staticmethod
+    def get_sample_objects():
+        # Define the data for the table
+        data = [['Name', 'Age'],
+                ['John', 25],
+                ['Mary', 30],
+                ['Bob', 20],
+                ]
+
+        # Define the table style
+        table_style = TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.gray),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+            ('ALIGN', (0, 0), (-1, 0), 'CENTER'),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, 0), 14),
+            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+            ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+            ('TEXTCOLOR', (0, 1), (-1, -1), colors.black),
+            ('ALIGN', (0, 1), (-1, -1), 'CENTER'),
+            ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
+            ('FONTSIZE', (0, 1), (-1, -1), 12),
+            ('BOTTOMPADDING', (0, 1), (-1, -1), 6),
+            ('TOPPADDING', (0, 1), (-1, -1), 6),
+            ('GRID', (0, 0), (-1, -1), 1, colors.black),
+            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+            ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.whitesmoke, colors.white])
+        ])
+
+        # Create the table object
+        table = Table(data)
+
+        # Apply the table style
+        table.setStyle(table_style)
+
+        return {'sample': table}
