@@ -1039,7 +1039,7 @@ class ReportXML(object):
                                            offset=offset)
 
                 style = self.process_css_for_table_paragraph_style(styles, row_count, col_count + offset)
-        return xml, style, len(overflow_rows) + 1
+        return xml, style, len(overflow_rows)
 
     def get_doc_type(self):
         entity_string = ''
@@ -1048,7 +1048,8 @@ class ReportXML(object):
         xml = """<!DOCTYPE root SYSTEM "print_engine" [%s]>""" % entity_string
         return xml
 
-    def get_overflow_overflow_gt_height(self, raw_overflow_gt_height, held_cells, widths):
+    @staticmethod
+    def get_overflow_overflow_gt_height(raw_overflow_gt_height, held_cells, widths):
         if raw_overflow_gt_height.startswith('#'):
             held_cell_data = held_cells.get(raw_overflow_gt_height[1:])
             display_object = held_cell_data['display_object']
@@ -1128,7 +1129,8 @@ class ReportXML(object):
                                                    offset=offset)
         return display_object, over_flow_len
 
-    def process_over_flow_xml(self, overflow_rows_xml, overflow_rows, rows_variables, td_element, styles, row_count, col_count, row_span, col_span, row_data, offset):
+    def process_over_flow_xml(self, overflow_rows_xml, overflow_rows, rows_variables,
+                              td_element, styles, row_count, col_count, row_span, col_span, row_data, offset):
 
         for overflow_row_offset, row_xml in enumerate(overflow_rows_xml, 1):
             if row_xml == overflow_rows_xml[-1]:
