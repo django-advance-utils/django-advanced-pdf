@@ -1062,6 +1062,8 @@ class ReportXML(object):
             elif isinstance(display_object, Table):
                 _, h = display_object.wrap(0, 0)
                 return h
+            else:
+                return 5 * mm
         else:
             return float(raw_overflow_gt_height) * mm
 
@@ -1079,7 +1081,7 @@ class ReportXML(object):
         height = display_object.calc_text_height(avail_width=avail_width)
 
         if height <= overflow_gt_height:
-            return display_object, 1
+            return display_object, 0
 
         xml, overflow_rows_xml, raw_parts, held_working_tags = self.split_cell(xml=xml, overflow_length=0)
 
@@ -1102,7 +1104,7 @@ class ReportXML(object):
                 break
         overflow_len = len(overflow_rows_xml[overflow_row_offset-1:])
         if not found_break or overflow_len == 0:
-            return display_object, 1
+            return display_object, 0
 
         display_object = EnhancedParagraph(working_xml, style, css_classes=self.styles)
 

@@ -158,6 +158,14 @@ class ExampleFilePDFView(View):
                 ['Bob', 20],
                 ]
 
+        data2 = [['Name', 'Age'],
+                 ['John', 25],
+                 ['Mary', 30],
+                 ['Bob', 20],
+                 ['Barry', 42],
+                 ['Adam', 18],
+                 ]
+
         # Define the table style
         table_style = TableStyle([
             ('BACKGROUND', (0, 0), (-1, 0), colors.gray),
@@ -178,13 +186,16 @@ class ExampleFilePDFView(View):
             ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.whitesmoke, colors.white])
         ])
 
-        # Create the table object
-        table = Table(data)
+        sample_table = Table(data)
+        sample_table.setStyle(table_style)
 
-        # Apply the table style
-        table.setStyle(table_style)
+        sample_table2 = Table(data2)
+        sample_table2.setStyle(table_style)
 
-        return {'sample': table}
+        return {'sample': sample_table,
+                'sample1': sample_table,
+                'sample2': sample_table2
+                }
 
 
 class CompaniesPDFView(View):
