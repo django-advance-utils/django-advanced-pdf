@@ -1,0 +1,89 @@
+<document title="My test printout" page_size="A4" page_style="borders" page_orientation="portrait" border_top_first="10"
+          border_bottom_first="10"
+          border_right_first="10"
+          border_left_first="10"
+          border_top_continuation="10"
+          border_bottom_continuation="10"
+          border_right_continuation="10"
+          border_left_continuation="10"
+          pager_bottom_text='My Company Name'>
+
+ <style>
+        main {
+            text_color:#0000FF;
+            inner_grid:0.25,#000000,1;
+            box:0.5,#000000
+        }
+
+        heading {
+            background:#F0F0F0;
+        }
+    </style>
+
+      <table hidden="1">
+        <tr><td>hello world</td></tr>
+    </table>
+
+    <table class="main">
+        <header output="1">
+            <tr row_height="25" style="text_color:#FF00FF"><td>Name</td><td hidden="1">Number</td></tr>
+        </header>
+        <tr><td>ABC</td><td>123</td></tr>
+        <tr><td>ABC</td><td>123</td></tr>
+        <tr><td>ABC</td><td>123</td></tr>
+        <tr><td>ABC</td><td>123</td></tr>
+        <tr><td>ABC</td><td>123</td></tr>
+        <tr><td>ABC</td><td>123</td></tr>
+        <tr><td>ABC</td><td>123</td></tr>
+        <tr><td>ABC</td><td>123</td></tr>
+        <tr><td>ABC</td><td>123</td></tr>
+        <tr><td>ABC</td><td>123</td></tr>
+        <tr><td>ABC</td><td>123</td></tr>
+        <tr><td>ABC</td><td>123</td></tr>
+        <tr><td>ABC</td><td>123</td></tr>
+        <tr><td>ABC</td><td>123</td></tr>
+        <tr><td>ABC</td><td>123</td></tr>
+        <tr><td>ABC</td><td>123</td></tr>
+        <tr><td>ABC</td><td>123</td></tr>
+        <tr><td>ABC</td><td>123</td></tr>
+        <tr><td>ABC</td><td>123</td></tr>
+        <tr><td>ABC</td><td>123</td></tr>
+        <tr><td>ABC</td><td>123</td></tr>
+        <tr><td>ABC</td><td>123</td></tr>
+        <tr><td>ABC</td><td>123</td></tr>
+        <tr><td>ABC</td><td>123</td></tr>
+        <tr><td>ABC</td><td>123</td></tr>
+        <tr><td>ABC</td><td>123</td></tr>
+        <tr><td>ABC</td><td>123</td></tr>
+        <tr><td>ABC</td><td>123</td></tr>
+        <tr><td>ABC</td><td>123</td></tr>
+        <tr><td>ABC</td><td>123</td></tr>
+        <tr><td>ABC</td><td>123</td></tr>
+        <tr><td>ABC</td><td>123</td></tr>
+        <tr><td>ABC</td><td>123</td></tr>
+        <tr><td>ABC</td><td>123</td></tr>
+        <tr><td>ABC</td><td>123</td></tr>
+        <tr><td>ABC</td><td>123</td></tr>
+        <tr><td>ABC</td><td>123</td></tr>
+        <tr><td>ABC</td><td>123</td></tr>
+        <tr><td>ABC</td><td>123</td></tr>
+        <tr><td>ABC</td><td>123</td></tr>
+        <tr><td>ABC</td><td>123</td></tr>
+        <tr><td>ABC</td><td>123</td></tr>
+        <tr><td>ABC</td><td>123</td></tr>
+        <tr><td>ABC</td><td>123</td></tr>
+        <tr><td>ABC</td><td>123</td></tr>
+        <tr><td>ABC</td><td>123</td></tr>
+        <tr><td>ABC</td><td>123</td></tr>
+        <tr><td>ABC</td><td>123</td></tr>
+        <tr><td>ABC</td><td>123</td></tr>
+        <tr><td>ABC</td><td>123</td></tr>
+        <tr><td>ABC</td><td>123</td></tr>
+        <tr><td>ABC</td><td>123</td></tr>
+        <tr><td>ABC</td><td>123</td></tr>
+        <tr><td>ABC</td><td>123</td></tr>
+        <tr><td>ABC</td><td>123</td></tr>
+        <tr><td>ABC</td><td>123</td></tr>
+        <tr><td>ABC</td><td>123</td></tr>
+    </table>
+</document>
