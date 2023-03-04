@@ -262,7 +262,7 @@ class ReportXML(object):
 
         self.process_css_for_table(table, main_styles, other_styles)
 
-        if table.get('hidden') in ['True', '1']:
+        if self.get_boolean_value(table.get('hidden')):
             return None
 
         min_rows_top = int(table.get('min_rows_top', 0))
@@ -283,11 +283,10 @@ class ReportXML(object):
         pos_y = table.get('pos_y')
 
         held_row_span = 1
-        hidden_cells = set()
+        hidden_columns = set()
 
         for element in table:
             if element.tag == 'tr':
-
                 row_count += 1
                 max_row_span, overflow_row_count = self.process_tr(tr_element=element,
                                                                    data=main_data,
@@ -300,7 +299,7 @@ class ReportXML(object):
                                                                    variables=variables,
                                                                    col_widths=col_widths,
                                                                    table_width=table_width,
-                                                                   hidden_cells=hidden_cells,
+                                                                   hidden_columns=hidden_columns,
                                                                    held_cells=held_cells)
 
                 if max_row_span > held_row_span:
@@ -335,7 +334,7 @@ class ReportXML(object):
                                                                            variables=variables,
                                                                            col_widths=col_widths,
                                                                            table_width=table_width,
-                                                                           hidden_cells=hidden_cells,
+                                                                           hidden_columns=hidden_columns,
                                                                            held_cells=held_cells)
                         if max_row_span > held_row_span:
                             held_row_span = max_row_span
@@ -364,7 +363,7 @@ class ReportXML(object):
             elif element.tag in ['header', 'footer']:
                 is_header = element.tag == 'header'
                 output = element.get('output', "0")
-                if is_header and output in ['True', '1']:
+                if is_header and self.get_boolean_value(output):
                     for tr in element:
                         row_count += 1
                         _, overflow_row_count = self.process_tr(tr_element=tr,
@@ -378,7 +377,7 @@ class ReportXML(object):
                                                                 variables=variables,
                                                                 held_cells=held_cells,
                                                                 col_widths=col_widths,
-                                                                hidden_cells=hidden_cells,
+                                                                hidden_columns=hidden_columns,
                                                                 table_width=table_width)
                 header_footer_span = {}
                 header_footer_data = []
@@ -400,7 +399,7 @@ class ReportXML(object):
                                     table_width=table_width,
                                     default_row_height=35,
                                     is_header_or_footer=True,
-                                    hidden_cells=hidden_cells)
+                                    hidden_columns=hidden_columns)
 
                 enhanced_table_data = EnhancedTableData(row_data=header_footer_data,
                                                         row_heights=header_footer_row_height,
@@ -479,8 +478,14 @@ class ReportXML(object):
         return x, y
 
     def process_tr(self, tr_element, data, styles, other_table_styles,
-                   row_heights, row_count, span, rows_variables, variables, col_widths, table_width, hidden_cells,
+                   row_heights, row_count, span, rows_variables, variables, col_widths, table_width, hidden_columns
+                   ,
                    held_cells=None, default_row_height=None, is_header_or_footer=False):
+
+        max_row_span = 0
+        if self.get_boolean_value(tr_element.get('hidden')):
+            return max_row_span, 0
+
         row_data = []
         other_styles = {}
 
@@ -551,17 +556,20 @@ class ReportXML(object):
             if td_element.tag != 'td':
                 continue
 
-            if index in hidden_cells:
+            if index in hidden_columns:
                 continue
 
-            hidden = td_element.get('hidden')
+            hidden_column = td_element.get('hidden_column')
             col_span = int(td_element.get('colspan', "1"))
             row_span = int(td_element.get('rowspan', "1"))
 
-            if hidden in ['True', '1']:
+            if self.get_boolean_value(hidden_column):
                 for h_index in range(col_span):
-                    hidden_cells.add(index + h_index)
+                    hidden_columns.add(index + h_index)
                 continue
+            if td_element.get('hidden'):
+                continue
+
             # check that cell is not marked as a rowspan
             p_offset = span.get('%d-%d' % (row_count, col_count + offset), None)
             while p_offset is not None and p_offset > 0:
@@ -569,7 +577,6 @@ class ReportXML(object):
                     row_data.append('')
                 offset += p_offset
                 p_offset = span.get('%d-%d' % (row_count, col_count + offset), None)
-
 
             if row_span > max_row_span:
                 max_row_span = row_span
@@ -1186,3 +1193,7 @@ class ReportXML(object):
             rows_variables.append(rows_variables[-1])
 
         return len(overflow_rows_xml)
+
+    # noinspection PyMethodMayBeStatic
+    def get_boolean_value(self, value):
+        return value in ['1', 'True', 'yes']

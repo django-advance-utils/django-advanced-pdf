@@ -26,7 +26,7 @@
 
     <table class="main">
         <header output="1">
-            <tr row_height="25" style="text_color:#FF00FF"><td>Name</td><td hidden="1">Number</td></tr>
+            <tr row_height="25" style="text_color:#FF00FF"><td>Name</td><td hidden_column="1">Number</td></tr>
         </header>
         <tr><td>ABC</td><td>123</td></tr>
         <tr><td>ABC</td><td>123</td></tr>
@@ -78,12 +78,12 @@
         <tr><td>ABC</td><td>123</td></tr>
         <tr><td>ABC</td><td>123</td></tr>
         <tr><td>ABC</td><td>123</td></tr>
-        <tr><td>ABC</td><td>123</td></tr>
-        <tr><td>ABC</td><td>123</td></tr>
-        <tr><td>ABC</td><td>123</td></tr>
-        <tr><td>ABC</td><td>123</td></tr>
-        <tr><td>ABC</td><td>123</td></tr>
-        <tr><td>ABC</td><td>123</td></tr>
-        <tr><td>ABC</td><td>123</td></tr>
+        <tr><td>ABC1</td><td>123</td></tr>
+        <tr><td>ABC2</td><td>123</td></tr>
+        <tr hidden="True"><td>ABC3</td><td>123</td></tr>
+        <tr><td>ABC4</td><td>123</td></tr>
+        <tr><td>ABC5</td><td>123</td></tr>
+        <tr><td>ABC6</td><td>123</td></tr>
+        <tr><td>ABC7</td><td>123</td></tr>
     </table>
 </document>
