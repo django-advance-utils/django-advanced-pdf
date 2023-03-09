@@ -551,11 +551,13 @@ class ReportXML(object):
         rows_variables.append(row_variables)
         col_count = 0
         for index, td_element in enumerate(tr_element, 0):
-            if len(col_widths) < col_count + 1:
-                col_widths.append(None)
+
             if td_element.tag != 'td':
                 continue
 
+            name = td_element.get('name')
+            if name is not None and name in hidden_columns:
+                continue
             if index in hidden_columns:
                 continue
 
@@ -564,11 +566,17 @@ class ReportXML(object):
             row_span = int(td_element.get('rowspan', "1"))
 
             if self.get_boolean_value(hidden_column):
-                for h_index in range(col_span):
-                    hidden_columns.add(index + h_index)
+                if name is not None:
+                    hidden_columns.add(name)
+                else:
+                    for h_index in range(col_span):
+                        hidden_columns.add(index + h_index)
                 continue
             if td_element.get('hidden'):
                 continue
+
+            if len(col_widths) < col_count + 1:
+                col_widths.append(None)
 
             # check that cell is not marked as a rowspan
             p_offset = span.get('%d-%d' % (row_count, col_count + offset), None)

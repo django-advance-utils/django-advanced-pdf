@@ -11,7 +11,7 @@
  <style>
         main {
             text_color:#0000FF;
-            inner_grid:0.25,#000000,1;
+            inner_grid:0.25,#000000,0;
             box:0.5,#000000
         }
 
@@ -86,4 +86,31 @@
         <tr><td>ABC6</td><td>123</td></tr>
         <tr><td>ABC7</td><td>123</td></tr>
     </table>
+
+
+    <table class="main">
+        <header output="1">
+            <tr row_height="25" style="text_color:#FF00FF">
+                <td>Name</td>
+                <td hidden_column="1" name="number">Number</td>
+                <td hidden_column="0" name="qty">Qty</td>
+            </tr>
+        </header>
+        <tr><td>ABC</td><td name="qty">123</td></tr>
+        <tr><td>ABC</td><td name="qty">123</td></tr>
+        <tr><td>ABC</td><td name="qty">123</td></tr>
+        <tr><td>ABC</td><td name="number">123</td><td name="qty" hidden="1">22</td><td name="qty">yes</td></tr>
+    </table>
+
+
+     <table class="main">
+         <header output="1">
+             <tr row_height="25" style="text_color:#FF00FF">
+                 <td>Name</td>
+             </tr>
+         </header>
+         <tr><td>ABC6</td></tr>
+         <tr><td>ABC7</td></tr>
+     </table>
+
 </document>
