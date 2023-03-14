@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="django-advanced-pdf",
-    version="0.1.3",
+    version="0.1.4",
     author="Thomas Turner",
     description="Django app that helps one create pdf",
     long_description=long_description,
