@@ -1013,7 +1013,7 @@ class ReportXML(object):
 
             for xml_part in [xml[:pos]] + xml_parts:
                 working_xml = next_xml.encode() + xml_part
-                tags = re.findall(r'<.[^(/><)]+>', working_xml.decode())
+                tags = re.findall(r'<.[^(/><)]*>', working_xml.decode())
                 next_xml = ''
                 working_tags = []
                 for tag in tags:
