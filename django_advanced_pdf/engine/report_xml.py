@@ -1013,12 +1013,15 @@ class ReportXML(object):
 
             for xml_part in [xml[:pos]] + xml_parts:
                 working_xml = next_xml.encode() + xml_part
-                tags = re.findall(r'<.[^(/><)]*>', working_xml.decode())
+                tags = re.findall(r'<[^<>]+>', working_xml.decode())
                 next_xml = ''
                 working_tags = []
                 for tag in tags:
+                    if tag[-2] == '/':
+                        continue
                     m = re.search(r'\w+', tag)
                     tag_name = m.group(0)
+
                     if tag[1] == '/':
                         if len(working_tags) == 0:
                             break
