@@ -113,6 +113,8 @@ class ReportXML(object):
                     return self.object_lookup[object_id]
             except ValueError:
                 pass
+                # if 'default' in self.object_lookup.keys():
+                #     return self.object_lookup['default']
         return None
 
     def make_pdf(self, root_element, file_buffer):
@@ -478,8 +480,7 @@ class ReportXML(object):
         return x, y
 
     def process_tr(self, tr_element, data, styles, other_table_styles,
-                   row_heights, row_count, span, rows_variables, variables, col_widths, table_width, hidden_columns
-                   ,
+                   row_heights, row_count, span, rows_variables, variables, col_widths, table_width, hidden_columns,
                    held_cells=None, default_row_height=None, is_header_or_footer=False):
 
         max_row_span = 0
@@ -1013,7 +1014,7 @@ class ReportXML(object):
 
             for xml_part in [xml[:pos]] + xml_parts:
                 working_xml = next_xml.encode() + xml_part
-                tags = re.findall(r'<[^<>]+>', working_xml.decode())
+                tags = re.findall(r'<[^<>]*>', working_xml.decode())
                 next_xml = ''
                 working_tags = []
                 for tag in tags:
