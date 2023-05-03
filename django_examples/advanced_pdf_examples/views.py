@@ -1,8 +1,6 @@
 import base64
 import os
 import pathlib
-from reportlab.lib import colors
-from reportlab.platypus import Table, TableStyle
 
 from PyPDF2 import PdfWriter, PdfReader
 from advanced_pdf_examples.models import Company
@@ -11,15 +9,20 @@ from django.conf import settings
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django.template.loader import get_template
+from django.urls import reverse
 from django.views import View
+from django.views.generic import TemplateView
 from django_datatables.columns import MenuColumn
 from django_datatables.datatables import DatatableView
 from django_datatables.helpers import DUMMY_ID
 from django_menus.menu import MenuMixin, MenuItem, HtmlMenu, AjaxButtonMenuItem
 from django_modals.modals import ModelFormModal
 from django_modals.processes import PERMISSION_OFF
+from reportlab.lib import colors
+from reportlab.platypus import Table, TableStyle
 
 from django_advanced_pdf.engine.report_xml import ReportXML
+from django_advanced_pdf.mixins import TaskDownloadMixin
 from django_advanced_pdf.models import PrintingTemplate
 from django_advanced_pdf.views import DatabasePDFView
 
@@ -33,6 +36,7 @@ class MainMenu(AjaxHelpers, MenuMixin):
             ('advanced_pdf_examples:view_companies_pdf', 'View Companies PDF'),
             ('advanced_pdf_examples:view_report_pdf', 'View Report'),
             ('advanced_pdf_examples:view_headed_notepaper_pdf', 'View Headed Notepaper PDF'),
+            ('advanced_pdf_examples:process_pdf,-', 'Process PDF Via Celery'),
             MenuItem(url='admin:index',
                      menu_display='Admin',
                      visible=self.request.user.is_superuser),
@@ -194,7 +198,8 @@ class ExampleFilePDFView(View):
 
         return {'sample': sample_table,
                 'sample1': sample_table,
-                'sample2': sample_table2
+                'sample2': sample_table2,
+                'default': sample_table2
                 }
 
 
@@ -243,3 +248,10 @@ class HeadedNotepaperView(View):
         )
         response = HttpResponse(result.getvalue(), content_type='application/pdf')
         return response
+
+
+class ProcessTaskPDF(MainMenu, TaskDownloadMixin, TemplateView):
+    template_name = 'advanced_pdf_examples/view_task_pdf.html'
+
+    def get_process_pdf_url(self, slug):
+        return reverse('advanced_pdf_examples:process_task_pdf', kwargs={'slug': slug})

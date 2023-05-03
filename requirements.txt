@@ -9,8 +9,8 @@ django-filtered-datatables==0.0.21
 django-nested-modals==0.0.20
 # git+https://github.com/jonesim/django-modals.git@0624daf0450df3018f5c4d489a3bc70f8e4d0453
 
-django-ajax-helpers==0.0.20
-# git+https://github.com/jonesim/ajax-helpers.git@3ab5d5310398bb213a3dd50edae8813983562f55
+# django-ajax-helpers==0.0.20
+git+https://github.com/jonesim/ajax-helpers.git@753daa85d6c7552c2d7f6e1cd5ad3fe5ecc5e8cf
 time-stamped-model==0.2.2
 date-offset==0.0.2
 django-debug-toolbar==3.2.4
@@ -23,3 +23,6 @@ pypdf2==3.0.1
 twisted==22.10.0
 PyMuPDF==1.21.1
 Pillow==9.4.0
+celery==5.2.7
+redis==4.4.2
+django-redis==5.2.0

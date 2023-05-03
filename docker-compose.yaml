@@ -1,26 +1,49 @@
 version: "3.9"
-services:
 
- django_pdf:
+x-django: &django
   build:
-   context: ./
+    context: ./
   volumes:
    - ./django_examples/:/app
    - ./django_advanced_pdf/:/app/django_advanced_pdf
    - /var/run/docker.sock:/var/run/docker.sock
-  command: bash -c "python manage.py migrate && python manage.py runserver 0.0.0.0:8012"
   environment:
    - PYTHONPATH=/django_advanced_pdf
-  ports:
-   - 8012:8012
+   - REDIS_HOST=redis
   depends_on:
    - db_pdf
- db_pdf:
-  image: postgres:13.0-alpine
-  volumes:
-   - ./data/db:/var/lib/postgresql/data
-  environment:
-   - POSTGRES_USER=django_advanced_pdf
-   - POSTGRES_PASSWORD=django_advanced_pdf
-   - POSTGRES_DB=django_advanced_pdf
+   - redis
+  command: bash -c "python manage.py migrate && python manage.py runserver 0.0.0.0:8012"
 
+services:
+  django_pdf:
+    <<: *django
+    ports:
+      - 8012:8012
+    depends_on:
+      - db_pdf
+      - redis
+      - celery
+
+  db_pdf:
+    image: postgres:13.0-alpine
+    volumes:
+      - ./data/db:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_USER=django_advanced_pdf
+      - POSTGRES_PASSWORD=django_advanced_pdf
+      - POSTGRES_DB=django_advanced_pdf
+
+  redis:
+    image: redis:6.2.4
+    command: --port 6380
+    ports:
+      - "6380:6380"
+    expose:
+      - "6380"
+
+  celery:
+   <<: *django
+   container_name: apdf_celery
+   image: apdf_celery
+   command: celery -A django_examples worker -l info

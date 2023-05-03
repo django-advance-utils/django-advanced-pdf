@@ -1,6 +1,7 @@
 import copy
 import re
 from io import StringIO, BytesIO
+from time import sleep
 
 from lxml import etree
 from reportlab.lib.colors import HexColor, black
@@ -58,7 +59,7 @@ class ReportXML(object):
         (u'rsquo', u'’'),
     ]
 
-    def __init__(self, object_lookup=None, pager_kwargs=None, test_mode=False):
+    def __init__(self, object_lookup=None, pager_kwargs=None, test_mode=False, status_method=None):
         self.styles = {}
         if object_lookup is not None:
             self.object_lookup = object_lookup
@@ -79,6 +80,7 @@ class ReportXML(object):
         self.border_bottom_continuation = 0
         self.page_style = None
         self.test_mode = test_mode
+        self.status_method = status_method
 
         if pager_kwargs is None:
             self.pager_kwargs = {}
@@ -92,6 +94,7 @@ class ReportXML(object):
         self.background_image_remaining = background_image_remaining
         self.background_image_footer = background_image_footer
 
+        self.update_status("Loading")
         parser = etree.XMLParser(remove_blank_text=True, resolve_entities=False)
 
         if add_doctype:
@@ -180,6 +183,7 @@ class ReportXML(object):
                               background_image_remaining=self.background_image_remaining,
                               background_image_footer=self.background_image_footer,
                               test_mode=self.test_mode,
+                              status_method=self.update_status,
                               **self.pager_kwargs)
 
     def canvasmaker(self, *args, **kwargs):
@@ -197,6 +201,7 @@ class ReportXML(object):
                               background_image_remaining=self.background_image_remaining,
                               background_image_footer=self.background_image_footer,
                               test_mode=self.test_mode,
+                              status_method=self.update_status,
                               **self.pager_kwargs,
                               **kwargs)
 
@@ -1209,3 +1214,7 @@ class ReportXML(object):
     # noinspection PyMethodMayBeStatic
     def get_boolean_value(self, value):
         return value in ['1', 'True', 'yes']
+
+    def update_status(self, message):
+        if self.status_method is not None:
+            self.status_method(message)

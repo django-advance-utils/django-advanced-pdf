@@ -10,12 +10,13 @@ from django_advanced_pdf.pagers.base import BasePager
 class BorderPager(BasePager):
     def __init__(self, heading, filename, footer_field=None, pagesize=None, bottom_up=1, page_compression=None,
                  invariant=None, verbosity=0, encrypt=None, crop_marks=None, pdf_version=None, enforce_color_space=None,
-                 bottom_text=None, test_mode=False, **kwargs):
+                 bottom_text=None, test_mode=False, status_method=None, **kwargs):
         BasePager.__init__(self, heading=heading, filename=filename, pagesize=pagesize,
                            bottom_up=bottom_up, page_compression=page_compression,
                            invariant=invariant, verbosity=verbosity, encryp=encrypt,
                            crop_marks=crop_marks, pdf_version=pdf_version,
                            enforce_color_space=enforce_color_space, test_mode=test_mode,
+                           status_method=status_method,
                            **kwargs)
 
         self._saved_page_states = []

@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+
+
+
+{% block contents %}
+
+    <div class="m-1 text-right">
+     <img src="{{ version_img }}">
+    </div>
+    <div class="p-4">
+        {{ description|safe }}
+        <div>
+            {{ menus.print_template.render }}
+    </div>
+        <br>
+        {% block header %}
+        {% endblock %}
+        <div>
+            {{ menus.page_menu.render }}
+        </div>
+    </div>
+
+    <object id="view_pdf" width="100%" height="600px" data=""></object>
+
+
+{% endblock %}
