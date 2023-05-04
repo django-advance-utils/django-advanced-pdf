@@ -38,11 +38,11 @@ class TaskProcessPDFHelper(TaskHelper):
         if config:
             return self.get_config()
 
-        self.pre_process(slug=slug, kwargs=kwargs)
+        self.pre_process(slug=slug, **kwargs)
         result, filename = self.build_pdf(slug)
         hash_key = str(uuid.uuid4().hex)
         caches[self.cache_key].set(hash_key, {'file': result.getvalue(), 'filename': filename})
-        return self.post_process(file_key=hash_key, slug=slug, kwargs=kwargs)
+        return self.post_process(file_key=hash_key, slug=slug, **kwargs)
 
     def post_process(self, file_key, slug, **kwargs):
         # noinspection PyNoneFunctionAssignment
