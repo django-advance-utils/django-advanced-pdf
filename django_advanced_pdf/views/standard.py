@@ -14,3 +14,4 @@ class DatabasePDFView(DetailView):
         result = self.object.make_pdf(context=context, **self.get_pager_kwargs())
         response = HttpResponse(result.getvalue(), content_type='application/pdf')
         return response
+

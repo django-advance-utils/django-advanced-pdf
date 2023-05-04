@@ -22,13 +22,13 @@ from reportlab.lib import colors
 from reportlab.platypus import Table, TableStyle
 
 from django_advanced_pdf.engine.report_xml import ReportXML
-from django_advanced_pdf.mixins import TaskDownloadMixin
 from django_advanced_pdf.models import PrintingTemplate
-from django_advanced_pdf.views import DatabasePDFView
+from django_advanced_pdf.views.standard import DatabasePDFView
 
 
 class MainMenu(AjaxHelpers, MenuMixin):
     def setup_menu(self):
+        super().setup_menu()
         # noinspection PyUnresolvedReferences
         self.add_menu('main_menu').add_items(
             ('advanced_pdf_examples:from_database_example', 'From Database Example'),
@@ -36,7 +36,7 @@ class MainMenu(AjaxHelpers, MenuMixin):
             ('advanced_pdf_examples:view_companies_pdf', 'View Companies PDF'),
             ('advanced_pdf_examples:view_report_pdf', 'View Report'),
             ('advanced_pdf_examples:view_headed_notepaper_pdf', 'View Headed Notepaper PDF'),
-            ('advanced_pdf_examples:process_pdf,-', 'Process PDF Via Celery'),
+            ('advanced_pdf_examples:task_examples,-', 'Task Examples'),
             MenuItem(url='admin:index',
                      menu_display='Admin',
                      visible=self.request.user.is_superuser),
@@ -250,8 +250,27 @@ class HeadedNotepaperView(View):
         return response
 
 
-class ProcessTaskPDF(MainMenu, TaskDownloadMixin, TemplateView):
-    template_name = 'advanced_pdf_examples/view_task_pdf.html'
+class ProcessTaskExamples(MainMenu, TemplateView):
+    template_name = 'advanced_pdf_examples/process_task_examples.html'
 
-    def get_process_pdf_url(self, slug):
-        return reverse('advanced_pdf_examples:process_task_pdf', kwargs={'slug': slug})
+    def setup_menu(self):
+        super().setup_menu()
+
+        self.add_menu('example', 'button_group').add_items(
+            AjaxButtonMenuItem(button_name='new_page',
+                               css_classes='btn btn-outline-dark',
+                               menu_display='Show PDF in new page',
+                               font_awesome='fa fa-folder-plus'),
+            AjaxButtonMenuItem(button_name='in_modal',
+                               css_classes='btn btn-outline-dark',
+                               menu_display='Show PDF in modal',
+                               font_awesome='fa fa-square'),
+        )
+
+    def button_new_page(self, *args, **kwargs):
+        url = reverse('advanced_pdf_examples:process_task_pdf', kwargs={'slug': '-'})
+        return self.command_response('show_modal', modal=url)
+
+    def button_in_modal(self, *args, **kwargs):
+        url = reverse('advanced_pdf_examples:process_task_pdf', kwargs={'slug': 'modal-1'})
+        return self.command_response('show_modal', modal=url)

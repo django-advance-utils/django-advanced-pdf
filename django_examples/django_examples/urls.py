@@ -21,5 +21,6 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('favicon.ico', RedirectView.as_view(url='/static/pdf_examples/favicon.ico', permanent=True)),
     path('', include('advanced_pdf_examples.urls', namespace='advanced_pdf_examples')),
+    path('pdf/', include('django_advanced_pdf.urls', namespace='django_advanced_pdf')),
     path('__debug__/', include('debug_toolbar.urls')),
 ]

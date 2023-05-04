@@ -9,6 +9,7 @@ from django_advanced_pdf.engine.report_xml import ReportXML
 
 
 class TaskProcessPDFHelper(TaskHelper):
+    cache_key = 'default'
 
     def update_progress(self, message):
         self.update_state(state='PROGRESS', meta={'message': message})
@@ -27,14 +28,24 @@ class TaskProcessPDFHelper(TaskHelper):
         result = report_xml.load_xml_and_make_pdf(xml)
         return result, filename
 
+    def get_config(self):
+        return {'progress': False, 'message': 'initial', 'title': 'Processing....'}
+
+    def post_process(self, file_key, slug):
+        if slug is not None and slug.get('modal') == '1':
+            url = reverse('django_advanced_pdf:view_task_pdf_modal', kwargs={'slug': f'file_key-{file_key}'})
+            return {'commands': [ajax_command('close'),
+                                 ajax_command('show_modal', modal=url)]}
+        else:
+            url = reverse('django_advanced_pdf:view_task_pdf', kwargs={'file_key': file_key})
+            return {'commands': [ajax_command('close'),
+                                 ajax_command('redirect', url=url)]}
+
     def process(self, config=False, slug=None, **kwargs):
-        message = 'initial'
         if config:
-            return {'progress': False, 'message': message, 'title': 'Processing....'}
+            return self.get_config()
 
         result, filename = self.build_pdf(slug)
         hash_key = str(uuid.uuid4().hex)
-        caches['default'].set(hash_key, {'file': result.getvalue(), 'filename': filename})
-        url = reverse(slug['view_name'], kwargs={'slug': f'file_key-{hash_key}'})
-        return {'commands': [ajax_command('close'),
-                             ajax_command('redirect', url=url)]}
+        caches[self.cache_key].set(hash_key, {'file': result.getvalue(), 'filename': filename})
+        return self.post_process(file_key=hash_key, slug=slug)
