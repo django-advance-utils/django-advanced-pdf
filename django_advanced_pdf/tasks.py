@@ -31,21 +31,34 @@ class TaskProcessPDFHelper(TaskHelper):
     def get_config(self):
         return {'progress': False, 'message': 'initial', 'title': 'Processing....'}
 
-    def post_process(self, file_key, slug):
-        if slug is not None and slug.get('modal') == '1':
-            url = reverse('django_advanced_pdf:view_task_pdf_modal', kwargs={'slug': f'file_key-{file_key}'})
-            return {'commands': [ajax_command('close'),
-                                 ajax_command('show_modal', modal=url)]}
-        else:
-            url = reverse('django_advanced_pdf:view_task_pdf', kwargs={'file_key': file_key})
-            return {'commands': [ajax_command('close'),
-                                 ajax_command('redirect', url=url)]}
+    def pre_process(self, slug, **kwargs):
+        pass  # can load user / set tenant here etc
 
     def process(self, config=False, slug=None, **kwargs):
         if config:
             return self.get_config()
 
+        self.pre_process(slug=slug, kwargs=kwargs)
         result, filename = self.build_pdf(slug)
         hash_key = str(uuid.uuid4().hex)
         caches[self.cache_key].set(hash_key, {'file': result.getvalue(), 'filename': filename})
-        return self.post_process(file_key=hash_key, slug=slug)
+        return self.post_process(file_key=hash_key, slug=slug, kwargs=kwargs)
+
+    def post_process(self, file_key, slug, **kwargs):
+        # noinspection PyNoneFunctionAssignment
+        urlconf = self.get_urlconf()
+        if slug is not None and slug.get('modal') == '1':
+            url = reverse('django_advanced_pdf:view_task_pdf_modal',
+                          kwargs={'slug': f'file_key-{file_key}'},
+                          urlconf=urlconf)
+            return {'commands': [ajax_command('close'),
+                                 ajax_command('show_modal', modal=url)]}
+        else:
+            url = reverse('django_advanced_pdf:view_task_pdf',
+                          kwargs={'file_key': file_key},
+                          urlconf=urlconf)
+            return {'commands': [ajax_command('close'),
+                                 ajax_command('redirect', url=url)]}
+
+    def get_urlconf(self):
+        return None

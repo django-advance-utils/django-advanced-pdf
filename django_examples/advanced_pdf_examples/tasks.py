@@ -31,4 +31,4 @@ class TaskProcessPDFExample(TaskProcessPDFHelper):
 
 @shared_task(bind=True, base=TaskProcessPDFExample)
 def process_pdf(self, config=False, slug=None, **kwargs):
-    return self.process(config=config, slug=slug)
+    return self.process(config=config, slug=slug, kwargs=kwargs)
