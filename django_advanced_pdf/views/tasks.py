@@ -2,16 +2,17 @@ from django.core.cache import caches
 from django.core.files.base import ContentFile
 from django.http import FileResponse, Http404
 from django.urls import reverse
+from django.utils.decorators import method_decorator
 from django.utils.safestring import mark_safe
 from django.views import View
 from django.views.decorators.clickjacking import xframe_options_exempt
 from django_modals.modals import Modal
 
 
+@method_decorator(xframe_options_exempt, name='dispatch')
 class ViewTaskPDF(View):
     cache_key = 'default'
 
-    @xframe_options_exempt
     def get(self, request, file_key):
         cache_data = caches[self.cache_key].get(file_key)
         if cache_data is not None:
