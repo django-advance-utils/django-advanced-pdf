@@ -22,11 +22,11 @@ class TaskProcessPDFHelper(TaskHelper):
                 '''
         return xml, 'hello world.pdf'
 
-    def build_pdf(self, slug):
+    def build_pdf(self, slug, **kwargs):
         xml, filename = self.get_xml_and_filename(slug)
         report_xml = ReportXML(status_method=self.update_progress)
         result = report_xml.load_xml_and_make_pdf(xml)
-        return result, filename
+        return result, {'filename': filename}
 
     def get_config(self):
         return {'progress': False, 'message': 'initial', 'title': 'Processing....'}
@@ -39,12 +39,13 @@ class TaskProcessPDFHelper(TaskHelper):
             return self.get_config()
 
         self.pre_process(slug=slug, **kwargs)
-        result, filename = self.build_pdf(slug)
-        hash_key = str(uuid.uuid4().hex)
-        caches[self.cache_key].set(hash_key, {'file': result.getvalue(), 'filename': filename})
-        return self.post_process(file_key=hash_key, slug=slug, **kwargs)
+        pdf, pdf_attributes = self.build_pdf(slug, **kwargs)
+        file_key = str(uuid.uuid4().hex)
+        caches[self.cache_key].set(file_key, {'file': pdf.getvalue(),
+                                              'filename': pdf_attributes['filename']})
+        return self.post_process(file_key=file_key, pdf_attributes=pdf_attributes, slug=slug, **kwargs)
 
-    def post_process(self, file_key, slug, **kwargs):
+    def post_process(self, file_key, pdf_attributes, slug, **kwargs):
         # noinspection PyNoneFunctionAssignment
         urlconf = self.get_urlconf()
         if slug is not None and slug.get('modal') == '1':

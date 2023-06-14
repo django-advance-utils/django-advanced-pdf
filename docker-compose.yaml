@@ -46,4 +46,7 @@ services:
    <<: *django
    container_name: apdf_celery
    image: apdf_celery
-   command: celery -A django_examples worker -l info
+   command: > 
+     bash -c "pip install --no-input watchdog &&
+             watchmedo auto-restart --directory=./ --pattern='*.py;*.xml;*.html' --recursive -- celery -A django_examples worker -l info"
+

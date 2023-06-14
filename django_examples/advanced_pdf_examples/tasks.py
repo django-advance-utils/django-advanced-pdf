@@ -19,14 +19,14 @@ class TaskProcessPDFExample(TaskProcessPDFHelper):
         xml = template.render({'companies': Company.objects.all()})
         return xml, 'companies.pdf'
 
-    def build_pdf(self, slug):
+    def build_pdf(self, slug, **kwargs):
         xml, filename = self.get_xml_and_filename(slug)
         report_xml = ReportXML(status_method=self.update_progress)
         result = report_xml.load_xml_and_make_pdf(
             xml,
             background_image_first=self.get_image_path('headed_paper.jpg'),
             background_image_remaining=self.get_image_path('headed_paper_remaining.jpg'),)
-        return result, filename
+        return result, {'filename': filename}
 
 
 @shared_task(bind=True, base=TaskProcessPDFExample)
