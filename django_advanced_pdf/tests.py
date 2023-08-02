@@ -105,6 +105,9 @@ class PDFTests(unittest.TestCase):
     def test_hidden(self):
         self.run_report(name='hidden')
 
+    def test_estimate(self):
+        self.run_report(name='estimate')
+
     @staticmethod
     def get_sample_objects():
         # Define the data for the table

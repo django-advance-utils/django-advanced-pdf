@@ -1,7 +1,6 @@
 import copy
 import re
 from io import StringIO, BytesIO
-from time import sleep
 
 from lxml import etree
 from reportlab.lib.colors import HexColor, black
@@ -81,6 +80,7 @@ class ReportXML(object):
         self.page_style = None
         self.test_mode = test_mode
         self.status_method = status_method
+        self.held_variables = None
 
         if pager_kwargs is None:
             self.pager_kwargs = {}
@@ -277,6 +277,8 @@ class ReportXML(object):
 
         rows_variables = []
         variables = {}
+        if self.held_variables is not None:
+            variables = {**self.held_variables}
 
         row_count = -1
         col_widths = []
@@ -443,6 +445,11 @@ class ReportXML(object):
                               v_align=v_align,
                               col_widths=new_column_widths,
                               initial=True)
+
+            if len(rows_variables) > 0 and len(rows_variables[-1]) > 0:
+                self.held_variables = rows_variables[-1]
+            else:
+                self.held_variables = None
         else:
             return None
 
