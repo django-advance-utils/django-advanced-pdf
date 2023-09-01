@@ -98,7 +98,11 @@ class FromDatabaseExampleIndex(MainMenu, DatatableView):
     def button_download_pdf(self, *args, **kwargs):
         printing_template = get_object_or_404(PrintingTemplate, pk=kwargs['pk'])
         result = printing_template.make_pdf()
-        return self.command_response('save_file', data=base64.b64encode(result.read()).decode('ascii'),
+        if result['has_potential_xml_errors']:
+            self.add_command('message', text='has potential xml errors')
+
+        return self.command_response('save_file',
+                                     data=base64.b64encode(result['pdf_data'].read()).decode('ascii'),
                                      filename=f'{printing_template.name}.pdf', type='application/pdf')
 
 

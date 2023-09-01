@@ -81,6 +81,7 @@ class ReportXML(object):
         self.test_mode = test_mode
         self.status_method = status_method
         self.held_variables = None
+        self.has_potential_xml_errors = False
 
         if pager_kwargs is None:
             self.pager_kwargs = {}
@@ -95,16 +96,36 @@ class ReportXML(object):
         self.background_image_footer = background_image_footer
 
         self.update_status("Loading")
-        parser = etree.XMLParser(remove_blank_text=True, resolve_entities=False)
-
+        self._has_potential_xml_errors = False
         if add_doctype:
             xml = self.get_doc_type() + xml
-        tree = etree.parse(StringIO(xml), parser)
+
+        try:
+            parser = etree.XMLParser(remove_blank_text=True, resolve_entities=True, recover=False)
+            tree = etree.parse(StringIO(xml), parser)
+        except etree.XMLSyntaxError:
+            self.has_potential_xml_errors = True
+            parser = etree.XMLParser(remove_blank_text=True, resolve_entities=True, recover=True)
+            tree = etree.parse(StringIO(xml), parser)
+
         root = tree.getroot()
         result = BytesIO()
         self.make_pdf(root, result)
         result.seek(0)
         return result
+
+    @property
+    def has_potential_xml_errors(self):
+        """Getter for has_potential_xml_errors property."""
+        return self._has_potential_xml_errors
+
+    @has_potential_xml_errors.setter
+    def has_potential_xml_errors(self, value):
+        """Setter for has_potential_xml_errors property."""
+        if not isinstance(value, bool):
+            raise ValueError("has_potential_xml_errors must be a boolean value.")
+
+        self._has_potential_xml_errors = value
 
     def get_object(self, object_id):
         if object_id in self.object_lookup.keys():

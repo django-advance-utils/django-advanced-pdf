@@ -1,0 +1,34 @@
+<document
+        title="Material Costings"
+        page_orientation="landscape"
+        page_size="A3"
+        
+            page_style="default_jms"
+        
+
+        border_top_first="10"
+        border_bottom_first="4"
+        border_right_first="10"
+        border_left_first="10"
+
+        border_top_continuation="10"
+        border_bottom_continuation="4"
+        border_right_continuation="10"
+        border_left_continuation="10"
+
+        footer_field=""
+        
+        >
+
+    <table style="font:Helvetica;font_size:10;">
+        <tr>
+            <td width="30">
+                <strong><d/ds>Client:</strong>
+            </td>
+            <td width="70">Snow-Z93 5SP (Mr Alan Snow)</td>
+        </tr>
+    </table>
+
+
+
+</document>

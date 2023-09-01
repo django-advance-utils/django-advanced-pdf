@@ -144,3 +144,5 @@ django_advanced_pdf/test_data/temp
 
 
 django_examples/advanced_pdf_examples/templates/file_examples/printout.xml
+django_examples/advanced_pdf_examples/templates/file_examples/temp.xml
+django_examples/advanced_pdf_examples/templates/file_examples/temp2.xml

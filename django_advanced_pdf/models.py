@@ -20,8 +20,10 @@ class PrintingTemplate(models.Model):
             c = Context(context)
             xml = t.render(c)
         report_xml = ReportXML(object_lookup=object_lookup, pager_kwargs=kwargs)
-        return report_xml.load_xml_and_make_pdf(xml,
-                                                add_doctype=add_doctype,
-                                                background_image_first=background_image_first,
-                                                background_image_remaining=background_image_remaining,
-                                                background_image_footer=background_image_footer)
+        pdf_data = report_xml.load_xml_and_make_pdf(xml,
+                                                    add_doctype=add_doctype,
+                                                    background_image_first=background_image_first,
+                                                    background_image_remaining=background_image_remaining,
+                                                    background_image_footer=background_image_footer)
+        return {'pdf_data': pdf_data,
+                'has_potential_xml_errors': report_xml.has_potential_xml_errors}
