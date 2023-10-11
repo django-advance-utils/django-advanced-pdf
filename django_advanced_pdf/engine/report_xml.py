@@ -14,7 +14,7 @@ from .enhanced_table.enhanced_tables import OVERFLOW_ROW, EnhancedTable, HEADER_
     KEEP_TYPE_MIDDLE, KEEP_TYPE_SPAN, KEEP_TYPE_NA
 from .png_images import insert_image, insert_obj
 from .svglib.svglib import SvgRenderer
-from .utils import DocTemplate, get_page_size_from_string, intcomma_currency, ColumnWidthPercentage
+from .utils import DocTemplate, get_page_size_from_string, intcomma_currency, ColumnWidthPercentage, MyTDUserHtmlParser
 from ..pagers.base import BasePager
 from ..pagers.border import BorderPager
 
@@ -101,11 +101,11 @@ class ReportXML(object):
             xml = self.get_doc_type() + xml
 
         try:
-            parser = etree.XMLParser(remove_blank_text=True, resolve_entities=True, recover=False)
+            parser = etree.XMLParser(remove_blank_text=True, resolve_entities=True, recover=False, strip_cdata=False)
             tree = etree.parse(StringIO(xml), parser)
         except etree.XMLSyntaxError:
             self.has_potential_xml_errors = True
-            parser = etree.XMLParser(remove_blank_text=True, resolve_entities=True, recover=True)
+            parser = etree.XMLParser(remove_blank_text=True, resolve_entities=True, recover=True, strip_cdata=False)
             tree = etree.parse(StringIO(xml), parser)
 
         root = tree.getroot()
@@ -588,7 +588,6 @@ class ReportXML(object):
 
             if td_element.tag != 'td':
                 continue
-
             name = td_element.get('name')
             if name is not None and name in hidden_columns:
                 continue
@@ -627,6 +626,8 @@ class ReportXML(object):
             self.process_css_for_table(td_element, styles, other_styles,
                                        start_col=col_count + offset, start_row=row_count,
                                        end_col=col_count + offset + col_span - 1, end_row=row_count + row_span - 1)
+
+            user_html = self.get_boolean_value(td_element.get('user_html'))
 
             if len(td_element) > 0 and td_element[0].tag == 'table':
                 new_table_column_widths = self.process_column_widths(col_widths, table_width)
@@ -726,8 +727,11 @@ class ReportXML(object):
                     else:
                         display_object = ''
 
-            elif len(td_element) > 0:
-                xml = etree.tostring(td_element, pretty_print=True)
+            elif len(td_element) > 0 or user_html:
+                if user_html:
+                    xml = self.repair_user_html(td_element.text)
+                else:
+                    xml = etree.tostring(td_element, pretty_print=True)
 
                 overflow_gt_height = td_element.get('overflow_gt_height')
                 overflow_gt_length = int(td_element.get('overflow_gt_length', 0))
@@ -819,6 +823,12 @@ class ReportXML(object):
 
         return max_row_span, overflow_row_count
 
+    def repair_user_html(self, html):
+        parser = MyTDUserHtmlParser()
+        parser.feed(html)
+        while parser.stack:
+            parser.repaired_html += f"</{parser.stack.pop()['tag']}>"
+        return parser.repaired_html
     @staticmethod
     def set_column_width(col_width):
         if col_width is not None and col_width != '':
@@ -1241,7 +1251,7 @@ class ReportXML(object):
 
     # noinspection PyMethodMayBeStatic
     def get_boolean_value(self, value):
-        return value in ['1', 'True', 'yes']
+        return value is not None and value.lower() in ['1', 'true', 'yes']
 
     def update_status(self, message):
         if self.status_method is not None:

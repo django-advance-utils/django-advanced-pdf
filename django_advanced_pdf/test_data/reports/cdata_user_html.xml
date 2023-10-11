@@ -1,0 +1,18 @@
+<document title="My test printout" page_size="A4" page_orientation="landscape">
+
+    <table class="data_table">
+        <tr class="table_base_row">
+            <td class="data_heading_center"><span>this is ok text not in cdata</span></td>
+            <td class="data_heading_center"><span>just some more text</span></td>
+        </tr>
+        <tr class="table_base_row">
+            <td class="data_heading_center" user_html="true"><![CDATA[<span>this is <strong>ok</strong> text in cdata<span>]]></td>
+            <td class="data_heading_center"><span>just some more text</span></td>
+        </tr>
+        <tr class="table_base_row">
+            <td class="data_heading_center" user_html="true"><![CDATA[<span>This is a test to see <strong>what happens with broken tags this one</span>]]></td>
+            <td class="data_heading_center"><span>just some more text</span></td>
+        </tr>
+
+    </table>
+</document>

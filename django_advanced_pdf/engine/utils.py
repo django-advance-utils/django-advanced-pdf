@@ -1,4 +1,6 @@
 import logging
+from collections import deque
+from html.parser import HTMLParser
 
 import reportlab
 from reportlab.lib import colors
@@ -273,3 +275,35 @@ class ColumnWidthPercentage(object):
 
     def get_value(self):
         return self.value
+
+
+class MyTDUserHtmlParser(HTMLParser):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.stack = deque()
+        self.repaired_html = ""
+
+    def handle_starttag(self, tag, attrs):
+        if not tag.endswith("/"):
+            self.stack.append({'tag': tag, 'children': deque()})
+            if len(self.stack) > 1:
+                self.stack[-2]['children'].append(self.stack[-1])
+        self.repaired_html += self.get_starttag_text()
+
+    def handle_endtag(self, tag):
+        buffer = ""
+        while self.stack:
+            last = self.stack[-1]['tag']
+            if last == tag:
+                self.stack.pop()
+                break
+            buffer = f"</{last}>" + buffer
+            self.stack.pop()
+
+        if buffer:
+            self.repaired_html += buffer
+
+        self.repaired_html += f"</{tag}>"
+
+    def handle_data(self, data):
+        self.repaired_html += data
