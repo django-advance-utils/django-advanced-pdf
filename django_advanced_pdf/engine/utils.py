@@ -231,7 +231,7 @@ def get_page_size_from_string(page_size_string, landscape_portrait_string):
         page_size = A1
     elif page_size_string == "a0":
         page_size = A0
-    elif page_size_string == "leter":
+    elif page_size_string == "letter":
         page_size = LETTER
     elif page_size_string == "legal":
         page_size = LEGAL
