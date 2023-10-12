@@ -6,7 +6,7 @@
             <td class="data_heading_center"><span>just some more text</span></td>
         </tr>
         <tr class="table_base_row">
-            <td class="data_heading_center" user_html="true"><![CDATA[<span>this is <strong>ok</strong> text in cdata<span>]]></td>
+            <td class="data_heading_center" user_html="true"><![CDATA[<span>this is <strong>ok</strong> text in<br/> cdata</span>]]></td>
             <td class="data_heading_center"><span>just some more text</span></td>
         </tr>
         <tr class="table_base_row">

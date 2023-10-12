@@ -282,27 +282,29 @@ class MyTDUserHtmlParser(HTMLParser):
         super().__init__(*args, **kwargs)
         self.stack = deque()
         self.repaired_html = ""
+        self.ignore_tags = set()
 
     def handle_starttag(self, tag, attrs):
-        if not tag.endswith("/"):
-            self.stack.append({'tag': tag, 'children': deque()})
-            if len(self.stack) > 1:
-                self.stack[-2]['children'].append(self.stack[-1])
-        self.repaired_html += self.get_starttag_text()
+        starttag_text = self.get_starttag_text()
+        self.repaired_html += starttag_text
+        if not starttag_text.endswith("/>"):
+            self.stack.append(tag)
+        else:
+            self.ignore_tags.add(tag)
 
     def handle_endtag(self, tag):
         buffer = ""
+        if tag in self.ignore_tags:
+            return
         while self.stack:
-            last = self.stack[-1]['tag']
+            last = self.stack[-1]
             if last == tag:
                 self.stack.pop()
                 break
             buffer = f"</{last}>" + buffer
             self.stack.pop()
 
-        if buffer:
-            self.repaired_html += buffer
-
+        self.repaired_html += buffer
         self.repaired_html += f"</{tag}>"
 
     def handle_data(self, data):
