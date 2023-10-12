@@ -796,7 +796,7 @@ class ReportXML(object):
                 styles.append(('SPAN',
                                (col_count + offset, row_count),
                                (col_count + offset + col_span - 1, row_count + row_span - 1)))
-                for x in range(1, overflow_row_count+1):
+                for x in range(1, overflow_row_count + 1):
                     styles.append(('SPAN',
                                    (col_count + offset, x + row_count),
                                    (col_count + offset + col_span - 1, x + row_count + row_span - 1)))
@@ -829,6 +829,7 @@ class ReportXML(object):
         while parser.stack:
             parser.repaired_html += f"</{parser.stack.pop()['tag']}>"
         return parser.repaired_html
+
     @staticmethod
     def set_column_width(col_width):
         if col_width is not None and col_width != '':
