@@ -3,7 +3,7 @@ from reportlab.lib.units import mm
 from reportlab.lib.utils import ImageReader
 from reportlab.pdfgen import canvas
 
-from django_advanced_pdf.engine.utils import PageUsed
+from django_advanced_pdf.engine.utils import PageUsed, get_boolean_value
 
 
 class BasePager(canvas.Canvas):
@@ -17,7 +17,8 @@ class BasePager(canvas.Canvas):
                  border_top_continuation=0, border_bottom_continuation=0,
                  program_name=None,
                  background_image_first=None, background_image_remaining=None,
-                 background_image_footer=None, test_mode=False, status_method=None, **kwargs):
+                 background_image_footer=None, test_mode=False, status_method=None,
+                 root_element=None, **kwargs):
 
         self.status_method = status_method
         self.heading = heading
@@ -26,6 +27,7 @@ class BasePager(canvas.Canvas):
         self.image2 = None
         self._saved_page_states = []
         self.test_mode = test_mode
+        self.root_element = root_element
 
         self.pageused = PageUsed(left=border_left_first,
                                  right=border_right_first,
@@ -45,6 +47,9 @@ class BasePager(canvas.Canvas):
                                crop_marks, pdf_version, enforce_color_space)
 
         self.add_background_images()
+
+    def margins(self, first=True):
+        return {'top': 0, 'bottom': 0, 'left': 0, 'right': 0}
 
     def inkAnnotation(self, contents, ink_list=None, rect=None, add_to_page=1, name=None, relative=0, **kw):
         pass
@@ -121,10 +126,11 @@ class BasePager(canvas.Canvas):
 
         self.setFont("Helvetica", 10)
 
-        self.drawRightString(self.border_right(self._pageNumber == 1),
-                             self.border_bottom(self._pageNumber == 1) - 4 * mm,
-                             "Page %d of %d" %
-                             (self._pageNumber, page_count))
+        if get_boolean_value(self.root_element.get('show_page_numbers'), default=True):
+            self.drawRightString(self.border_right(self._pageNumber == 1),
+                                 self.border_bottom(self._pageNumber == 1) - 4 * mm,
+                                 "Page %d of %d" %
+                                 (self._pageNumber, page_count))
 
     def display_program_name(self):
         if self.program_name is not None:
@@ -136,7 +142,7 @@ class BasePager(canvas.Canvas):
                             border_bottom,
                             self.program_name)
 
-    def draw_page_number(self, page_count):
+    def draw_page_layout(self, page_count):
 
         """
         @type   page_count  : int
@@ -184,7 +190,7 @@ class BasePager(canvas.Canvas):
             if self.status_method is not None:
                 self.status_method(f'Processing page {self._pageNumber}/{num_pages}')
             self.draw_footer_image_block()
-            self.draw_page_number(num_pages)
+            self.draw_page_layout(num_pages)
             canvas.Canvas.showPage(self)
 
         canvas.Canvas.save(self)

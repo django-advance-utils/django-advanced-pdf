@@ -1,4 +1,8 @@
-<document title="My test printout" page_size="A4" page_orientation="landscape">
+<document title="My test printout" page_size="A4" page_orientation="landscape"
+          border_top_first="5"
+          border_top_continuation="5"
+          border_bottom_first="5"
+          border_bottom_continuation="5">
 
     <style>
         red {

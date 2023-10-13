@@ -28,6 +28,9 @@ class BorderPager(BasePager):
                            right=self.page_width() - (self.border_right()))
         self.footer_field = footer_field
 
+    def margins(self, first=True):
+        return {'top': 10 * mm, 'bottom':  5 * mm, 'left': 0, 'right': 0}
+
     def draw_borders(self, page_count):
         self.setFont("Helvetica", 7)
 

@@ -14,7 +14,8 @@ from .enhanced_table.enhanced_tables import OVERFLOW_ROW, EnhancedTable, HEADER_
     KEEP_TYPE_MIDDLE, KEEP_TYPE_SPAN, KEEP_TYPE_NA
 from .png_images import insert_image, insert_obj
 from .svglib.svglib import SvgRenderer
-from .utils import DocTemplate, get_page_size_from_string, intcomma_currency, ColumnWidthPercentage, MyTDUserHtmlParser
+from .utils import DocTemplate, get_page_size_from_string, intcomma_currency, ColumnWidthPercentage, MyTDUserHtmlParser, \
+    get_boolean_value
 from ..pagers.base import BasePager
 from ..pagers.border import BorderPager
 
@@ -77,6 +78,7 @@ class ReportXML(object):
         self.border_right_continuation = 0
         self.border_top_continuation = 0
         self.border_bottom_continuation = 0
+        self.root_element = 0
         self.page_style = None
         self.test_mode = test_mode
         self.status_method = status_method
@@ -145,6 +147,7 @@ class ReportXML(object):
         title = root_element.get('title')
         page_size = get_page_size_from_string(root_element.get('page_size', ''),
                                               root_element.get('page_orientation', ''))
+
         pager = self.setup_pager(page_size=page_size,
                                  root_element=root_element)
         doc = DocTemplate(title,
@@ -166,6 +169,7 @@ class ReportXML(object):
         return self.pager_types.get(self.page_style, self.default_pager)(*args, **kwargs)
 
     def setup_pager(self, page_size, root_element):
+        self.root_element = root_element
         title = root_element.get('title')
         self.page_style = root_element.get('page_style')
 
@@ -205,6 +209,7 @@ class ReportXML(object):
                               background_image_footer=self.background_image_footer,
                               test_mode=self.test_mode,
                               status_method=self.update_status,
+                              root_element=self.root_element,
                               **self.pager_kwargs)
 
     def canvasmaker(self, *args, **kwargs):
@@ -223,6 +228,7 @@ class ReportXML(object):
                               background_image_footer=self.background_image_footer,
                               test_mode=self.test_mode,
                               status_method=self.update_status,
+                              root_element=self.root_element,
                               **self.pager_kwargs,
                               **kwargs)
 
@@ -290,7 +296,7 @@ class ReportXML(object):
 
         self.process_css_for_table(table, main_styles, other_styles)
 
-        if self.get_boolean_value(table.get('hidden')):
+        if get_boolean_value(table.get('hidden')):
             return None
 
         min_rows_top = int(table.get('min_rows_top', 0))
@@ -393,7 +399,7 @@ class ReportXML(object):
             elif element.tag in ['header', 'footer']:
                 is_header = element.tag == 'header'
                 output = element.get('output', "0")
-                if is_header and self.get_boolean_value(output):
+                if is_header and get_boolean_value(output):
                     for tr in element:
                         row_count += 1
                         _, overflow_row_count = self.process_tr(tr_element=tr,
@@ -474,10 +480,11 @@ class ReportXML(object):
         else:
             return None
 
+        t.setStyle(TableStyle(main_styles))
         if pos_y is not None and pos_x is not None and page_height is not None:
             ref_is_top = table.get('pos_y_ref', 'top') == 'top'
             ref_is_right = table.get('pos_x_ref', 'left') == 'right'
-            ignore_margin = table.get('ignore_margin', 'no') == 'yes'
+            ignore_margin = get_boolean_value(table.get('ignore_margin'))
             if ref_is_top:
                 page_height *= mm
                 page_height += top_border + bottom_border
@@ -499,8 +506,6 @@ class ReportXML(object):
                 new_pos_x = pos_x
             t.pos_x = str(new_pos_x)
 
-        t.setStyle(TableStyle(main_styles))
-
         return t
 
     @staticmethod
@@ -517,7 +522,7 @@ class ReportXML(object):
                    held_cells=None, default_row_height=None, is_header_or_footer=False):
 
         max_row_span = 0
-        if self.get_boolean_value(tr_element.get('hidden')):
+        if get_boolean_value(tr_element.get('hidden')):
             return max_row_span, 0
 
         row_data = []
@@ -598,7 +603,7 @@ class ReportXML(object):
             col_span = int(td_element.get('colspan', "1"))
             row_span = int(td_element.get('rowspan', "1"))
 
-            if self.get_boolean_value(hidden_column):
+            if get_boolean_value(hidden_column):
                 if name is not None:
                     hidden_columns.add(name)
                 else:
@@ -627,7 +632,7 @@ class ReportXML(object):
                                        start_col=col_count + offset, start_row=row_count,
                                        end_col=col_count + offset + col_span - 1, end_row=row_count + row_span - 1)
 
-            user_html = self.get_boolean_value(td_element.get('user_html'))
+            user_html = get_boolean_value(td_element.get('user_html'))
 
             if len(td_element) > 0 and td_element[0].tag == 'table':
                 new_table_column_widths = self.process_column_widths(col_widths, table_width)
@@ -1249,10 +1254,6 @@ class ReportXML(object):
             rows_variables.append(rows_variables[-1])
 
         return len(overflow_rows_xml)
-
-    # noinspection PyMethodMayBeStatic
-    def get_boolean_value(self, value):
-        return value is not None and value.lower() in ['1', 'true', 'yes']
 
     def update_status(self, message):
         if self.status_method is not None:

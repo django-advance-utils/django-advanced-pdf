@@ -25,23 +25,25 @@ class DocTemplate(SimpleDocTemplate):
         #  Create and add two page templates each comprising a single frame to handle the
         #  first and subsequent pages. Each frame spans the entire page, but has padding
         #  set corresponding to the page used by the boxes and whatnot.
+        first_margins = pager.margins()
+        continuation_margins = pager.margins(first=False)
 
         frame1 = Frame(0,
                        0,
                        self.pagesize[0],
                        self.pagesize[1],
-                       pager.page_used_left(),
-                       pager.page_used_bottom() + 5 * mm,
-                       pager.page_used_right(),
-                       pager.page_used_top() + 5 * mm)
+                       pager.page_used_left() + first_margins['left'],
+                       pager.page_used_bottom() + first_margins['bottom'],
+                       pager.page_used_right() + first_margins['right'],
+                       pager.page_used_top() + first_margins['top'])
         frame2 = Frame(0,
                        0,
                        self.pagesize[0],
                        self.pagesize[1],
-                       pager.page_used_left(False),
-                       pager.page_used_bottom(False) + 5 * mm,
-                       pager.page_used_right(False),
-                       pager.page_used_top(False) + 5 * mm)
+                       pager.page_used_left(False) + continuation_margins['left'],
+                       pager.page_used_bottom(False) + continuation_margins['bottom'],
+                       pager.page_used_right(False) + continuation_margins['right'],
+                       pager.page_used_top(False) + continuation_margins['top'])
 
         self.addPageTemplates([PageTemplate(id='Page1', frames=frame1), PageTemplate(id='Page2', frames=frame2)])
 
@@ -309,3 +311,9 @@ class MyTDUserHtmlParser(HTMLParser):
 
     def handle_data(self, data):
         self.repaired_html += data
+
+
+def get_boolean_value(value, default=False):
+    if value is None:
+        return default
+    return value.lower() in ['1', 'true', 'yes']

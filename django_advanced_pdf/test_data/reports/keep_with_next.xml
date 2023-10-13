@@ -1,4 +1,11 @@
-<document title="My test printout" page_size="A4" page_orientation="portrait" border_left_first="10" border_right_first="10" page_style="blank">
+<document title="My test printout" page_size="A4" page_orientation="portrait"
+          border_left_first="10" border_right_first="10"
+          border_top_first="5"
+          border_top_continuation="5"
+          border_bottom_first="5"
+          border_bottom_continuation="5"
+          show_page_numbers="no"
+          page_style="blank">
 
  <style>
         main {
