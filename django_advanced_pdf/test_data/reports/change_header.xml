@@ -30,7 +30,7 @@
     <table class="main">
 
         <header output="0">
-            <tr row_height="20" class="header">
+            <tr row_height="7.0555555555555545" class="header">
                 <td>My Header</td>
                 <td>My Header</td>
                 <td colspan="2">My Header2 %(var1)s</td>
@@ -38,14 +38,14 @@
         </header>
 
         <footer>
-            <tr row_height="20" class="header">
+            <tr row_height="7.0555555555555545" class="header">
                 <td>My Footer</td>
                 <td>My Footer</td>
                 <td colspan="2">My Footer</td>
             </tr>
         </footer>
 
-        <tr row_height="20" class="header">
+        <tr row_height="7.0555555555555545" class="header">
             <variable name="var1">Hello</variable>
             <td>My Header</td>
             <td>My Header</td>
@@ -94,7 +94,7 @@
         <tr><td>39</td><td>a</td><td>b</td><td>c</td></tr>
 
         <header output="1">
-            <tr row_height="20" class="heading">
+            <tr row_height="7.0555555555555545" class="heading">
                 <td>My Header changed</td>
                 <td>My Header changed</td>
                 <td>My Header changed</td>
@@ -104,7 +104,7 @@
 
 
 {#        <footer>#}
-{#            <tr row_height="20" class="heading">#}
+{#            <tr row_height="7.0555555555555545" class="heading">#}
 {#                <td>My footer changed</td>#}
 {#                <td>My footer changed</td>#}
 {#                <td>My footer changed</td>#}

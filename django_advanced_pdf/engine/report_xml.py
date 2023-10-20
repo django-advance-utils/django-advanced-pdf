@@ -433,7 +433,7 @@ class ReportXML(object):
                                     variables=variables,
                                     col_widths=col_widths,
                                     table_width=table_width,
-                                    default_row_height=35,
+                                    default_row_height=35 / mm,
                                     is_header_or_footer=True,
                                     hidden_columns=hidden_columns)
 
@@ -816,9 +816,11 @@ class ReportXML(object):
 
         row_height = self.get_row_height(other_table_styles, other_styles)
         if row_height is None:
-            row_height = tr_element.get('row_height', default_row_height)
+            row_height = tr_element.get('row_height')
             if row_height is not None:
-                row_height = float(row_height)
+                row_height = float(row_height) * mm
+            elif default_row_height is not None:
+                row_height = default_row_height * mm
 
         row_heights.append(row_height)
 

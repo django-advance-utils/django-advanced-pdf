@@ -65,7 +65,7 @@
 
     <table class="main_table">
         <footer>
-            <tr row_height="25" style="text_color:#FF0000;">
+            <tr row_height="8.819444444444443" style="text_color:#FF0000;">
                 <td> </td>
                 <td>Total</td>
                 <td></td>
@@ -76,8 +76,8 @@
         </footer>
 
         <header>
-            <tr row_height="25" style="text_color:#FF00FF"><td>My Header</td></tr>
-            <tr row_height="25" style="text_color:#FF00FF"><td><currency variable="total"/></td></tr>
+            <tr row_height="8.819444444444443" style="text_color:#FF00FF"><td>My Header</td></tr>
+            <tr row_height="8.819444444444443" style="text_color:#FF00FF"><td><currency variable="total"/></td></tr>
         </header>
         <tr>
             <currency_variables total="0" is_float="0" symbol="£" />

@@ -26,7 +26,7 @@
 
     <table class="main">
         <header output="1">
-            <tr row_height="25" style="text_color:#FF00FF"><td>Name</td><td hidden_column="1">Number</td></tr>
+            <tr row_height="8.819444444444443" style="text_color:#FF00FF"><td>Name</td><td hidden_column="1">Number</td></tr>
         </header>
         <tr><td>ABC</td><td>123</td></tr>
         <tr><td>ABC</td><td>123</td></tr>
@@ -90,7 +90,7 @@
 
     <table class="main">
         <header output="1">
-            <tr row_height="25" style="text_color:#FF00FF">
+            <tr row_height="8.819444444444443" style="text_color:#FF00FF">
                 <td>Name</td>
                 <td hidden_column="1" name="number">Number</td>
                 <td hidden_column="0" name="qty">Qty</td>
@@ -105,7 +105,7 @@
 
      <table class="main">
          <header output="1">
-             <tr row_height="25" style="text_color:#FF00FF">
+             <tr row_height="8.819444444444443" style="text_color:#FF00FF">
                  <td>Name</td>
              </tr>
          </header>
