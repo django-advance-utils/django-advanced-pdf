@@ -735,6 +735,12 @@ class ReportXML(object):
             elif len(td_element) > 0 or user_html:
                 if user_html:
                     xml = self.repair_user_html(td_element.text)
+                    start_tag = '<%s' % td_element.tag
+                    for attr, value in td_element.attrib.items():
+                        start_tag += ' %s="%s"' % (attr, value)
+                    start_tag += '>'
+                    end_tag = '</%s>' % td_element.tag
+                    xml = start_tag + xml + end_tag
                 else:
                     xml = etree.tostring(td_element, pretty_print=True)
 
@@ -1170,6 +1176,9 @@ class ReportXML(object):
 
         if height <= overflow_gt_height:
             return display_object, 0
+
+        if not isinstance(xml, bytes):
+            xml = xml.encode()
 
         xml, overflow_rows_xml, raw_parts, held_working_tags = self.split_cell(xml=xml, overflow_length=0)
 
