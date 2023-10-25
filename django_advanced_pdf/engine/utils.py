@@ -19,6 +19,17 @@ PURPLE_COLOUR = HexColor(0x721472)
 BLACK_COLOUR = HexColor(0x000000)
 
 
+class ReportXMLError(Exception):
+    def __init__(self, value):
+        self.value = value
+
+    def __str__(self):
+        return repr(self.value)
+
+    def value(self):
+        return self.value
+
+
 class DocTemplate(SimpleDocTemplate):
     def __init__(self, heading, pager, *args, **kwargs):
         BaseDocTemplate.__init__(self, *args, **kwargs)
@@ -324,3 +335,4 @@ def get_boolean_value(value, default=False):
     if value is None:
         return default
     return value.lower() in ['1', 'true', 'yes']
+

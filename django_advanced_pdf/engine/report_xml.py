@@ -14,8 +14,9 @@ from .enhanced_table.enhanced_tables import OVERFLOW_ROW, EnhancedTable, HEADER_
     KEEP_TYPE_MIDDLE, KEEP_TYPE_SPAN, KEEP_TYPE_NA
 from .png_images import insert_image, insert_obj
 from .svglib.svglib import SvgRenderer
-from .utils import DocTemplate, get_page_size_from_element, intcomma_currency, ColumnWidthPercentage, MyTDUserHtmlParser, \
-    get_boolean_value
+from .utils import DocTemplate, get_page_size_from_element, intcomma_currency, ColumnWidthPercentage, \
+    MyTDUserHtmlParser, \
+    get_boolean_value, ReportXMLError
 from ..pagers.base import BasePager
 from ..pagers.border import BorderPager
 
@@ -236,7 +237,8 @@ class ReportXML(object):
         children = root_element.getchildren()
 
         for child in children:
-            if child.tag.lower() == "table":
+            current_tag = child.tag.lower()
+            if current_tag == "table":
                 table = self.process_table(child,
                                            table_width=page_width,
                                            page_height=page_height,
@@ -246,14 +248,16 @@ class ReportXML(object):
                 if table is not None:
                     story.append(table)
 
-            elif child.tag.lower() == "style":
+            elif current_tag == "style":
                 self.process_style_element(child.text)
-            elif child.tag.lower() == "p":
+            elif current_tag == "p":
                 story.append(self.process_paragraph_element(child))
-            elif child.tag.lower() == "page_break":
+            elif current_tag == "page_break":
                 story.append(PageBreak())
-            elif child.tag.lower() == "spacer":
+            elif current_tag == "spacer":
                 story.append(self.process_spacer_tag(child))
+        if len(story) == 0:
+            raise ReportXMLError("No data")
 
     def process_style_element(self, style_text):
         """
