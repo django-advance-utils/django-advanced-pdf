@@ -216,7 +216,10 @@ class DecimalText(object):
             return self.m_text
 
 
-def get_page_size_from_string(page_size_string, landscape_portrait_string):
+def get_page_size_from_element(element):
+    page_size_string = element.get('page_size', '')
+    landscape_portrait_string = element.get('page_orientation', '')
+
     page_size_string = page_size_string.lower()
     landscape_portrait_string = landscape_portrait_string.lower()
     if page_size_string == "a4":  # most common that why it at the top
@@ -239,6 +242,10 @@ def get_page_size_from_string(page_size_string, landscape_portrait_string):
         page_size = LEGAL
     elif page_size_string == "elevenseventeen":
         page_size = ELEVENSEVENTEEN
+    elif page_size_string == "custom":
+        page_width = float(element.get('page_width', 0))
+        page_height = float(element.get('page_height', 0))
+        return page_width * mm, page_height * mm
     else:
         assert False, "Unknown page type"
 

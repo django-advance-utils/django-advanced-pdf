@@ -14,7 +14,7 @@ from .enhanced_table.enhanced_tables import OVERFLOW_ROW, EnhancedTable, HEADER_
     KEEP_TYPE_MIDDLE, KEEP_TYPE_SPAN, KEEP_TYPE_NA
 from .png_images import insert_image, insert_obj
 from .svglib.svglib import SvgRenderer
-from .utils import DocTemplate, get_page_size_from_string, intcomma_currency, ColumnWidthPercentage, MyTDUserHtmlParser, \
+from .utils import DocTemplate, get_page_size_from_element, intcomma_currency, ColumnWidthPercentage, MyTDUserHtmlParser, \
     get_boolean_value
 from ..pagers.base import BasePager
 from ..pagers.border import BorderPager
@@ -145,8 +145,7 @@ class ReportXML(object):
 
     def make_pdf(self, root_element, file_buffer):
         title = root_element.get('title')
-        page_size = get_page_size_from_string(root_element.get('page_size', ''),
-                                              root_element.get('page_orientation', ''))
+        page_size = get_page_size_from_element(element=root_element)
 
         pager = self.setup_pager(page_size=page_size,
                                  root_element=root_element)
