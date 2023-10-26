@@ -16,7 +16,7 @@ from .png_images import insert_image, insert_obj
 from .svglib.svglib import SvgRenderer
 from .utils import DocTemplate, get_page_size_from_element, intcomma_currency, ColumnWidthPercentage, \
     MyTDUserHtmlParser, \
-    get_boolean_value, ReportXMLError
+    get_boolean_value, ReportXMLError, ObjectPosition
 from ..pagers.base import BasePager
 from ..pagers.border import BorderPager
 
@@ -130,19 +130,67 @@ class ReportXML(object):
 
         self._has_potential_xml_errors = value
 
-    def get_object(self, object_id):
-        if object_id in self.object_lookup.keys():
-            return self.object_lookup[object_id]
+    def get_object(self, element, page_height=None, page_width=None, top_border=None, bottom_border=None):
+        display_object = None
+        object_id = element.get('id', "")
+        if object_id != "":
+            if object_id in self.object_lookup.keys():
+                display_object = self.object_lookup[object_id]
+            else:
+                try:
+                    object_id = int(object_id)
+                    if object_id in self.object_lookup.keys():
+                        display_object = self.object_lookup[object_id]
+                except ValueError:
+                    pass
         else:
-            try:
-                object_id = int(object_id)
-                if object_id in self.object_lookup.keys():
-                    return self.object_lookup[object_id]
-            except ValueError:
-                pass
-                # if 'default' in self.object_lookup.keys():
-                #     return self.object_lookup['default']
-        return None
+            display_object = insert_obj(element)
+        if page_height is not None and page_width is not None:
+            return self.set_object_position(element=element,
+                                            display_object=display_object,
+                                            page_height=page_height,
+                                            page_width=page_width,
+                                            top_border=top_border,
+                                            bottom_border=bottom_border)
+        return display_object
+
+    def set_object_position(self, element, display_object, page_height, page_width, top_border, bottom_border):
+        pos_x = element.get('pos_x', '')
+        pos_y = element.get('pos_y', '')
+        if pos_x != '' or pos_y != '':
+            if pos_x == '':
+                pos_x = 0
+            else:
+                pos_x = float(pos_x) * mm
+            if pos_y == '':
+                pos_y = 0
+            else:
+                pos_y = float(pos_y) * mm
+
+            ref_is_top = element.get('pos_y_ref', 'top') == 'top'
+            ref_is_right = element.get('pos_x_ref', 'left') == 'right'
+            ignore_margin = get_boolean_value(element.get('ignore_margin'))
+
+            if ref_is_top:
+                page_height *= mm
+                page_height += top_border + bottom_border
+                height = display_object.drawHeight
+                new_pos_y = page_height - (float(pos_y) + height)
+                if not ignore_margin and top_border is not None:
+                    new_pos_y -= float(top_border)
+            else:
+                new_pos_y = float(pos_y)
+                if not ignore_margin and bottom_border is not None:
+                    new_pos_y += float(bottom_border)
+            if ref_is_right:
+                page_width *= mm
+                width = display_object.drawWidth
+                new_pos_x = page_width - (float(pos_x) + width)
+            else:
+                new_pos_x = pos_x
+
+            display_object = ObjectPosition([display_object], pos_x=new_pos_x, pos_y=new_pos_y)
+        return display_object
 
     def make_pdf(self, root_element, file_buffer):
         title = root_element.get('title')
@@ -256,6 +304,15 @@ class ReportXML(object):
                 story.append(PageBreak())
             elif current_tag == "spacer":
                 story.append(self.process_spacer_tag(child))
+            elif current_tag == "obj":
+
+                story.append(self.get_object(element=child,
+                                             page_height=page_height,
+                                             page_width=page_width,
+                                             top_border=top_border,
+                                             bottom_border=bottom_border))
+
+
         if len(story) == 0:
             raise ReportXMLError("No data")
 
@@ -665,11 +722,7 @@ class ReportXML(object):
             elif len(td_element) > 0 and td_element[0].tag[-3:] == 'png':
                 display_object = insert_image(td_element[0])
             elif len(td_element) > 0 and td_element[0].tag[-3:] == 'obj':
-                object_id = td_element[0].get('id', "")
-                if object_id != "":
-                    display_object = self.get_object(object_id)
-                else:
-                    display_object = insert_obj(td_element[0])
+                display_object = self.get_object(element=td_element[0])
             elif len(td_element) > 0 and td_element[0].tag[-12:] == 'currency_qty':
                 variable_name = td_element[0].get('variable')
                 qty = int(td_element[0].get('qty'))

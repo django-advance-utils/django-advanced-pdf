@@ -19,7 +19,8 @@ from django_menus.menu import MenuMixin, MenuItem, HtmlMenu, AjaxButtonMenuItem
 from django_modals.modals import ModelFormModal
 from django_modals.processes import PERMISSION_OFF
 from reportlab.lib import colors
-from reportlab.platypus import Table, TableStyle
+from reportlab.lib.units import mm
+from reportlab.platypus import Table, TableStyle, Image
 
 from django_advanced_pdf.engine.report_xml import ReportXML
 from django_advanced_pdf.models import PrintingTemplate
@@ -200,7 +201,13 @@ class ExampleFilePDFView(View):
         sample_table2 = Table(data2)
         sample_table2.setStyle(table_style)
 
-        return {'sample': sample_table,
+        path = os.path.join(settings.BASE_DIR.parent, 'django_advanced_pdf/test_data/images')
+        sample_label = Image(os.path.join(path, 'sample_label.png'), width=50 * mm, height=200 * mm)
+        small_image = Image(os.path.join(path, 'small_image.png'), width=20 * mm, height=20 * mm)
+
+        return {'sample_label': sample_label,
+                'small_image': small_image,
+                'sample': sample_table,
                 'sample1': sample_table,
                 'sample2': sample_table2,
                 'default': sample_table2

@@ -1,12 +1,14 @@
+import os
 import pathlib
 import unittest
 from pathlib import Path
 import fitz
 from reportlab.lib import colors
-from reportlab.platypus import TableStyle, Table
+from reportlab.lib.units import mm
+from reportlab.platypus import TableStyle, Table, Image as RLImage
 
 from django_advanced_pdf.engine.report_xml import ReportXML
-from PIL import Image, ImageChops
+from PIL import ImageChops, Image
 
 
 class PDFTests(unittest.TestCase):
@@ -111,6 +113,9 @@ class PDFTests(unittest.TestCase):
     def test_cdata_user_html(self):
         self.run_report(name='cdata_user_html')
 
+    def test_label(self):
+        self.run_report(name='label', object_lookup=self.get_sample_objects())
+
     @staticmethod
     def get_sample_objects():
         # Define the data for the table
@@ -146,4 +151,11 @@ class PDFTests(unittest.TestCase):
         # Apply the table style
         table.setStyle(table_style)
 
-        return {'sample': table}
+        path = os.path.join(Path(__file__).resolve().parent, 'test_data/images')
+
+        sample_label = RLImage(os.path.join(path, 'sample_label.png'), width=50 * mm, height=200 * mm)
+        small_image = RLImage(os.path.join(path, 'small_image.png'), width=20 * mm, height=20 * mm)
+
+        return {'sample': table,
+                'sample_label': sample_label,
+                'small_image': small_image}

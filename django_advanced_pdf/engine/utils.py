@@ -3,14 +3,14 @@ from collections import deque
 from html.parser import HTMLParser
 
 import reportlab
+from django.contrib.humanize.templatetags.humanize import intcomma
 from reportlab.lib import colors
 from reportlab.lib.colors import HexColor
 from reportlab.lib.pagesizes import A4, A6, A5, A3, A2, A1, A0, LETTER, LEGAL, ELEVENSEVENTEEN, landscape, portrait
 from reportlab.lib.units import mm
 from reportlab.pdfbase.pdfmetrics import stringWidth
 from reportlab.pdfgen import canvas
-from reportlab.platypus import BaseDocTemplate, Frame, PageTemplate, SimpleDocTemplate
-from django.contrib.humanize.templatetags.humanize import intcomma
+from reportlab.platypus import BaseDocTemplate, Frame, PageTemplate, SimpleDocTemplate, Flowable
 
 logger = logging.getLogger("reportlab.platypus")
 
@@ -29,6 +29,27 @@ class ReportXMLError(Exception):
     def value(self):
         return self.value
 
+
+class ObjectPosition(Flowable):
+    def __init__(self, content, pos_x=None, pos_y=None):
+        self.content = content
+        self.pos_x = pos_x
+        self.pos_y = pos_y
+        Flowable.__init__(self)
+
+    def wrap(self, availableWidth, availableHeight):
+        self.width = availableWidth
+        self.height = availableHeight
+        return self.width, self.height
+
+    def draw(self):
+        if self.pos_x is not None and self.pos_y is not None:
+            self.canv.translate(float(self.pos_x), float(self.pos_y))
+        for flowable in self.content:
+            if flowable:
+                flowable.wrap(self.width, self.height)
+                flowable.drawOn(self.canv, 0, 0)
+                self.canv.translate(0, flowable.drawHeight)
 
 class DocTemplate(SimpleDocTemplate):
     def __init__(self, heading, pager, *args, **kwargs):

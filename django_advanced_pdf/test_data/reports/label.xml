@@ -1,0 +1,5 @@
+<document title="My test label" page_size="custom" page_width="50" page_height="200" page_style="blank" border_top="0" border_bottom="0" border_right="0" border_left="0">
+<obj id="small_image" pos_x="0" pos_y="10"/><page_break/>
+<obj id="sample_label" /><page_break/>
+<obj id="sample_label" />
+</document>
