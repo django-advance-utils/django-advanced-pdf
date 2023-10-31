@@ -10,7 +10,7 @@ from reportlab.lib.pagesizes import A4, A6, A5, A3, A2, A1, A0, LETTER, LEGAL, E
 from reportlab.lib.units import mm
 from reportlab.pdfbase.pdfmetrics import stringWidth
 from reportlab.pdfgen import canvas
-from reportlab.platypus import BaseDocTemplate, Frame, PageTemplate, SimpleDocTemplate, Flowable
+from reportlab.platypus import BaseDocTemplate, Frame, PageTemplate, SimpleDocTemplate, Flowable, NullDraw
 
 logger = logging.getLogger("reportlab.platypus")
 
@@ -30,7 +30,7 @@ class ReportXMLError(Exception):
         return self.value
 
 
-class ObjectPosition(Flowable):
+class ObjectPosition(NullDraw):
     def __init__(self, content, pos_x=None, pos_y=None):
         self.content = content
         self.pos_x = pos_x
@@ -38,18 +38,20 @@ class ObjectPosition(Flowable):
         Flowable.__init__(self)
 
     def wrap(self, availableWidth, availableHeight):
-        self.width = availableWidth
-        self.height = availableHeight
-        return self.width, self.height
+        return 0, 0
 
-    def draw(self):
-        if self.pos_x is not None and self.pos_y is not None:
-            self.canv.translate(float(self.pos_x), float(self.pos_y))
+    def drawOn(self, canv, x, y, _sW=0):
+        pos_x = 0
+        pos_y = 0
+        if self.pos_x is not None:
+            pos_x = float(self.pos_x)
+        if self.pos_y is not None:
+            pos_y = float(self.pos_y)
         for flowable in self.content:
-            if flowable:
-                flowable.wrap(self.width, self.height)
-                flowable.drawOn(self.canv, 0, 0)
-                self.canv.translate(0, flowable.drawHeight)
+            flowable.drawOn(self.canv, pos_x, pos_y)
+
+    def getSpaceAfter(self):
+        return self.height
 
 class DocTemplate(SimpleDocTemplate):
     def __init__(self, heading, pager, *args, **kwargs):

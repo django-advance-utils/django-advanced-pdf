@@ -1,0 +1,10 @@
+<document title="My test label" page_size="a4" page_style="blank" border_top="0" border_bottom="0" border_right="0" border_left="0">
+    <obj id="small_image" pos_x="10" pos_y="0"/>
+    <obj id="small_image" pos_x="0" pos_y="60"/>
+    <obj id="small_image" pos_x="10" pos_y="62"/>
+    <obj id="small_image" pos_x="0" pos_y="90"/>
+    <page_break/>
+    <obj id="small_image" pos_x="10" pos_y="60"/>
+    <obj id="small_image" pos_x="40" pos_y="60"/>
+
+</document>
