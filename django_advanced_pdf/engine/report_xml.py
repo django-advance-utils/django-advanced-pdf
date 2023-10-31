@@ -173,15 +173,14 @@ class ReportXML(object):
 
             if ref_is_top:
                 page_height *= mm
-                page_height += top_border + bottom_border
                 height = display_object.drawHeight
                 new_pos_y = page_height - (float(pos_y) + height)
-                if not ignore_margin and top_border is not None:
-                    new_pos_y -= float(top_border)
+                if ignore_margin and top_border is not None:
+                    new_pos_y += float(top_border)
             else:
                 new_pos_y = float(pos_y)
-                if not ignore_margin and bottom_border is not None:
-                    new_pos_y += float(bottom_border)
+                if ignore_margin and bottom_border is not None:
+                    new_pos_y -= float(bottom_border)
             if ref_is_right:
                 page_width *= mm
                 width = display_object.drawWidth
@@ -547,11 +546,12 @@ class ReportXML(object):
             ignore_margin = get_boolean_value(table.get('ignore_margin'))
             if ref_is_top:
                 page_height *= mm
-                page_height += top_border + bottom_border
                 height = t.get_height()
                 new_pos_y = page_height - (float(pos_y) + height)
-                if not ignore_margin and top_border is not None:
-                    new_pos_y -= float(top_border)
+                if ignore_margin and top_border is not None:
+                    new_pos_y += float(top_border)
+                if bottom_border is not None:
+                    new_pos_y += float(bottom_border)
             else:
                 new_pos_y = float(pos_y)
                 if not ignore_margin and bottom_border is not None:
