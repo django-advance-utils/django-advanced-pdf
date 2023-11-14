@@ -896,7 +896,7 @@ class ReportXML(object):
         parser = MyTDUserHtmlParser()
         parser.feed(html)
         while parser.stack:
-            parser.repaired_html += f"</{parser.stack.pop()['tag']}>"
+            parser.repaired_html += f"</{parser.stack.pop()}>"
         return parser.repaired_html
 
     @staticmethod
