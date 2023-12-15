@@ -6,7 +6,9 @@ from reportlab.lib.units import mm
 
 class EnhancedParagraphStyle(ParagraphStyle):
 
-    def process_css_for_table_paragraph_style(self, css, row_count, col_count):
+    def process_css_for_table_paragraph_style(self, css, other_styles, row_count, col_count):
+
+
         for style in css:
             if row_count is not None and col_count is not None and \
                     not self.is_valid_css_row(row_count, col_count, style[1], style[2]):
@@ -16,25 +18,40 @@ class EnhancedParagraphStyle(ParagraphStyle):
             if style_type == '' or len(style) < 4:
                 continue
             style_detail = style[3]
-            if style_type in ('font_name',
-                              'face',
-                              'font'):
-                self.fontName = style_detail
-            elif style_type in ('size',
-                                'fontsize'):
-                self.fontSize = style_detail
-            elif style_type == 'leading':
-                self.leading = style_detail
-            elif style_type == 'textcolor':
-                self.textColor = style_detail
-            elif style_type == 'align':
-                alignment_type = style_detail.lower()
-                if alignment_type == 'left':
-                    self.alignment = TA_LEFT
-                elif alignment_type == 'center':
-                    self.alignment = TA_CENTER
-                elif alignment_type == 'right':
-                    self.alignment = TA_RIGHT
+            self._add_style(style_type, style_detail)
+
+        for style_type, style_detail in other_styles.items():
+            style_type = style_type.lower()
+            self._add_style(style_type, style_detail)
+
+    def _add_style(self, style_type, style_detail):
+        if style_type in ('font_name',
+                          'face',
+                          'font'):
+            self.fontName = style_detail
+        elif style_type in ('size',
+                            'fontsize'):
+            self.fontSize = style_detail
+        elif style_type == 'leading':
+            self.leading = style_detail
+        elif style_type == 'textcolor':
+            self.textColor = style_detail
+        elif style_type == 'align':
+            alignment_type = style_detail.lower()
+            if alignment_type == 'left':
+                self.alignment = TA_LEFT
+            elif alignment_type == 'center':
+                self.alignment = TA_CENTER
+            elif alignment_type == 'right':
+                self.alignment = TA_RIGHT
+        elif style_type == 'left_indent':
+            self.leftIndent = float(style_detail)
+        elif style_type == 'right_indent':
+            self.rightIndent = float(style_detail)
+        elif style_type == 'first_line_indent':
+            self.firstLineIndent = float(style_detail)
+        elif style_type == 'bullet_indent':
+            self.bulletIndent = float(style_detail)
 
     def process_raw_css(self, css):
         styles_list = css.split(';')

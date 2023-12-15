@@ -311,7 +311,6 @@ class ReportXML(object):
                                              top_border=top_border,
                                              bottom_border=bottom_border))
 
-
         if len(story) == 0:
             raise ReportXMLError("No data")
 
@@ -689,8 +688,10 @@ class ReportXML(object):
 
             # get the styles for td
             self.process_css_for_table(td_element, styles, other_styles,
-                                       start_col=col_count + offset, start_row=row_count,
-                                       end_col=col_count + offset + col_span - 1, end_row=row_count + row_span - 1)
+                                       start_col=col_count + offset,
+                                       start_row=row_count,
+                                       end_col=col_count + offset + col_span - 1,
+                                       end_row=row_count + row_span - 1)
 
             user_html = get_boolean_value(td_element.get('user_html'))
 
@@ -743,7 +744,7 @@ class ReportXML(object):
 
                 display_str = '%s%s' % (symbol, intcomma_currency(unit, show_more_decimal_places=True))
 
-                style = self.process_css_for_table_paragraph_style(styles, row_count, col_count + offset)
+                style = self.process_css_for_table_paragraph_style(styles, other_styles, row_count, col_count + offset)
                 display_object = EnhancedParagraph(display_str, style, css_classes=self.styles)
 
             elif len(td_element) > 0 and td_element[0].tag[-8:] == 'currency':
@@ -802,7 +803,10 @@ class ReportXML(object):
 
                 overflow_gt_height = td_element.get('overflow_gt_height')
                 overflow_gt_length = int(td_element.get('overflow_gt_length', 0))
-                style = self.process_css_for_table_paragraph_style(styles, row_count, col_count + offset)
+                style = self.process_css_for_table_paragraph_style(css=styles,
+                                                                   other_styles=other_styles,
+                                                                   row_count=row_count,
+                                                                   col_count=col_count + offset)
 
                 if overflow_gt_height is not None:
 
@@ -812,6 +816,7 @@ class ReportXML(object):
                         overflow_gt_height=overflow_gt_height,
                         xml=xml,
                         style=style,
+                        other_styles=other_styles,
                         col_widths=col_widths,
                         table_width=table_width,
                         col_span=col_span,
@@ -831,6 +836,7 @@ class ReportXML(object):
                                                                             overflow_gt_length=overflow_gt_length,
                                                                             styles=styles,
                                                                             style=style,
+                                                                            other_styles=other_styles,
                                                                             offset=offset,
                                                                             col_count=col_count,
                                                                             row_count=row_count,
@@ -989,6 +995,13 @@ class ReportXML(object):
             elif style_type == 'row_height':
                 other_styles[style_type.upper()] = int(style_detail)
 
+            elif style_type in ('left_indent',
+                                'right_indent',
+                                'first_line_indent',
+                                'bullet_indent',
+                                ):
+                other_styles[style_type.upper()] = float(style_detail) * mm
+
     @staticmethod
     def get_padding_for_cell(styles, start_col=0, start_row=0, end_col=-1, end_row=-1):
         start_tuple = (start_col, start_row)
@@ -1022,9 +1035,9 @@ class ReportXML(object):
         return css
 
     @staticmethod
-    def process_css_for_table_paragraph_style(css, row_count, col_count):
+    def process_css_for_table_paragraph_style(css, other_styles, row_count, col_count):
         paragraph_style = EnhancedParagraphStyle('paragraph_style')
-        paragraph_style.process_css_for_table_paragraph_style(css, row_count, col_count)
+        paragraph_style.process_css_for_table_paragraph_style(css, other_styles, row_count, col_count)
         return paragraph_style
 
     def process_paragraph_element(self, tag):
@@ -1158,7 +1171,8 @@ class ReportXML(object):
 
         return xml, overflow_rows, raw_parts, held_working_tags
 
-    def overflow_cell(self, td_element, xml, overflow_gt_length, styles, style, offset, col_count, row_count, col_span,
+    def overflow_cell(self, td_element, xml, overflow_gt_length, styles, style, other_styles,
+                      offset, col_count, row_count, col_span,
                       row_span, row_data, overflow_rows, rows_variables):
         text = re.sub('<.*?>', '', str(xml))
         if len(text) > overflow_gt_length:
@@ -1168,7 +1182,7 @@ class ReportXML(object):
             if overflow_rows_xml:
                 self.process_css_for_table(tag=td_element,
                                            styles=styles,
-                                           other_styles={},
+                                           other_styles=other_styles,
                                            start_col=col_count + offset,
                                            start_row=row_count,
                                            end_col=col_count + offset + col_span - 1,
@@ -1181,6 +1195,7 @@ class ReportXML(object):
                                            rows_variables=rows_variables,
                                            td_element=td_element,
                                            styles=styles,
+                                           other_styles=other_styles,
                                            row_count=row_count,
                                            col_count=col_count,
                                            row_span=row_span,
@@ -1188,7 +1203,7 @@ class ReportXML(object):
                                            row_data=row_data,
                                            offset=offset)
 
-                style = self.process_css_for_table_paragraph_style(styles, row_count, col_count + offset)
+                style = self.process_css_for_table_paragraph_style(styles, other_styles, row_count, col_count + offset)
         return xml, style, len(overflow_rows)
 
     def get_doc_type(self):
@@ -1217,7 +1232,7 @@ class ReportXML(object):
         else:
             return float(raw_overflow_gt_height) * mm
 
-    def process_overflow_height(self, td_element, index, overflow_gt_height, xml, style,
+    def process_overflow_height(self, td_element, index, overflow_gt_height, xml, style, other_styles,
                                 col_widths, table_width, col_span,
                                 styles, offset, col_count, row_count, row_span, row_data, overflow_rows,
                                 rows_variables, held_cells):
@@ -1276,6 +1291,7 @@ class ReportXML(object):
                                                    rows_variables=rows_variables,
                                                    td_element=td_element,
                                                    styles=styles,
+                                                   other_styles=other_styles,
                                                    row_count=row_count,
                                                    col_count=col_count,
                                                    row_span=row_span,
@@ -1285,7 +1301,8 @@ class ReportXML(object):
         return display_object, over_flow_len
 
     def process_over_flow_xml(self, overflow_rows_xml, overflow_rows, rows_variables,
-                              td_element, styles, row_count, col_count, row_span, col_span, row_data, offset):
+                              td_element, styles, other_styles, row_count, col_count,
+                              row_span, col_span, row_data, offset):
 
         for overflow_row_offset, row_xml in enumerate(overflow_rows_xml, 1):
             if row_xml == overflow_rows_xml[-1]:
@@ -1295,14 +1312,14 @@ class ReportXML(object):
 
             self.process_css_for_table(tag=td_element,
                                        styles=styles,
-                                       other_styles={},
+                                       other_styles=other_styles,
                                        start_col=col_count + offset,
                                        start_row=row_count + overflow_row_offset,
                                        end_col=col_count + offset + col_span - 1,
                                        end_row=row_count + overflow_row_offset + row_span - 1)
             self.process_css_for_table(tag=td_element,
                                        styles=styles,
-                                       other_styles={},
+                                       other_styles=other_styles,
                                        start_col=col_count + offset,
                                        start_row=row_count + overflow_row_offset,
                                        end_col=col_count + offset + col_span - 1,
@@ -1311,6 +1328,7 @@ class ReportXML(object):
                                        class_tag_name='overflow_%s_class' % style_tag_name)
             style = self.process_css_for_table_paragraph_style(
                 css=styles,
+                other_styles=other_styles,
                 row_count=row_count + overflow_row_offset,
                 col_count=col_count + offset)
             overflow_object = EnhancedParagraph(row_xml, style, css_classes=self.styles)

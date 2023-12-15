@@ -1,0 +1,49 @@
+<document title="My test printout" page_size="A4"
+          border_top_first="5"
+          border_top_continuation="5"
+          border_bottom_first="5"
+          border_bottom_continuation="5">
+
+<style>
+    main {
+        inner_grid:0.25,#000000;
+        box:0.5,#000000;
+        font_size:7;
+        vAlign:top;
+        top_padding:0;
+        }
+
+    bullet{
+    left_indent: 15;
+    bullet_indent: 10
+        }
+    </style>
+
+{#    <p class="bullet">df fgd dfg dfg dfg gdf fgd gdf gdf gfd sdfh dhs hds shdf gfd fdhs dfhs hsdf hsdf sdhf dfsh dfhs dsfh hdfs fdhs hdfs hsdf sdfh sdfh shdf fhds sdfh hsdf hdfs dfhs</p>#}
+    <table class="main">
+        <tr><td rowspan="2">jkfidhhfdsjn</td>
+        <td class="bullet"><bullet>*</bullet>Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem aperiam, eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae dicta sunt explicabo. Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit, sed quia consequuntur magni dolores eos qui ratione voluptatem sequi nesciunt. Neque porro quisquam est, qui dolorem ipsum quia dolor sit amet, consectetur, adipisci velit, sed quia non numquam eius modi tempora incidunt ut labore et dolore magnam aliquam quaerat voluptatem.</td>
+        </tr>
+        <tr>
+        <td class="bullet"><bullet>*</bullet>Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem aperiam, eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae dicta sunt explicabo. Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit, sed quia consequuntur magni dolores eos qui ratione voluptatem sequi nesciunt. Neque porro quisquam est, qui dolorem ipsum quia dolor sit amet, consectetur, adipisci velit, sed quia non numquam eius modi tempora incidunt ut labore et dolore magnam aliquam quaerat voluptatem.</td>
+</tr></table>
+
+
+<table class="main"><tr><td>jkfidhhfdsjn</td>
+    <td>
+    <table>
+    <tr>
+    <td class="bullet"><bullet>*</bullet>Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem aperiam, eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae dicta sunt explicabo. Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit, sed quia consequuntur magni dolores eos qui ratione voluptatem sequi nesciunt. Neque porro quisquam est, qui dolorem ipsum quia dolor sit amet, consectetur, adipisci velit, sed quia non numquam eius modi tempora incidunt ut labore et dolore magnam aliquam quaerat voluptatem.</td>
+        </tr>
+        <tr>
+        <td class="bullet"><bullet>*</bullet>Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem aperiam, eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae dicta sunt explicabo. Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit, sed quia consequuntur magni dolores eos qui ratione voluptatem sequi nesciunt. Neque porro quisquam est, qui dolorem ipsum quia dolor sit amet, consectetur, adipisci velit, sed quia non numquam eius modi tempora incidunt ut labore et dolore magnam aliquam quaerat voluptatem.</td>
+    </tr>
+    </table>
+
+        </td>
+
+</table>
+</tr></table>
+
+
+</document>
