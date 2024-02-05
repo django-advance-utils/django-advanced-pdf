@@ -11,7 +11,7 @@ from .enhanced_paragraph.enhanced_paragraph import EnhancedParagraph
 from .enhanced_paragraph.style import EnhancedParagraphStyle
 from .enhanced_table.data import EnhancedTableData
 from .enhanced_table.enhanced_tables import OVERFLOW_ROW, EnhancedTable, HEADER_FOOTER, KEEP_TYPE_END, KEEP_TYPE_START, \
-    KEEP_TYPE_MIDDLE, KEEP_TYPE_SPAN, KEEP_TYPE_NA
+    KEEP_TYPE_MIDDLE, KEEP_TYPE_SPAN, KEEP_TYPE_NA, KEEP_TYPE_BREAK
 from .png_images import insert_image, insert_obj
 from .svglib.svglib import SvgRenderer
 from .utils import DocTemplate, get_page_size_from_element, intcomma_currency, ColumnWidthPercentage, \
@@ -402,6 +402,8 @@ class ReportXML(object):
                 if held_row_span > 1 or min_rows_top > 0:
                     min_rows_top -= 1
                     keep_type = KEEP_TYPE_SPAN
+                elif get_boolean_value(element.attrib.get('break')):
+                    keep_type = KEEP_TYPE_BREAK
                 else:
                     keep_type = KEEP_TYPE_NA
                 for _ in range(overflow_row_count + 1):

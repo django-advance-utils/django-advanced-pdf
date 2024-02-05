@@ -21,6 +21,7 @@ KEEP_TYPE_SPAN = 1
 KEEP_TYPE_START = 2
 KEEP_TYPE_MIDDLE = 3
 KEEP_TYPE_END = 4
+KEEP_TYPE_BREAK = 5
 
 
 # noinspection PyPep8Naming
@@ -155,6 +156,9 @@ class EnhancedTable(Table):
                 footer_height = self.footers[footer_index].rows_height
 
             if h + rh > availHeight - footer_height:
+                break
+            if keep_with_next == KEEP_TYPE_BREAK:
+                split_at = n
                 break
 
             if (self.initial or i > number_of_header) and n not in impossible and\
