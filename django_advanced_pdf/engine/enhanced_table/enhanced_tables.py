@@ -38,7 +38,7 @@ class EnhancedTable(Table):
                  col_widths=None, row_heights=None, style=None,
                  repeat_rows=0, repeat_cols=0, split_by_row=1, empty_table_action=None, ident=None,
                  h_align=None, v_align=None, normalized_data=0, cell_styles=None,
-                 _calc_row_splits=True, initial=False, pos_x=None, pos_y=None, colpositions=None):
+                 _calc_row_splits=True, initial=False, pos_x=None, pos_y=None, colpositions=None, check_break=True):
         """
         Class Constructor.
 
@@ -102,7 +102,7 @@ class EnhancedTable(Table):
         self.pos_x = pos_x
         self.pos_y = pos_y
         self._colpositions = colpositions
-
+        self.check_break = check_break
         no_split_cmds = self._calc_nosplit_positions(_calc_row_splits)
 
         if no_split_cmds:
@@ -327,6 +327,7 @@ class EnhancedTable(Table):
                            min_rows_after_header=self.min_rows_after_header,
                            min_rows_before_total=self.min_rows_before_total,
                            _calc_row_splits=False,
+                           check_break=False,
                            colpositions=self._colpositions)
 
         # copy the commands
@@ -695,7 +696,10 @@ class EnhancedTable(Table):
 
     def _calc_height(self, availHeight, availWidth, H=None, W=None):
         height, height_max = self.calc_height_of_table(availHeight, availWidth, H, W)
-        self._height = height
+        if self.check_break and KEEP_TYPE_BREAK in self.keep_with_next:
+            self._height = availHeight + 1
+        else:
+            self._height = height
         self._hmax = height_max
 
     def get_height(self):
