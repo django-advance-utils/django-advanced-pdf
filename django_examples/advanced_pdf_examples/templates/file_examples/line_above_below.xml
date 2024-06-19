@@ -1,0 +1,21 @@
+<document title="My test printout" page_size="A4" page_orientation="portrait"
+          border_top_first="5"
+          border_top_continuation="5"
+          border_bottom_first="5"
+          border_bottom_continuation="5">
+    
+
+    <table class="full_table">
+        <tr>
+            <td style="line_below:2,#FF0000">Red line below (2)</td>
+            <td>No lines</td>
+        </tr>
+        <tr>
+            <td col_span="2">No data</td>
+        </tr>
+        <tr>
+            <td>No lines</td>
+            <td style="line_above:1,#0000FF">Blue line above (1)</td>
+        </tr>
+    </table>
+</document>
