@@ -1,0 +1,149 @@
+<document title="Invoice" page_size="A4"
+          border_top_first="5"
+          border_top_continuation="5"
+          border_bottom_first="5"
+          border_bottom_continuation="5">
+
+    <style>
+        top{
+            text_color:#000000;
+            align:right;
+            font_size:50;
+        }
+
+        contact{
+            font_size:10;
+            top_padding:0;
+        }
+
+        rtable{
+            inner_grid:0.25,#000000;
+            vAlign:top;
+            font_size:7;
+            box:0.5,#000000;
+            valign:top;
+            right_padding:1;
+        }
+
+        estimate_title {
+            align:center;
+            font_size:20;
+            leading:24;
+            font:Helvetica;
+            background:#D3D3D3;
+            box:0.5,#000000;
+        }
+
+        blank{
+            background:#FFFFFF;
+        }
+
+        tables{
+            inner_grid:0.25,#000000;
+            box:0.5,#000000;
+            text_color:#000000;
+            valign:top;
+            left_padding:1;
+            background:#ffffff;
+        }
+
+        greyed{
+            inner_grid:0.25,#000000;
+            box:0.5,#000000;
+            text_color:#000000;
+            valign:top;
+            left_padding:1;
+            background:#D3D3D3
+        }
+
+        final{
+            background:#D3D3FF;
+        }
+    </style>
+
+    <table class="top">
+        <tr>
+            <td style="font-size: 20px" align="right" rowspan="2">Invoice    </td>
+        </tr>
+        <tr>
+            <td></td>
+        </tr>
+    </table>
+
+
+    <table class="contact">
+        <tr><td colspan="2" width="25">{{ invoice.company.name }}<br/>Street<br/>City<br/>Postcode<br/>Email/Phone Number</td></tr>
+        <tr></tr>
+    </table>
+
+
+    <table class="tables">
+
+            <tr><td class="estimate_title" colspan="4" width="25">BILL TO:</td></tr>
+            <tr><td colspan="2">Customer Name</td><td colspan="2" width="50">Invoice Number</td></tr>
+            <tr><td colspan="2" >Customer Address</td><td colspan="2">Current Date</td></tr>
+            <tr><td colspan="2" width="60">Customer Email/Phone Number</td><td colspan="2">Due Date</td></tr>
+
+        <tr>
+            <td colspan="4"></td>
+        </tr>
+    </table>
+
+
+    <table class="tables">
+        <tr class="greyed">
+            <td width="120">Description</td>
+            <td width="35">QTY</td>
+            <td width="35">Price</td>
+            <td width="20">Total</td>
+        </tr>
+
+        {% for invoice_line in invoice_lines %}
+        <tr>
+            <td>{{ invoice_line.description }}</td>
+            <td>{{ invoice_line.qty }}</td>
+            <td>{{ invoice_line.price }}</td>
+            <td>{{ invoice_line.total }}</td>
+        </tr>
+        {% endfor %}
+
+
+        <tr>
+            <td class="blank" colspan="4"></td>
+        </tr>
+        <tr>
+            <td class="blank" colspan="2" rowspan="4">Additional notes</td>
+            <td class="greyed">Subtotal</td><td></td>
+        </tr>
+        <tr>
+            <td class="greyed">Discount</td><td></td>
+        </tr>
+        <tr>
+            <td class="greyed">Tax</td><td></td>
+        </tr>
+        <tr>
+            <td class="greyed">Total</td><td></td>
+        </tr>
+        <tr>
+            <td colspan="4" class="final"></td>
+        </tr>
+    </table>
+
+    <table>
+        <tr></tr>
+        <tr>
+            <td>Payment Information</td>
+        </tr>
+        <tr>
+            <td>Name</td>
+        </tr>
+        <tr>
+            <td>Account Number</td>
+        </tr>
+        <tr>
+            <td>Paypal</td>
+        </tr>
+    </table>
+
+
+</document>

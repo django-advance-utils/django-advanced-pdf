@@ -67,6 +67,23 @@ class Tags(models.Model):
         verbose_name_plural = 'Tags'
 
 
+class Invoice(TimeStampedModel):
+    company = models.ForeignKey(Company, on_delete=models.CASCADE)
+    date = models.DateField()
+    number = models.CharField(max_length=80)
+
+
+class InvoiceLine(TimeStampedModel):
+    invoice = models.ForeignKey(Invoice, on_delete=models.CASCADE)
+    description = models.CharField(max_length=1024)
+    qty = models.PositiveSmallIntegerField(default=1)
+    price = models.PositiveIntegerField()
+    order = models.PositiveSmallIntegerField()
+
+    class Meta:
+        ordering = ('order',)
+
+
 class Note(models.Model):
     company = models.ForeignKey(Company, on_delete=models.CASCADE)
     date = models.DateField()

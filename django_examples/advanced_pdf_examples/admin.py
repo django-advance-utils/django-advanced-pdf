@@ -1,6 +1,6 @@
 from django.contrib import admin
 from advanced_pdf_examples.models import Company, Person, Tags, Sector, Tally, Payment,\
-    CompanyInformation, CompanyCategory
+    CompanyInformation, CompanyCategory, Invoice, InvoiceLine
 from django.contrib.auth.admin import UserAdmin
 
 from advanced_pdf_examples.models import UserProfile
@@ -75,3 +75,17 @@ admin.site.register(UserProfile, UserAdmin)
 class CompanyCategoryAdmin(admin.ModelAdmin):
     list_display = ('name',
                     )
+
+
+class InvoiceLineInline(admin.TabularInline):
+    model = InvoiceLine
+
+
+@admin.register(Invoice)
+class InvoiceAdmin(admin.ModelAdmin):
+    list_display = ('company',
+                    'date',
+                    'number')
+
+    inlines = [InvoiceLineInline,
+               ]

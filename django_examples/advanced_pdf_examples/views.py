@@ -3,7 +3,7 @@ import os
 import pathlib
 
 from PyPDF2 import PdfWriter, PdfReader
-from advanced_pdf_examples.models import Company
+from advanced_pdf_examples.models import Company, Invoice
 from ajax_helpers.mixins import AjaxHelpers
 from django.conf import settings
 from django.http import HttpResponse
@@ -12,7 +12,7 @@ from django.template.loader import get_template
 from django.urls import reverse
 from django.views import View
 from django.views.generic import TemplateView
-from django_datatables.columns import MenuColumn
+from django_datatables.columns import MenuColumn, ColumnLink
 from django_datatables.datatables import DatatableView
 from django_datatables.helpers import DUMMY_ID
 from django_menus.menu import MenuMixin, MenuItem, HtmlMenu, AjaxButtonMenuItem
@@ -35,6 +35,7 @@ class MainMenu(AjaxHelpers, MenuMixin):
             ('advanced_pdf_examples:from_database_example', 'From Database Example'),
             ('advanced_pdf_examples:from_file_example', 'From File Example'),
             ('advanced_pdf_examples:view_companies_pdf', 'View Companies PDF'),
+            ('advanced_pdf_examples:invoices', 'Invoices'),
             ('advanced_pdf_examples:view_report_pdf', 'View Report'),
             ('advanced_pdf_examples:view_headed_notepaper_pdf', 'View Headed Notepaper PDF'),
             ('advanced_pdf_examples:task_examples,-', 'Task Examples'),
@@ -147,6 +148,20 @@ class FromFileExampleIndex(MainMenu, DatatableView):
         )
 
 
+class InvoicesIndex(MainMenu, DatatableView):
+    template_name = 'advanced_pdf_examples/index.html'
+    model = Invoice
+
+    def setup_table(self, table):
+        table.add_columns(
+            '.id',
+            ('company__name', {'title': 'Company Name'}),
+            ColumnLink(column_name='link',
+                       field=['id', 'number'],
+                       url_name='advanced_pdf_examples:invoice_companies_pdf'),
+        )
+
+
 class ExampleFilePDFView(View):
     def get(self, request, filename):
         template = get_template(f'file_examples/{filename}.xml')
@@ -218,6 +233,20 @@ class CompaniesPDFView(View):
     def get(self, request):
         template = get_template(f'file_examples/with_context/companies.xml')
         xml = template.render({'companies': Company.objects.all()})
+        report_xml = ReportXML()
+        result = report_xml.load_xml_and_make_pdf(xml)
+        response = HttpResponse(result.getvalue(), content_type='application/pdf')
+        return response
+
+
+class InvoicePDFView(View):
+    def get(self, request, invoice_id):
+
+        invoice = get_object_or_404(Invoice, pk=invoice_id)
+
+        template = get_template(f'file_examples/with_context/invoice.xml')
+        xml = template.render({'invoice': invoice,
+                               'invoice_lines': invoice.invoiceline_set.all()})
         report_xml = ReportXML()
         result = report_xml.load_xml_and_make_pdf(xml)
         response = HttpResponse(result.getvalue(), content_type='application/pdf')

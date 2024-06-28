@@ -2,7 +2,7 @@ from django.urls import path
 
 from advanced_pdf_examples.views import FromDatabaseExampleIndex, FromFileExampleIndex, PrintingTemplateModal,\
     ExampleDatabasePDFView, ExampleFilePDFView, CompaniesPDFView, ReportExampleView, HeadedNotepaperView,\
-    ProcessTaskExamples
+    ProcessTaskExamples,  InvoicePDFView, InvoicesIndex
 from django_modals.task_modals import TaskModal
 
 
@@ -18,6 +18,9 @@ urlpatterns = [
     path('view/database/<int:pk>/', ExampleDatabasePDFView.as_view(), name='view_example_database_pdf'),
     path('view/file/<str:filename>/', ExampleFilePDFView.as_view(), name='view_example_file_pdf'),
     path('view/companies/', CompaniesPDFView.as_view(), name='view_companies_pdf'),
+
+    path('invoices/', InvoicesIndex.as_view(), name='invoices'),
+    path('invoice/<int:invoice_id>/', InvoicePDFView.as_view(), name='invoice_companies_pdf'),
     path('report/example/', ReportExampleView.as_view(), name='view_report_pdf'),
     path('report/headed-notepaper/', HeadedNotepaperView.as_view(), name='view_headed_notepaper_pdf'),
     path('tasks/<str:slug>/', ProcessTaskExamples.as_view(), name='task_examples'),
