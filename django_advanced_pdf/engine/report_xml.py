@@ -1006,19 +1006,21 @@ class ReportXML(object):
     def get_padding_for_cell(styles, start_col=0, start_row=0, end_col=-1, end_row=-1):
         start_tuple = (start_col, start_row)
         padding = 0
-        found_padding = False
+        found_left = False
+        found_right = False
         for style in styles:
-
             style_type = style[0]
-            if style_type in ('LEFTPADDING',
-                              'RIGHTPADDING'):
-
-                if start_tuple == style[1]:  # todo this isn't always going to work if defined on tr or table
-                    padding += style[3]
-                    found_padding = True
-        if found_padding:
+            if style_type == 'LEFTPADDING' and start_tuple == style[1]:
+                padding += style[3]
+                found_left = True
+            elif style_type == 'RIGHTPADDING' and start_tuple == style[1]:
+                padding += style[3]
+                found_right = True
+        if found_left and found_right:
             return padding - 1
-        return 3
+        if found_left or found_right:
+            return padding + 6
+        return 12
 
     def get_css_from_style_attribute(self, tag, style_tag_name='style', class_tag_name='class'):
 

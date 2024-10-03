@@ -150,3 +150,4 @@ django_examples/advanced_pdf_examples/templates/file_examples/temp3.xml
 *.lock
 django_advanced_pdf/_*/_trial_marker
 django_advanced_pdf/test_data/errors/*.png
+django_examples/advanced_pdf_examples/templates/file_examples/subtable.xml
