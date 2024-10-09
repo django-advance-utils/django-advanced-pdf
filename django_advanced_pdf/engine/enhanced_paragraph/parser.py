@@ -1,6 +1,6 @@
 from reportlab.lib.colors import HexColor
 from reportlab.platypus import ParaParser
-from reportlab.platypus.paraparser import _lineRepeats
+from reportlab.platypus.paraparser import _lineRepeats, _ExValidate
 
 
 class EnhancedParaParser(ParaParser):
@@ -50,3 +50,19 @@ class EnhancedParaParser(ParaParser):
 
     def end_span(self):
         self._pop('span')
+
+    def getAttributes(self, attr, attrMap):
+        # stops a error happening on thing like <u class="">
+
+        A = {}
+        for k, v in attr.items():
+            if not self.caseSensitive:
+                k = k.lower()
+            if k in attrMap:
+                j = attrMap[k]
+                func = j[1]
+                if func is not None:
+                    #it's a function
+                    v = func(self, v) if isinstance(func,_ExValidate) else func(v)
+                A[j[0]] = v
+        return A
