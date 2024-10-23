@@ -48,7 +48,7 @@ class BasePager(canvas.Canvas):
 
         self.add_background_images()
 
-    def margins(self, first=True):
+    def margins(self, first_page=True):
         return {'top': 0, 'bottom': 0, 'left': 0, 'right': 0}
 
     def inkAnnotation(self, contents, ink_list=None, rect=None, add_to_page=1, name=None, relative=0, **kw):
@@ -83,6 +83,18 @@ class BasePager(canvas.Canvas):
         if bottom > self.pageused.bottom:
             self.pageused.bottom = bottom
             self.pageused2.bottom = bottom
+
+    def get_page_used(self, first_page=True):
+        if first_page:
+            return {'left': self.pageused.left,
+                    'right': self.pageused.right,
+                    'top': self.pageused.top,
+                    'bottom': self.pageused.bottom}
+        else:
+            return {'left': self.pageused2.left,
+                    'right': self.pageused2.right,
+                    'top': self.pageused2.top,
+                    'bottom': self.pageused2.bottom}
 
     def page_used_left(self, first_page=True):
         return self.pageused.left if first_page else self.pageused2.left
@@ -153,21 +165,24 @@ class BasePager(canvas.Canvas):
             method(page_count)
         self.draw_borders(page_count)
 
-        #  Enable the condition below to draw a red box round the margins.
-        #  Used for layout debugging.
-        #
-        if False:
-            first_page = self._pageNumber == 1
-            border_left = self.border_left(first_page)
-            border_right = self.border_right(first_page)
-            border_bottom = self.border_bottom(first_page)
-            border_top = self.border_top(first_page)
-            self.setStrokeColor(colors.red)
-            self.line(border_left, border_bottom, border_right, border_bottom)  # bottom
-            self.line(border_right, border_bottom, border_right, border_top)  # right
-            self.line(border_left, border_bottom, border_left, border_top)  # left
-            self.line(border_left, border_top, border_right, border_top)  # top
-            self.setStrokeColor(colors.black)
+        # self.draw_debug_border()
+
+    def draw_debug_border(self):
+        """
+        Draw a red box round the margins.
+        Used for layout debugging.
+        """
+        first_page = self._pageNumber == 1
+        border_left = self.border_left(first_page)
+        border_right = self.border_right(first_page)
+        border_bottom = self.border_bottom(first_page)
+        border_top = self.border_top(first_page)
+        self.setStrokeColor(colors.red)
+        self.line(border_left, border_bottom, border_right, border_bottom)  # bottom
+        self.line(border_right, border_bottom, border_right, border_top)  # right
+        self.line(border_left, border_bottom, border_left, border_top)  # left
+        self.line(border_left, border_top, border_right, border_top)  # top
+        self.setStrokeColor(colors.black)
 
     def showPage(self):
         self._saved_page_states.append(dict(self.__dict__))

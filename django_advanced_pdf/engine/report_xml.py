@@ -85,6 +85,7 @@ class ReportXML(object):
         self.status_method = status_method
         self.held_variables = None
         self.has_potential_xml_errors = False
+        self.pager_blocks = []
 
         if pager_kwargs is None:
             self.pager_kwargs = {}
@@ -197,10 +198,7 @@ class ReportXML(object):
 
         pager = self.setup_pager(page_size=page_size,
                                  root_element=root_element)
-        doc = DocTemplate(title,
-                          pager,
-                          file_buffer,
-                          pagesize=page_size)
+
         story = []
         page_width = (pager.page_width() - pager.pageused.left - pager.pageused.right) / mm
         page_height = (pager.page_height() - pager.pageused.top - pager.page_used_bottom()) / mm
@@ -210,6 +208,13 @@ class ReportXML(object):
                          page_height=page_height,
                          top_border=pager.pageused.top,
                          bottom_border=pager.pageused.bottom)
+
+        doc = DocTemplate(heading=title,
+                          pager=pager,
+                          filename=file_buffer,
+                          pagesize=page_size,
+                          pager_blocks=self.pager_blocks)
+
         doc.build(story, canvasmaker=self.canvasmaker)
 
     def get_pager(self, *args, **kwargs):
@@ -310,6 +315,10 @@ class ReportXML(object):
                                              page_width=page_width,
                                              top_border=top_border,
                                              bottom_border=bottom_border))
+            elif current_tag == "pagers":
+                self.process_pagers(element=child,
+                                    page_width=page_width,
+                                    page_height=page_height)
 
         if len(story) == 0:
             raise ReportXMLError("No data")
@@ -1345,3 +1354,29 @@ class ReportXML(object):
     def update_status(self, message):
         if self.status_method is not None:
             self.status_method(message)
+
+    def process_pagers(self, element, page_width, page_height):
+        pagers_children = element.getchildren()
+        for pagers_child in pagers_children:
+            if pagers_child.tag == 'pager':
+                pager_children = pagers_child.getchildren()
+
+                display_objects = []
+
+                for pager_child in pager_children:
+                    if pager_child.tag == 'table':
+                        table = self.process_table(table=pager_child,
+                                                   table_width=page_width,
+                                                   page_height=page_height,
+                                                   page_width=page_width,
+                                                   top_border=0,
+                                                   bottom_border=0
+                                                   )
+                        display_objects.append(table)
+
+
+                pager = {'pos_x': float(pagers_child.get('pos_x', 0)),
+                         'pos_y': float(pagers_child.get('pos_y', 0)),
+                         'pos_y_ref': pagers_child.get('pos_y_ref', 'top'),
+                         'display_objects': display_objects}
+                self.pager_blocks.append(pager)

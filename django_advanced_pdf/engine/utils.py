@@ -11,7 +11,7 @@ from reportlab.lib.pagesizes import A4, A6, A5, A3, A2, A1, A0, LETTER, LEGAL, E
 from reportlab.lib.units import mm
 from reportlab.pdfbase.pdfmetrics import stringWidth
 from reportlab.pdfgen import canvas
-from reportlab.platypus import BaseDocTemplate, Frame, PageTemplate, SimpleDocTemplate, Flowable
+from reportlab.platypus import BaseDocTemplate, Frame, PageTemplate, SimpleDocTemplate, Flowable, Table, TableStyle
 
 logger = logging.getLogger("reportlab.platypus")
 
@@ -55,35 +55,41 @@ class ObjectPosition(Flowable):
         for flowable in self.content:
             flowable.drawOn(self.canv, pos_x, pos_y)
 
+
 class DocTemplate(SimpleDocTemplate):
-    def __init__(self, heading, pager, *args, **kwargs):
+    def __init__(self, heading, pager, pager_blocks, *args, **kwargs):
         BaseDocTemplate.__init__(self, *args, **kwargs)
         #  Create and add two page templates each comprising a single frame to handle the
         #  first and subsequent pages. Each frame spans the entire page, but has padding
         #  set corresponding to the page used by the boxes and whatnot.
         first_margins = pager.margins()
-        continuation_margins = pager.margins(first=False)
+        continuation_margins = pager.margins(first_page=False)
+        self.pager_blocks = []
+        pager_blocks_heights = self.prepass_pager_block(pager_blocks)
+        first_page_used = pager.get_page_used()
+        continuation_page_used = pager.get_page_used(first_page=False)
 
         frame1 = Frame(0,
                        0,
                        self.pagesize[0],
                        self.pagesize[1],
-                       pager.page_used_left() + first_margins['left'],
-                       pager.page_used_bottom() + first_margins['bottom'],
-                       pager.page_used_right() + first_margins['right'],
-                       pager.page_used_top() + first_margins['top'])
+                       first_page_used['left'] + first_margins['left'],
+                       first_page_used['bottom'] + first_margins['bottom'] + pager_blocks_heights['bottom'],
+                       first_page_used['right'] + first_margins['right'],
+                       first_page_used['top'] + first_margins['top'] + pager_blocks_heights['top'])
         frame2 = Frame(0,
                        0,
                        self.pagesize[0],
                        self.pagesize[1],
-                       pager.page_used_left(False) + continuation_margins['left'],
-                       pager.page_used_bottom(False) + continuation_margins['bottom'],
-                       pager.page_used_right(False) + continuation_margins['right'],
-                       pager.page_used_top(False) + continuation_margins['top'])
+                       continuation_page_used['left'] + continuation_margins['left'],
+                       continuation_page_used['bottom'] + continuation_margins['bottom'] + pager_blocks_heights['bottom'],
+                       continuation_page_used['right'] + continuation_margins['right'],
+                       continuation_page_used['top'] + continuation_margins['top'] + pager_blocks_heights['top'])
 
         self.addPageTemplates([PageTemplate(id='Page1', frames=frame1), PageTemplate(id='Page2', frames=frame2)])
 
         self.pager = pager
+
         self.heading = heading
 
     def handle_pageEnd(self):
@@ -143,32 +149,60 @@ class DocTemplate(SimpleDocTemplate):
         self.frame._debug = self._debug
         self.handle_frameBegin()
 
-    def before_draw_canvas(self, canv, page_number):
-        # if page_number == 2:
-        #     self.create_abs_table(canv)
-        pass
-    # def create_abs_table(self, canv):
-    #     data = [['00', '01', '02', '03', '04'],
-    #             ['10', '11', '12', '13', '14'],
-    #             ['20', '21', '22', '23', '24'],
-    #             ['30', '31', '32', '33', '34']]
-    #
-    #     t = Table(data)
-    #     t.setStyle(TableStyle([('BACKGROUND', (1, 1), (-2, -2), colors.green),
-    #                            ('TEXTCOLOR', (0, 0), (1, -1), colors.red)]))
-    #
-    #     t.wrapOn(canv, self.width - 100, self.height)
-    #     t.drawOn(canv, *self.coord(100, 200, mm))
+    def prepass_pager_block(self, pager_blocks):
+        top_block_height = 0
+        bottom_block_height = 0
+        if len(pager_blocks) > 0:
+            for pager_block in pager_blocks:
+                display_objects = pager_block['display_objects']
+                height = 0
+                offsets = []
+                for display_object in display_objects:
+                    offsets.append(height)
+                    h, _ = display_object.calc_height_of_table(self.pagesize[0], self.pagesize[1])
+                    height += h
+                if pager_block.get('pos_y_ref') == 'top':
+                    top_block_height += height
+                else:
+                    bottom_block_height += height
+                self.pager_blocks.append({**pager_block,
+                                          'height': height / mm,
+                                          'offsets': offsets[::-1]})
+        return {'top': top_block_height, 'bottom': bottom_block_height}
 
-    def coord(self, x, y, unit=mm):
+    def before_draw_canvas(self, canv, page_number):
+        if page_number == 1:
+            page_used = self.pager.get_page_used()
+        else:
+            page_used = self.pager.get_page_used(first_page=False)
+        page_height = self.pager.pagesize[1]
+        if len(self.pager_blocks) > 0:
+            for pager_block in self.pager_blocks:
+                display_objects = pager_block['display_objects']
+                offsets = pager_block['offsets']
+                block_height = pager_block['height']
+                pos_x = pager_block['pos_x'] + (page_used['left'] / mm)
+                for display_object, offset in zip(display_objects, offsets):
+                    display_object.wrapOn(canv, self.width, self.height)
+                    block_pos_y = pager_block['pos_y']
+                    if pager_block.get('pos_y_ref') == 'top':
+                        pos_y = block_pos_y + ((page_used['top'] + offset) / mm) + block_height
+                    else:
+                        page_height_mm = page_height / mm
+                        total_margins = (page_used['bottom'] + offset) / mm
+                        pos_y = page_height_mm - block_pos_y - total_margins
+
+                    display_object.drawOn(canv, *self.coord(pos_x, pos_y, mm, height=page_height))
+
+    def coord(self, x, y, unit=mm, height=None):
         """
         http://stackoverflow.com/questions/4726011/wrap-text-in-a-table-reportlab
         Helper class to help position flowables in Canvas objects
         """
-        x, y = x * unit, self.height - y * unit
+        if height is None:
+            height = self.height
+        x, y = x * unit, height - y * unit
         return x, y
-
-
 
 
 class Grouper(dict):
