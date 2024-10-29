@@ -8,7 +8,6 @@ class EnhancedParagraphStyle(ParagraphStyle):
 
     def process_css_for_table_paragraph_style(self, css, other_styles, row_count, col_count):
 
-
         for style in css:
             if row_count is not None and col_count is not None and \
                     not self.is_valid_css_row(row_count, col_count, style[1], style[2]):
@@ -25,6 +24,8 @@ class EnhancedParagraphStyle(ParagraphStyle):
             self._add_style(style_type, style_detail)
 
     def _add_style(self, style_type, style_detail):
+        if isinstance(style_detail, str):
+            style_detail = style_detail.lstrip()
         if style_type in ('font_name',
                           'face',
                           'font'):
@@ -61,6 +62,8 @@ class EnhancedParagraphStyle(ParagraphStyle):
                 continue
             style_type, style_detail = style.split(':')
             style_type = style_type.lower().lstrip("\r\n ")
+            if isinstance(style_detail, str):
+                style_detail = style_detail.lstrip()
 
             if style_type == '':
                 continue

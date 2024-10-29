@@ -24,6 +24,9 @@ class EnhancedParaParser(ParaParser):
                 continue
             style_type, style_detail = style.split(':')
             style_type = style_type.lower().lstrip("\r\n ")
+            if isinstance(style_detail, str):
+                style_detail = style_detail.lstrip()
+
             if style_type in ('font',
                               'face',
                               'font_name'):

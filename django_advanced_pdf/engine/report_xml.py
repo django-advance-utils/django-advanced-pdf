@@ -956,6 +956,8 @@ class ReportXML(object):
                 continue
             style_type, style_detail = style.split(':')
             style_type = style_type.lower().lstrip("\r\n ")
+            if isinstance(style_detail, str):
+                style_detail = style_detail.lstrip()
 
             if style_type in ('inner_grid',
                               'box',
