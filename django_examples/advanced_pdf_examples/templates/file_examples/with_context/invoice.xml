@@ -63,10 +63,7 @@
 
     <table class="top">
         <tr>
-            <td style="font-size: 20px" align="right" rowspan="2">Invoice    </td>
-        </tr>
-        <tr>
-            <td></td>
+            <td style="font-size: 20px" align="right">Invoice</td>
         </tr>
     </table>
 
@@ -91,6 +88,7 @@
 
 
     <table class="tables">
+<currency_variables total="0" is_float="0" symbol="£" />
         <tr class="greyed">
             <td width="120">Description</td>
             <td width="35">QTY</td>
@@ -102,8 +100,8 @@
         <tr>
             <td>{{ invoice_line.description }}</td>
             <td>{{ invoice_line.qty }}</td>
-            <td>{{ invoice_line.price }}</td>
-            <td>{{ invoice_line.total }}</td>
+            <td></td>
+            <td><currency_qty qty="{{ invoice_line.qty }}" value="{{ invoice_line.price }}" symbol_from="total"/></td>
         </tr>
         {% endfor %}
 
