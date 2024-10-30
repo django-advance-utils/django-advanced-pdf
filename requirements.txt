@@ -1,28 +1,26 @@
-Django==3.2.7
-psycopg2-binary>=2.8
-django-crispy-forms==1.12.0
-#django-tab-menus==0.0.15
-git+https://github.com/jonesim/django-menus.git@ad597ee3969e730e9760b1a596af7fb3aee42f3a
-django-filtered-datatables==0.0.21
-# git+https://github.com/jonesim/django-datatables.git@835fbfcca570616dc7c4cec8b13110118553c585
-
-django-nested-modals==0.0.20
-# git+https://github.com/jonesim/django-modals.git@0624daf0450df3018f5c4d489a3bc70f8e4d0453
-
+django==5.1.2
+psycopg2-binary==2.9.10
+django-crispy-forms==1.14.0
 # django-ajax-helpers==0.0.20
-git+https://github.com/jonesim/ajax-helpers.git@753daa85d6c7552c2d7f6e1cd5ad3fe5ecc5e8cf
+git+https://github.com/jonesim/ajax-helpers.git@3a55d60b2bf8e1d4cbe867f9c46c4e0baff88aef
+# django-filtered-datatables==0.0.20
+git+https://github.com/jonesim/django-datatables.git@bc7540aa950d063eefa768f2a8de1d0a38b83f24
+#django-tab-menus==0.0.14
+git+https://github.com/jonesim/django-menus.git@09f95fdd7545e3ecbecbdb17b04448a24c1194b6
+# django-nested-modals==0.0.23
+git+https://github.com/jonesim/django-modals.git@69433600267ab18836423ba5aa2ed3854e7250f8
 time-stamped-model==0.2.2
 date-offset==0.0.2
-django-debug-toolbar==3.2.4
-reportlab==4.0.0
-lxml==4.9.1
+django-debug-toolbar==4.4.6
+reportlab==4.2.5
+lxml==5.3.0
 six==1.16.0
 cssselect2==0.7.0
 tinycss2==1.2.1
 pypdf2==3.0.1
 twisted==22.10.0
-PyMuPDF==1.21.1
-Pillow==9.4.0
+PyMuPDF==1.24.0
+Pillow==10.4.0
 celery==5.2.7
 redis==4.4.2
 django-redis==5.2.0

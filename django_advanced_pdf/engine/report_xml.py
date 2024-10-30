@@ -1141,12 +1141,12 @@ class ReportXML(object):
         held_working_tags = []
         raw_parts = None
         offset = xml.find('>'.encode())
-        m = re.search("<br\s?/>".encode(), xml[overflow_length + offset:])
+        m = re.search(r"<br\s?/>".encode(), xml[overflow_length + offset:])
         if m:
             pos = m.start() + overflow_length + offset
             span = m.span()
             match_len = span[1] - span[0]
-            xml_parts = re.split("<br\s?/>".encode(), xml[pos + match_len:])
+            xml_parts = re.split(r"<br\s?/>".encode(), xml[pos + match_len:])
             next_xml = ''
             raw_parts = []
             # this makes the xml valid again after it has been split
