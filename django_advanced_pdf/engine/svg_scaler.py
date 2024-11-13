@@ -16,7 +16,9 @@ class SVGScaler:
                  '_attributes']
 
     def __init__(self):
-        # TODO: Annotations, rule. Assume MM if data-units not provided
+        # TODO: Annotations.
+        # TODO: Rule.
+        # TODO: Assume MM if data-units not provided
         self._ratio = None
         self._ratio_pattern = r'^1:(\d+)$'
         self._units = None
@@ -74,28 +76,6 @@ class SVGScaler:
         result = round(value, 3)
         return result
 
-    def scale(self, ratio: str, units: str, svg: etree.Element):
-        self.ratio = ratio
-        self.units = units
-        # self._preprocess_root_attr(svg=svg)
-        self._svg_items = list(svg.iterchildren())
-        [self._modify_svg_element(element=element) for element in self._svg_items]
-
-    def _modify_svg_element(self, element):
-        self.svg_tag = element.tag
-        match self.svg_tag:
-            case 'g':
-                self._modify_tag(element=element)
-                svg_items = element.iterchildren()
-                [self._modify_svg_element(element=element) for element in svg_items]
-            case _:
-                self._modify_tag(element=element)
-
-    def _modify_tag(self, element):
-        for attr in self._attributes:
-            value = element.attrib.get(attr)
-            if value: self._match_attribute(element=element, attr=attr, value=value)
-
     @staticmethod
     def _strip_units(value):
         units = ['mm', 'in', 'cm']
@@ -122,8 +102,9 @@ class SVGScaler:
         element.set('style', ';'.join(styles))
 
     def _set_scaled_path(self, element, value):
-        match_and_clean = lambda match: str(self.rnd(float(match.group(0)) * self.scaling_factor))
-        scaled_path = re.sub(r'-?\d*\.?\d+', match_and_clean, value)
+        coerce_and_scale = lambda regex_val: str(self.rnd(float(regex_val) * self.scaling_factor))
+        handler = lambda match: coerce_and_scale(match.group(0))
+        scaled_path = re.sub(r'-?\d*\.?\d+', handler, value)
         element.set('d', scaled_path)
 
     def _set_scaled_transform(self, element, value):
@@ -149,3 +130,27 @@ class SVGScaler:
             self._set_scaled_value(element=element, attr=attr, value=value)
         elif attr in self._other_attributes:
             self._match_other_attributes(element=element, attr=attr, value=value)
+
+    def _modify_tag(self, element):
+        for attr in self._attributes:
+            value = element.attrib.get(attr)
+            if value: self._match_attribute(element=element, attr=attr, value=value)
+
+    def _modify_svg_element(self, element):
+        self.svg_tag = element.tag
+        match self.svg_tag:
+            case 'g':
+                self._modify_tag(element=element)
+                svg_items = element.iterchildren()
+                [self._modify_svg_element(element=element) for element in svg_items]
+            case _:
+                self._modify_tag(element=element)
+
+    def _drop_attr(self, svg): [svg.attrib.pop(key) for key in self._attributes if key in svg.attrib]
+
+    def scale(self, ratio: str, units: str, svg: etree.Element):
+        self.ratio = ratio
+        self.units = units
+        self._drop_attr(svg=svg)
+        self._svg_items = list(svg.iterchildren())
+        [self._modify_svg_element(element=element) for element in self._svg_items]
