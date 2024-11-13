@@ -4,7 +4,7 @@ from io import StringIO, BytesIO
 
 from lxml import etree
 from reportlab.lib.colors import HexColor, black
-from reportlab.lib.units import mm, inch, cm
+from reportlab.lib.units import mm
 from reportlab.platypus import TableStyle, PageBreak, Spacer, Table
 
 from .enhanced_paragraph.enhanced_paragraph import EnhancedParagraph
@@ -13,6 +13,7 @@ from .enhanced_table.data import EnhancedTableData
 from .enhanced_table.enhanced_tables import OVERFLOW_ROW, EnhancedTable, HEADER_FOOTER, KEEP_TYPE_END, KEEP_TYPE_START, \
     KEEP_TYPE_MIDDLE, KEEP_TYPE_SPAN, KEEP_TYPE_NA
 from .png_images import insert_image, insert_obj
+from .svg_scaler import SVGScaler
 from .svglib.svglib import SvgRenderer
 from .utils import DocTemplate, get_page_size_from_element, intcomma_currency, ColumnWidthPercentage, \
     MyTDUserHtmlParser, \
@@ -1388,44 +1389,3 @@ class ReportXML(object):
                          'pos_y_ref': pagers_child.get('pos_y_ref', 'top'),
                          'display_objects': display_objects}
                 self.pager_blocks.append(pager)
-
-
-class SVGScaler:
-    def __init__(self):
-       self._ratio = None
-       self._ratio_pattern = r'^1:(\d+)$'
-       self._units = None
-
-    @property
-    def ratio(self):
-        return self._ratio
-
-    @ratio.setter
-    def ratio(self, value: str):
-        match =  re.fullmatch(self._ratio_pattern, value)
-        if not match:
-            raise ValueError('format must be "1:n" where 1 unit on the scale drawing represents n-integer real units')
-        else:
-            n = int(match.group(1))
-            if not n > 0: raise ValueError("The ratio 1:n cannot have n = 0")
-            self._ratio = 1/n
-
-    @property
-    def units(self):
-        return self._units
-
-    @units.setter
-    def units(self, value: str):
-        lookup = {
-            'inch': inch,
-            'mm': mm,
-            'cm': cm
-        }
-        if value not in lookup:
-            raise ValueError('units must be string "mm", "cm" or "inch"')
-        else:
-            self._units = lookup[value]
-
-    def scale(self, ratio: str, units: str, svg: etree.Element):
-        self.ratio = ratio
-        self.units = units
