@@ -15,7 +15,6 @@ class SVGScaler:
                  '_attributes']
 
     def __init__(self):
-        # TODO: Annotations.
         # TODO: Rule.
         self._ratio = None
         self._ratio_pattern = r'^1:(\d+(\.\d+)?)$'
@@ -130,14 +129,9 @@ class SVGScaler:
     def _match_attribute(self, element, attr, value):
         handler = {
             **{attr: self._set_scaled_value for attr in self._standard_attributes},
-            'style': self._match_other_attributes,
-            'transform': self._match_other_attributes,
-            'd': self._match_other_attributes,
-            'points': self._match_other_attributes,
+            **{attr: self._match_other_attributes for attr in self._other_attributes}
         }.get(attr)
-
         if handler:
-            # noinspection PyArgumentList
             handler(element=element, attr=attr, value=value)
 
     def _modify_tag(self, element):
