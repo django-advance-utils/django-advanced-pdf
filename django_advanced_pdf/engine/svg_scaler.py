@@ -12,7 +12,8 @@ class SVGScaler:
                  '_svg_tag',
                  '_standard_attributes',
                  '_other_attributes',
-                 '_attributes']
+                 '_attributes',
+                 '_attr_handler']
 
     def __init__(self):
         # TODO: Rule.
@@ -23,6 +24,8 @@ class SVGScaler:
         self._standard_attributes = ['width', 'height', 'x', 'y', 'x1', 'y1', 'x2', 'y2', 'stroke-width', 'text']
         self._other_attributes = ['style', 'transform', 'd', 'points']
         self._attributes = self._standard_attributes + self._other_attributes
+        self._attr_handler = {**{attr: self._set_scaled_value for attr in self._standard_attributes},
+                              **{attr: self._match_other_attributes for attr in self._other_attributes}}
 
     @property
     def ratio(self):
@@ -126,28 +129,25 @@ class SVGScaler:
         scaled_value = self._coerce_and_scale_value(value)
         element.set(attr, scaled_value)
 
-    def _match_attribute(self, element, attr, value):
-        handler = {
-            **{attr: self._set_scaled_value for attr in self._standard_attributes},
-            **{attr: self._match_other_attributes for attr in self._other_attributes}
-        }.get(attr)
+    def _map_attribute_to_function(self, element, attr, value):
+        handler = self._attr_handler.get(attr)
         if handler:
             handler(element=element, attr=attr, value=value)
 
-    def _modify_tag(self, element):
+    def _open_element(self, element):
         for attr in self._attributes:
             value = element.attrib.get(attr)
-            if value: self._match_attribute(element=element, attr=attr, value=value)
+            if value: self._map_attribute_to_function(element=element, attr=attr, value=value)
 
-    def _modify_svg_element(self, element):
+    def _match_element_tag(self, element):
         self.svg_tag = element.tag
         match self.svg_tag:
             case 'g':
-                self._modify_tag(element=element)
+                self._open_element(element=element)
                 for child_element in element.iterchildren():
-                    self._modify_svg_element(element=child_element)
+                    self._match_element_tag(element=child_element)
             case _:
-                self._modify_tag(element=element)
+                self._open_element(element=element)
 
     def _drop_attr(self, svg): [svg.attrib.pop(key) for key in self._attributes if key in svg.attrib]
 
@@ -156,4 +156,4 @@ class SVGScaler:
         self.units = units
         self._drop_attr(svg=svg)
         for element in svg.iterchildren():
-            self._modify_svg_element(element=element)
+            self._match_element_tag(element=element)
