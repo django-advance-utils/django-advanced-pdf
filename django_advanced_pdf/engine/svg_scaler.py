@@ -1,4 +1,5 @@
 import re
+import warnings
 
 from lxml import etree
 from reportlab.lib.units import inch, mm, cm
@@ -14,8 +15,6 @@ class SVGScaler:
                  '_attributes']
 
     def __init__(self):
-        # TODO: Handle multiple transform functions passed
-        # TODO: Handle negative/float values passed to Path
         # TODO: Assume MM if data-units not provided
         # TODO: Annotations.
         # TODO: Rule.
@@ -77,6 +76,11 @@ class SVGScaler:
                 break
         return value
 
+    def _coerce_and_scale_value(self, value):
+        cleaned_value = self._strip_units(value)
+        scaled_value = self.rnd(float(cleaned_value) * self.scaling_factor)
+        return str(scaled_value)
+
     def _set_scaled_style(self, element, value):
         styles = value.split(';')
         for idx, string in enumerate(styles):
@@ -93,12 +97,12 @@ class SVGScaler:
         element.set('d', f'{scaled_path}')
 
     def _set_scaled_transform(self, element, value):
-        start_txt = 'translate('
-        end_txt = ')'
-        start, end = value.find(start_txt), value.find(end_txt)
-        x, y = value[start + len(start_txt): end].split(',')
-        x, y = self._coerce_and_scale_value(x), self._coerce_and_scale_value(y)
-        element.set('transform', f'translate({x} {y})')
+        handler = lambda match: f'translate({self._coerce_and_scale_value(match.group(1))}, \
+                                            {self._coerce_and_scale_value(match.group(2))})'
+        scaled_transform = re.sub('translate\(([-\d.]+),\s*([-\d.]+)\)', handler, value)
+        if 'skew' or 'scale' in scaled_transform:
+            warnings.warn('your SVG uses "skew" or "scale" in transform, this is unsupported with class SVGScaler')
+        element.set('transform', scaled_transform)
 
     def _match_other_attributes(self, element, attr, value):
         match attr:
@@ -108,11 +112,6 @@ class SVGScaler:
                 self._set_scaled_transform(element=element, value=value)
             case 'd':
                 self._set_scaled_path(element=element, value=value)
-
-    def _coerce_and_scale_value(self, value):
-        cleaned_value = self._strip_units(value)
-        scaled_value = self.rnd(float(cleaned_value) * self.scaling_factor)
-        return str(scaled_value)
 
     def _set_scaled_value(self, element, attr, value):
         scaled_value = self._coerce_and_scale_value(value)
@@ -125,8 +124,10 @@ class SVGScaler:
             'transform': self._match_other_attributes,
             'd': self._match_other_attributes,
         }.get(attr)
-        # noinspection PyArgumentList
-        handler(element=element, attr=attr, value=value)
+
+        if handler:
+            # noinspection PyArgumentList
+            handler(element=element, attr=attr, value=value)
 
     def _modify_tag(self, element):
         for attr in self._attributes:
