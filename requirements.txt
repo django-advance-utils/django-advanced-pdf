@@ -24,4 +24,3 @@ Pillow==10.4.0
 celery==5.2.7
 redis==4.4.2
 django-redis==5.2.0
-svglib==1.5.1
