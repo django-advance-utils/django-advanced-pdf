@@ -1,6 +1,5 @@
 import re
 import warnings
-
 from lxml import etree
 from reportlab.lib.units import inch, mm, cm
 
@@ -78,9 +77,10 @@ class SVGScaler:
         return value
 
     def _coerce_and_scale_value(self, value):
-        cleaned_value = self._strip_units(value)
-        scaled_value = self.rnd(float(cleaned_value) * self.scaling_factor)
-        return str(scaled_value)
+        if isinstance(value, str):
+            value = self._strip_units(value)
+        scaled_value = self.rnd(float(value) * self.scaling_factor)
+        return f'{scaled_value}'
 
     def _set_scaled_style(self, element, value):
         styles = value.split(';')
@@ -95,15 +95,16 @@ class SVGScaler:
     def _set_scaled_path(self, element, value):
         pattern = r'-?\d*\.?\d+'
         handler = lambda match: self._coerce_and_scale_value(match.group(0))
-        scaled_path = re.sub(pattern, handler, value)
+        scaled_path = ' '.join(re.sub(pattern, handler, value).split())
         element.set('d', f'{scaled_path}')
 
     def _set_scaled_transform(self, element, value):
         pattern = r'translate\(([-\d.]+),\s*([-\d.]+)\)'
         handler = lambda match: f'translate({self._coerce_and_scale_value(match.group(1))}, \
                                             {self._coerce_and_scale_value(match.group(2))})'
-        scaled_transform = re.sub(pattern, handler, value)
-        if 'skew' or 'scale' in scaled_transform:
+        scaled_transform = re.sub(pattern, handler, value).replace(' ', '')
+
+        if any(unhandled_transform in scaled_transform for unhandled_transform in ['skew', 'scale']):
             warnings.warn('your SVG uses "skew" or "scale" in transform, this is unsupported with class SVGScaler')
         element.set('transform', scaled_transform)
 
@@ -126,6 +127,11 @@ class SVGScaler:
                 self._set_scaled_points(**kwargs)
 
     def _set_scaled_value(self, element, attr, value):
+        units = ['%', 'mm', 'in', 'cm']
+        if any(unit in value for unit in units):
+            warnings. \
+                warn( f'skipped scaling element: {element.tag} with attribute: {attr} and value: {value} has units.')
+            return None
         scaled_value = self._coerce_and_scale_value(value)
         element.set(attr, scaled_value)
 
@@ -157,3 +163,60 @@ class SVGScaler:
         self._drop_attr(svg=svg)
         for element in svg.iterchildren():
             self._match_element_tag(element=element)
+
+
+class SVGScaledRuler(SVGScaler):
+    def __init__(self):
+        super().__init__()
+        self.scaled_length = None
+        self.length = None
+
+    def _draw_line(self, element, x1="0", y1="0", x2="0", y2="0"):
+        attrib = {'x1': x1, 'y1': y1, 'x2': x2, 'y2': y2, 'stroke': 'black', 'stroke-width': "0.25"}
+        etree.SubElement(element,
+                         _tag='line',
+                         attrib=attrib)
+
+    def linear_steps(self, split_count):
+        if split_count == 1:
+            return [0]
+        step_size = float(self.scaled_length) / (split_count - 1)
+        return [f'{self.rnd(i * step_size)}' for i in range(split_count)]
+
+    def _draw_ticks(self, element):
+        scaled_length = float(self.scaled_length)
+        major_tick_sz = float(self.scaled_length) * 0.15
+        minor_tick_sz = float(self.scaled_length) * 0.05
+        middle_tick_sz = float(self.scaled_length) * 0.10
+        minor_tick_spacing = self.linear_steps(self.length)
+        middle_tick_spacing = self.linear_steps(1)
+        # for space in middle_tick_spacing:
+        #     self._draw_line(element=element, x1=space, x2=space, y2=f'-{middle_tick_sz}')
+        i = 0
+        for space in minor_tick_spacing:
+            if i == self.length-1:
+                break
+            if i % 10 == 0:
+                if i == 0:
+                    i += 1
+                    continue
+                i+=1
+                self._draw_line(element=element, x1=space, x2=space, y2=f'-{middle_tick_sz}')
+                continue
+            self._draw_line(element=element, x1=space, x2=space, y2=f'-{minor_tick_sz}')
+            i += 1
+
+        self._draw_line(element=element, y2=f'-{major_tick_sz}')
+        self._draw_line(element=element, x1=self.scaled_length, x2=self.scaled_length, y2=f'-{major_tick_sz}')
+
+    def render(self, ratio, units, length, horizontal=True):
+        svg = etree.Element('svg', nsmap={'svg': 'http://www.w3.org/2000/svg'})
+        self.ratio = ratio
+        self.units = units
+
+        self.length = length
+        self.scaled_length = self._coerce_and_scale_value(value=length)
+
+        self._draw_line(element=svg, x2=self.scaled_length)
+        self._draw_ticks(element=svg)
+        return svg
