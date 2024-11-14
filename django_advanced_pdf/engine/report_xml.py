@@ -735,7 +735,7 @@ class ReportXML(object):
                 if ratio:
                     scaler = SVGScaler()
                     scaler.scale(ratio=ratio, units=units if units else 'mm', svg=svg)
-                display_object = self.svg2rlg_from_node(td_element[0])
+                display_object = self.svg2rlg_from_node(svg)
             elif len(td_element) > 0 and td_element[0].tag[-3:] == 'png':
                 display_object = insert_image(td_element[0])
             elif len(td_element) > 0 and td_element[0].tag[-3:] == 'obj':

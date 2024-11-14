@@ -18,11 +18,11 @@ class SVGScaler:
         # TODO: Annotations.
         # TODO: Rule.
         self._ratio = None
-        self._ratio_pattern = r'^1:(\d+)$'
+        self._ratio_pattern = r'^1:(\d+(\.\d+)?)$'
         self._units = None
         self._svg_tag = None
-        self._standard_attributes = ['width', 'height', 'x', 'y', 'x1', 'y1', 'x2', 'y2']
-        self._other_attributes = ['style', 'transform', 'd']
+        self._standard_attributes = ['width', 'height', 'x', 'y', 'x1', 'y1', 'x2', 'y2', 'stroke-width', 'text']
+        self._other_attributes = ['style', 'transform', 'd', 'points']
         self._attributes = self._standard_attributes + self._other_attributes
 
     @property
@@ -31,11 +31,11 @@ class SVGScaler:
 
     @ratio.setter
     def ratio(self, value: str):
-        match =  re.fullmatch(self._ratio_pattern, value)
+        match = re.fullmatch(self._ratio_pattern, value)
         if not match:
-            raise ValueError('format must be "1:n" where 1 unit on the scale drawing represents integer n real units')
-        n = int(match.group(1))
-        if not n > 1: raise ValueError("The ratio 1:n cannot have n < 1")
+            raise ValueError('format must be "1:n" where 1 unit on a scale drawing represents float n real-life units')
+        if (n := float(match.group(1))) <= 0:
+            raise ValueError('the ratio 1:n must have n greater than 0')
         self._ratio = 1/n
 
     @property
@@ -91,26 +91,37 @@ class SVGScaler:
         element.set('style', ';'.join(styles))
 
     def _set_scaled_path(self, element, value):
+        pattern = r'-?\d*\.?\d+'
         handler = lambda match: self._coerce_and_scale_value(match.group(0))
-        scaled_path = re.sub(r'-?\d*\.?\d+', handler, value)
+        scaled_path = re.sub(pattern, handler, value)
         element.set('d', f'{scaled_path}')
 
     def _set_scaled_transform(self, element, value):
+        pattern = r'translate\(([-\d.]+),\s*([-\d.]+)\)'
         handler = lambda match: f'translate({self._coerce_and_scale_value(match.group(1))}, \
                                             {self._coerce_and_scale_value(match.group(2))})'
-        scaled_transform = re.sub('translate\(([-\d.]+),\s*([-\d.]+)\)', handler, value)
+        scaled_transform = re.sub(pattern, handler, value)
         if 'skew' or 'scale' in scaled_transform:
             warnings.warn('your SVG uses "skew" or "scale" in transform, this is unsupported with class SVGScaler')
         element.set('transform', scaled_transform)
 
+    def _set_scaled_points(self, element, value):
+        pattern = r'-?\d+(\.\d+)?'
+        handler = lambda match: self._coerce_and_scale_value(match.group(0))
+        scaled_points = re.sub(pattern, handler, value)
+        element.set('points', scaled_points)
+
     def _match_other_attributes(self, element, attr, value):
+        kwargs = {'element': element, 'value': value}
         match attr:
             case 'style':
-                self._set_scaled_style(element=element, value=value)
+                self._set_scaled_style(**kwargs)
             case 'transform':
-                self._set_scaled_transform(element=element, value=value)
+                self._set_scaled_transform(**kwargs)
             case 'd':
-                self._set_scaled_path(element=element, value=value)
+                self._set_scaled_path(**kwargs)
+            case 'points':
+                self._set_scaled_points(**kwargs)
 
     def _set_scaled_value(self, element, attr, value):
         scaled_value = self._coerce_and_scale_value(value)
@@ -122,6 +133,7 @@ class SVGScaler:
             'style': self._match_other_attributes,
             'transform': self._match_other_attributes,
             'd': self._match_other_attributes,
+            'points': self._match_other_attributes,
         }.get(attr)
 
         if handler:
