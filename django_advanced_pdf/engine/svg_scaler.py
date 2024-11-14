@@ -15,7 +15,6 @@ class SVGScaler:
                  '_attributes']
 
     def __init__(self):
-        # TODO: Assume MM if data-units not provided
         # TODO: Annotations.
         # TODO: Rule.
         self._ratio = None
