@@ -8,21 +8,20 @@ class SVGScaler:
     __slots__ = ['_ratio',
                  '_ratio_pattern',
                  '_units',
-                 '_scaling_factor',
-                 '_svg_items',
                  '_svg_tag',
                  '_standard_attributes',
                  '_other_attributes',
                  '_attributes']
 
     def __init__(self):
+        # TODO: Handle multiple transform functions passed
+        # TODO: Handle negative/float values passed to Path
+        # TODO: Assume MM if data-units not provided
         # TODO: Annotations.
         # TODO: Rule.
-        # TODO: Assume MM if data-units not provided
         self._ratio = None
         self._ratio_pattern = r'^1:(\d+)$'
         self._units = None
-        self._svg_items = None
         self._svg_tag = None
         self._standard_attributes = ['width', 'height', 'x', 'y', 'x1', 'y1', 'x2', 'y2']
         self._other_attributes = ['style', 'transform', 'd']
@@ -37,10 +36,9 @@ class SVGScaler:
         match =  re.fullmatch(self._ratio_pattern, value)
         if not match:
             raise ValueError('format must be "1:n" where 1 unit on the scale drawing represents integer n real units')
-        else:
-            n = int(match.group(1))
-            if not n > 1: raise ValueError("The ratio 1:n cannot have n < 1")
-            self._ratio = 1/n
+        n = int(match.group(1))
+        if not n > 1: raise ValueError("The ratio 1:n cannot have n < 1")
+        self._ratio = 1/n
 
     @property
     def units(self):
@@ -48,15 +46,9 @@ class SVGScaler:
 
     @units.setter
     def units(self, value: str):
-        lookup = {
-            'inch': inch,
-            'mm': mm,
-            'cm': cm
-        }
-        if value not in lookup:
-            raise ValueError('units must be string "mm", "cm" or "inch"')
-        else:
-            self._units = lookup[value]
+        lookup = {'inch': inch, 'mm': mm, 'cm': cm}
+        if value not in lookup: raise ValueError('units must be string "mm", "cm" or "inch"')
+        self._units = lookup[value]
 
     @property
     def scaling_factor(self):
@@ -85,35 +77,27 @@ class SVGScaler:
                 break
         return value
 
-    def _set_scaled_value(self, element, attr, value):
-        value = self._strip_units(value=value)
-        value_float = float(value)
-        scaled_value = value_float * self.scaling_factor
-        element.set(attr, f'{self.rnd(scaled_value)}')
-
     def _set_scaled_style(self, element, value):
         styles = value.split(';')
         for idx, string in enumerate(styles):
             if 'stroke-width' in string:
                 txt, size = string.split(':')
-                size = float(size) * self.scaling_factor
+                size = self._coerce_and_scale_value(size)
                 styles[idx] = f'{txt}:{size}'
                 break
         element.set('style', ';'.join(styles))
 
     def _set_scaled_path(self, element, value):
-        coerce_and_scale = lambda regex_val: str(self.rnd(float(regex_val) * self.scaling_factor))
-        handler = lambda match: coerce_and_scale(match.group(0))
+        handler = lambda match: self._coerce_and_scale_value(match.group(0))
         scaled_path = re.sub(r'-?\d*\.?\d+', handler, value)
-        element.set('d', scaled_path)
+        element.set('d', f'{scaled_path}')
 
     def _set_scaled_transform(self, element, value):
         start_txt = 'translate('
         end_txt = ')'
-        start = value.find(start_txt)
-        end = value.find(end_txt)
+        start, end = value.find(start_txt), value.find(end_txt)
         x, y = value[start + len(start_txt): end].split(',')
-        x, y = self.rnd(float(x) * self.scaling_factor), self.rnd(float(y) * self.scaling_factor)
+        x, y = self._coerce_and_scale_value(x), self._coerce_and_scale_value(y)
         element.set('transform', f'translate({x} {y})')
 
     def _match_other_attributes(self, element, attr, value):
@@ -125,11 +109,24 @@ class SVGScaler:
             case 'd':
                 self._set_scaled_path(element=element, value=value)
 
+    def _coerce_and_scale_value(self, value):
+        cleaned_value = self._strip_units(value)
+        scaled_value = self.rnd(float(cleaned_value) * self.scaling_factor)
+        return str(scaled_value)
+
+    def _set_scaled_value(self, element, attr, value):
+        scaled_value = self._coerce_and_scale_value(value)
+        element.set(attr, scaled_value)
+
     def _match_attribute(self, element, attr, value):
-        if attr in self._standard_attributes:
-            self._set_scaled_value(element=element, attr=attr, value=value)
-        elif attr in self._other_attributes:
-            self._match_other_attributes(element=element, attr=attr, value=value)
+        handler = {
+            **{attr: self._set_scaled_value for attr in self._standard_attributes},
+            'style': self._match_other_attributes,
+            'transform': self._match_other_attributes,
+            'd': self._match_other_attributes,
+        }.get(attr)
+        # noinspection PyArgumentList
+        handler(element=element, attr=attr, value=value)
 
     def _modify_tag(self, element):
         for attr in self._attributes:
@@ -141,8 +138,8 @@ class SVGScaler:
         match self.svg_tag:
             case 'g':
                 self._modify_tag(element=element)
-                svg_items = element.iterchildren()
-                [self._modify_svg_element(element=element) for element in svg_items]
+                for child_element in element.iterchildren():
+                    self._modify_svg_element(element=child_element)
             case _:
                 self._modify_tag(element=element)
 
@@ -152,5 +149,5 @@ class SVGScaler:
         self.ratio = ratio
         self.units = units
         self._drop_attr(svg=svg)
-        self._svg_items = list(svg.iterchildren())
-        [self._modify_svg_element(element=element) for element in self._svg_items]
+        for element in svg.iterchildren():
+            self._modify_svg_element(element=element)
