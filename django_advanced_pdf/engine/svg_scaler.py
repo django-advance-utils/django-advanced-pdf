@@ -7,6 +7,9 @@ from reportlab.lib.units import inch, mm, cm
 class SVGScaler:
     __slots__ = ['_ratio',
                  '_ratio_pattern',
+                 '_path_pattern',
+                 '_transform_pattern',
+                 '_point_pattern',
                  '_units',
                  '_svg_tag',
                  '_standard_attributes',
@@ -18,6 +21,9 @@ class SVGScaler:
         # TODO: Rule.
         self._ratio = None
         self._ratio_pattern = r'^1:(\d+(\.\d+)?)$'
+        self._path_pattern = r'-?\d*\.?\d+'
+        self._transform_pattern = r'translate\(([-\d.]+),\s*([-\d.]+)\)'
+        self._point_pattern = r'-?\d+(\.\d+)?'
         self._units = None
         self._svg_tag = None
         self._standard_attributes = ['width', 'height', 'x', 'y', 'x1', 'y1', 'x2', 'y2', 'stroke-width', 'text']
@@ -59,8 +65,8 @@ class SVGScaler:
 
     @svg_tag.setter
     def svg_tag(self, value):
-        ns_and_tag = value.split('}')
-        self._svg_tag = ns_and_tag[-1]
+        _, tag = value.split('}')
+        self._svg_tag = tag
 
     @staticmethod
     def rnd(value):
@@ -93,25 +99,22 @@ class SVGScaler:
         element.set('style', ';'.join(styles))
 
     def _set_scaled_path(self, element, value):
-        pattern = r'-?\d*\.?\d+'
         handler = lambda match: self._coerce_and_scale_value(match.group(0))
-        scaled_path = ' '.join(re.sub(pattern, handler, value).split())
+        scaled_path = ' '.join(re.sub(self._path_pattern, handler, value).split())
         element.set('d', f'{scaled_path}')
 
     def _set_scaled_transform(self, element, value):
-        pattern = r'translate\(([-\d.]+),\s*([-\d.]+)\)'
         handler = lambda match: f'translate({self._coerce_and_scale_value(match.group(1))}, \
                                             {self._coerce_and_scale_value(match.group(2))})'
-        scaled_transform = re.sub(pattern, handler, value).replace(' ', '')
+        scaled_transform = re.sub(self._transform_pattern, handler, value).replace(' ', '')
 
         if any(unhandled_transform in scaled_transform for unhandled_transform in ['skew', 'scale']):
             warnings.warn('your SVG uses "skew" or "scale" in transform, this is unsupported with class SVGScaler')
         element.set('transform', scaled_transform)
 
-    def _set_scaled_points(self, element, value):
-        pattern = r'-?\d+(\.\d+)?'
+    def _set_scaled_point(self, element, value):
         handler = lambda match: self._coerce_and_scale_value(match.group(0))
-        scaled_points = re.sub(pattern, handler, value)
+        scaled_points = re.sub(self._point_pattern, handler, value)
         element.set('points', scaled_points)
 
     def _match_other_attributes(self, element, attr, value):
@@ -124,7 +127,7 @@ class SVGScaler:
             case 'd':
                 self._set_scaled_path(**kwargs)
             case 'points':
-                self._set_scaled_points(**kwargs)
+                self._set_scaled_point(**kwargs)
 
     def _set_scaled_value(self, element, attr, value):
         units = ['%', 'mm', 'in', 'cm']
