@@ -204,13 +204,13 @@ class SVGScaledRuler(SVGScaler):
         return length, units
 
     def _draw_line(self, element, x1="0", y1="0", x2="0", y2="0"):
-        attrib = {'x1': x1, 'y1': y1, 'x2': x2, 'y2': y2, 'stroke': 'black', 'stroke-width': str(0.1/self.units)}
+        attrib = {'x1': x1, 'y1': y1, 'x2': x2, 'y2': y2, 'stroke': 'black', 'stroke-width': str(5/self.units)}
         etree.SubElement(element,
                          _tag='line',
                          attrib=attrib)
 
     def _draw_text(self, element, text, x="0", y="0"):
-        attrib = {'x': x, 'y': y, 'text-anchor': 'middle'}
+        attrib = {'x': x, 'y': y, 'text-anchor': 'middle', 'font-weight': 'lighter'}
         ele = etree.SubElement(element,
                         _tag='text',
                         attrib=attrib)
@@ -240,10 +240,9 @@ class SVGScaledRuler(SVGScaler):
         m_tick_size = str(tick_size_factor * 0.75)
         s_tick_size = str(tick_size_factor * 0.35)
         marker_location = str(-1*(0.6/self.ratio))
-        ratio_location = str(0.4/self.ratio)
-
+        x_ratio_location, y_ratio_location = str(0.31415926535/self.ratio), str(0.4/self.ratio)
         self._draw_line(element=svg, x2=f'{self.length}')
-        self._draw_text(element=svg, y=ratio_location, text=ratio)
+        self._draw_text(element=svg, x=x_ratio_location, y=y_ratio_location, text=ratio)
         counter = 1
         for i in range(1, len(lin_steps) + 1, 1):
             step = lin_steps[i - 1]
@@ -262,4 +261,3 @@ class SVGScaledRuler(SVGScaler):
                 self._draw_line(element=svg, x1=step, x2=step, y2=s_tick_size)
         self.scale(ratio=self.ratio, units=self.units, svg=svg)
         return svg
-
