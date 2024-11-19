@@ -735,8 +735,12 @@ class ReportXML(object):
                 if ratio:
                     scaler = SVGScaler()
                     scaler.scale(ratio=ratio, units=units if units else 'mm', svg=svg)
+
+                # -- DELETE TESTING BLOCK --#
                 ruler = SVGScaledRuler()
-                svg_rule = ruler.render(ratio="1:1", units="mm", length=50)
+                svg_rule = ruler.render(ratio="1:10", real_length="50cm") # TODO: Delete this testing block
+                # -- DELETE TESTING BLOCK --#
+
                 display_object = self.svg2rlg_from_node(svg_rule)
             elif len(td_element) > 0 and td_element[0].tag[-3:] == 'png':
                 display_object = insert_image(td_element[0])

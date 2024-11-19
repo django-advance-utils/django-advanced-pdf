@@ -2,6 +2,7 @@ import re
 import warnings
 from lxml import etree
 from reportlab.lib.units import inch, mm, cm
+import math
 
 
 class SVGScaler:
@@ -38,12 +39,15 @@ class SVGScaler:
 
     @ratio.setter
     def ratio(self, value: str):
-        match = re.fullmatch(self._ratio_pattern, value)
-        if not match:
-            raise ValueError('format must be "1:n" where 1 unit on a scale drawing represents float n real-life units')
-        if (n := float(match.group(1))) <= 0:
-            raise ValueError('the ratio 1:n must have n greater than 0')
-        self._ratio = 1/n
+        if isinstance(value, float):
+            self._ratio = value
+        else:
+            match = re.fullmatch(self._ratio_pattern, value)
+            if not match:
+                raise ValueError('format must be "1:n" where 1 unit on a scale drawing represents float n real-life units')
+            if (n := float(match.group(1))) <= 0:
+                raise ValueError('the ratio 1:n must have n greater than 0')
+            self._ratio = 1/n
 
     @property
     def units(self):
@@ -51,9 +55,12 @@ class SVGScaler:
 
     @units.setter
     def units(self, value: str):
-        lookup = {'inch': inch, 'mm': mm, 'cm': cm}
-        if value not in lookup: raise ValueError('units must be string "mm", "cm" or "inch"')
-        self._units = lookup[value]
+        if isinstance(value, float):
+            self._units = value
+        else:
+            lookup = {'inch': inch, 'mm': mm, 'cm': cm}
+            if value not in lookup: raise ValueError('units must be string "mm", "cm" or "inch"')
+            self._units = lookup[value]
 
     @property
     def scaling_factor(self):
@@ -65,8 +72,8 @@ class SVGScaler:
 
     @svg_tag.setter
     def svg_tag(self, value):
-        _, tag = value.split('}')
-        self._svg_tag = tag
+        ns_and_tag = value.split('}')
+        self._svg_tag = ns_and_tag[-1]
 
     @staticmethod
     def rnd(value):
@@ -163,63 +170,96 @@ class SVGScaler:
     def scale(self, ratio: str, units: str, svg: etree.Element):
         self.ratio = ratio
         self.units = units
+        print(ratio)
         self._drop_attr(svg=svg)
         for element in svg.iterchildren():
             self._match_element_tag(element=element)
 
 
 class SVGScaledRuler(SVGScaler):
+    __slots__ = ['input_pattern', 'length']
     def __init__(self):
         super().__init__()
-        self.scaled_length = None
+        self.input_pattern = r'(\d+(\.\d+)?)(cm|mm|m)'
         self.length = None
 
+    def _parse_length(self, length):
+        match = re.match(self.input_pattern, length.strip())
+        if not match:
+            raise ValueError('please provide a valid length, say, "50cm".')
+        value, units = float(match.group(1)), match.group(3)
+        if (rounded_value := math.ceil(value)) != value:
+            warnings.warn('value has been rounded')
+
+        match units:
+            case 'mm':
+                length = rounded_value * 0.1
+            case 'cm':
+                length = rounded_value * 1
+            case _:
+                length = None
+
+        if length is None or length < 1:
+            raise ValueError('the real object length must be greater than 1cm.')
+        return length, units
+
     def _draw_line(self, element, x1="0", y1="0", x2="0", y2="0"):
-        attrib = {'x1': x1, 'y1': y1, 'x2': x2, 'y2': y2, 'stroke': 'black', 'stroke-width': "0.25"}
+        attrib = {'x1': x1, 'y1': y1, 'x2': x2, 'y2': y2, 'stroke': 'black', 'stroke-width': str(0.1/self.units)}
         etree.SubElement(element,
                          _tag='line',
                          attrib=attrib)
 
-    def linear_steps(self, split_count):
-        if split_count == 1:
-            return [0]
-        step_size = float(self.scaled_length) / (split_count - 1)
-        return [f'{self.rnd(i * step_size)}' for i in range(split_count)]
+    def _draw_text(self, element, text, x="0", y="0"):
+        attrib = {'x': x, 'y': y, 'text-anchor': 'middle'}
+        ele = etree.SubElement(element,
+                        _tag='text',
+                        attrib=attrib)
+        ele.text = text
 
-    def _draw_ticks(self, element):
-        scaled_length = float(self.scaled_length)
-        major_tick_sz = float(self.scaled_length) * 0.15
-        minor_tick_sz = float(self.scaled_length) * 0.05
-        middle_tick_sz = float(self.scaled_length) * 0.10
-        minor_tick_spacing = self.linear_steps(self.length)
-        middle_tick_spacing = self.linear_steps(1)
-        # for space in middle_tick_spacing:
-        #     self._draw_line(element=element, x1=space, x2=space, y2=f'-{middle_tick_sz}')
-        i = 0
-        for space in minor_tick_spacing:
-            if i == self.length-1:
-                break
-            if i % 10 == 0:
-                if i == 0:
-                    i += 1
-                    continue
-                i+=1
-                self._draw_line(element=element, x1=space, x2=space, y2=f'-{middle_tick_sz}')
-                continue
-            self._draw_line(element=element, x1=space, x2=space, y2=f'-{minor_tick_sz}')
-            i += 1
+    def steps(self, total_distance, num_markers):
+        if num_markers < 2 or total_distance <= 0:
+            raise ValueError("num_markers must be >= 2 and total_distance must be > 0")
+        spacing = total_distance / (num_markers - 1)
+        marker_positions = [f'{self.rnd(i * spacing)}' for i in range(num_markers)]
+        return marker_positions
 
-        self._draw_line(element=element, y2=f'-{major_tick_sz}')
-        self._draw_line(element=element, x1=self.scaled_length, x2=self.scaled_length, y2=f'-{major_tick_sz}')
-
-    def render(self, ratio, units, length, horizontal=True):
-        svg = etree.Element('svg', nsmap={'svg': 'http://www.w3.org/2000/svg'})
+    def render(self, ratio, real_length):
         self.ratio = ratio
-        self.units = units
+        self.length, self.units = self._parse_length(length=real_length)
+        if (scaled_length := self.ratio * self.length) < 1:
+            raise ValueError('ruler not within size constraint of ratio * length.')
+        elif (rounded_scaled_length := math.ceil(scaled_length)) != scaled_length:
+            scaled_length = rounded_scaled_length
+            warnings.warn('the value had to be rounded because length * ratio was not a multiple of 10')
 
-        self.length = length
-        self.scaled_length = self._coerce_and_scale_value(value=length)
+        svg = etree.Element('svg', nsmap={'svg': 'http://www.w3.org/2000/svg'})
+        ticks = int(scaled_length*10)
+        lin_steps = self.steps(self.length, ticks)
+        tick_size_factor = -0.5 / self.ratio
+        l_tick_size = str(tick_size_factor)
+        m_tick_size = str(tick_size_factor * 0.75)
+        s_tick_size = str(tick_size_factor * 0.35)
+        marker_location = str(-1*(0.6/self.ratio))
+        ratio_location = str(0.4/self.ratio)
 
-        self._draw_line(element=svg, x2=self.scaled_length)
-        self._draw_ticks(element=svg)
+        self._draw_line(element=svg, x2=f'{self.length}')
+        self._draw_text(element=svg, y=ratio_location, text=ratio)
+        counter = 1
+        for i in range(1, len(lin_steps) + 1, 1):
+            step = lin_steps[i - 1]
+            if i == 1:
+                self._draw_line(element=svg, x1=step, x2=step, y2=l_tick_size)
+                self._draw_text(element=svg, x=step, y=marker_location, text=f'0')
+
+            elif i % 10 == 0:
+                self._draw_line(element=svg, x1=step, x2=step, y2=l_tick_size)
+                if counter % 2 == 0:
+                    self._draw_text(element=svg, x=step, y=marker_location, text=f'{i*10}')
+                counter += 1
+            elif i % 5 == 0:
+                self._draw_line(element=svg, x1=step, x2=step, y2=m_tick_size)
+            else:
+                self._draw_line(element=svg, x1=step, x2=step, y2=s_tick_size)
+        self.scale(ratio=self.ratio, units=self.units, svg=svg)
         return svg
+
