@@ -13,7 +13,8 @@ from .enhanced_table.data import EnhancedTableData
 from .enhanced_table.enhanced_tables import OVERFLOW_ROW, EnhancedTable, HEADER_FOOTER, KEEP_TYPE_END, KEEP_TYPE_START, \
     KEEP_TYPE_MIDDLE, KEEP_TYPE_SPAN, KEEP_TYPE_NA
 from .png_images import insert_image, insert_obj
-from .svg_scaler import SVGScaler, SVGScaledRuler
+from .svg_ruler import SVGScaledRuler
+from .svg_scaler import SVGScaler
 from .svglib.svglib import SvgRenderer
 from .utils import DocTemplate, get_page_size_from_element, intcomma_currency, ColumnWidthPercentage, \
     MyTDUserHtmlParser, \
@@ -735,13 +736,13 @@ class ReportXML(object):
                 if ratio:
                     scaler = SVGScaler()
                     scaler.scale(ratio=ratio, units=units if units else 'mm', svg=svg)
-
-                # -- DELETE TESTING BLOCK --#
-                # ruler = SVGScaledRuler()
-                # svg_rule = ruler.render(ratio="1:10", real_length="50cm") # TODO: Delete this testing block
-                # display_object = self.svg2rlg_from_node(svg_rule)
-                # -- DELETE TESTING BLOCK --#
                 display_object = self.svg2rlg_from_node(svg)
+            elif len(td_element) > 0 and td_element[0].tag[-5:] == 'ruler':
+                ruler = td_element[0]
+                ratio = ruler.attrib.get('ratio')
+                real_length = ruler.attrib.get('real-length')
+                scaled_ruler = SVGScaledRuler().render(ratio=ratio, real_length=real_length)
+                display_object = self.svg2rlg_from_node(scaled_ruler)
             elif len(td_element) > 0 and td_element[0].tag[-3:] == 'png':
                 display_object = insert_image(td_element[0])
             elif len(td_element) > 0 and td_element[0].tag[-3:] == 'obj':

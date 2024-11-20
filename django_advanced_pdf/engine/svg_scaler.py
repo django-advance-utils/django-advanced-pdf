@@ -2,7 +2,6 @@ import re
 import warnings
 from lxml import etree
 from reportlab.lib.units import inch, mm, cm
-import math
 
 
 class SVGScaler:
@@ -44,7 +43,7 @@ class SVGScaler:
         else:
             match = re.fullmatch(self._ratio_pattern, value)
             if not match:
-                raise ValueError('format must be "1:n" where 1 unit on a scale drawing represents float n real-life units')
+                raise ValueError('format must be 1:n where 1 unit on a scale drawing represents float n real-life units')
             if (n := float(match.group(1))) <= 0:
                 raise ValueError('the ratio 1:n must have n greater than 0')
             self._ratio = 1/n
@@ -170,6 +169,6 @@ class SVGScaler:
     def scale(self, ratio: str, units: str, svg: etree.Element):
         self.ratio = ratio
         self.units = units
-        self._drop_attr(svg=svg)
+        # self._drop_attr(svg=svg)
         for element in svg.iterchildren():
             self._match_element_tag(element=element)
