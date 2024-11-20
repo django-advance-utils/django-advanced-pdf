@@ -737,11 +737,11 @@ class ReportXML(object):
                     scaler.scale(ratio=ratio, units=units if units else 'mm', svg=svg)
 
                 # -- DELETE TESTING BLOCK --#
-                ruler = SVGScaledRuler()
-                svg_rule = ruler.render(ratio="1:10", real_length="50cm") # TODO: Delete this testing block
+                # ruler = SVGScaledRuler()
+                # svg_rule = ruler.render(ratio="1:10", real_length="50cm") # TODO: Delete this testing block
+                # display_object = self.svg2rlg_from_node(svg_rule)
                 # -- DELETE TESTING BLOCK --#
-
-                display_object = self.svg2rlg_from_node(svg_rule)
+                display_object = self.svg2rlg_from_node(svg)
             elif len(td_element) > 0 and td_element[0].tag[-3:] == 'png':
                 display_object = insert_image(td_element[0])
             elif len(td_element) > 0 and td_element[0].tag[-3:] == 'obj':
