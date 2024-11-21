@@ -1,0 +1,17 @@
+<document title=""
+          page_size="A4"
+          border_right_first="10"
+          border_left_first="10"
+          border_bottom_first="10"
+          border_top_first="10"
+          border_right_continuation="2"
+          border_left_continuation="2"
+          border_bottom_continuation="0">
+    <table class="full_table" style="inner_grid:0.25,#000000;box:0.5,#FF0000">
+        <tr>
+            <td>
+                <ruler data-ratio="1:10"></ruler>
+            </td>
+        </tr>
+    </table>
+</document>

@@ -79,12 +79,14 @@ class SVGScaledRuler(SVGScaler):
     def _draw_ruler(self, ratio_text):
         self._draw_line(x1=0, x2=self.length, y1=self.line_offset,  y2=self.line_offset)
         self._draw_text(text=ratio_text, text_anchor='right', x=0, y=self.offset_y)
-        lin_steps = self._steps(rule_length=self.length, n_ticks=self.minor_tick_count)
-        l_tick_sz = self.line_offset - (self.offset_y*0.35)
-        m_tick_sz = self.line_offset - (self.offset_y*0.25)
-        s_tick_sz = self.line_offset - (self.offset_y*0.15)
-        tick_text_offset = l_tick_sz - (self.offset_y*0.1)
 
+        relative_length_from_y = lambda offset, scalar: offset - (self.offset_y*scalar)
+        l_tick_sz = relative_length_from_y(offset=self.line_offset, scalar=.35)
+        m_tick_sz = relative_length_from_y(offset=self.line_offset, scalar=.25)
+        s_tick_sz = relative_length_from_y(offset=self.line_offset, scalar=.1)
+        tick_text_offset = relative_length_from_y(offset=l_tick_sz, scalar=.1)
+
+        lin_steps = self._steps(rule_length=self.length, n_ticks=self.minor_tick_count)
         for i in range(1, len(lin_steps) + 1, 1):
             step = lin_steps[i - 1]
             if i == 1:
