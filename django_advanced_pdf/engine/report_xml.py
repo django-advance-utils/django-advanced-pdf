@@ -6,6 +6,7 @@ from lxml import etree
 from reportlab.lib.colors import HexColor, black
 from reportlab.lib.units import mm
 from reportlab.platypus import TableStyle, PageBreak, Spacer, Table
+from svglib.svglib import SvgRenderer
 
 from .enhanced_paragraph.enhanced_paragraph import EnhancedParagraph
 from .enhanced_paragraph.style import EnhancedParagraphStyle
@@ -13,9 +14,9 @@ from .enhanced_table.data import EnhancedTableData
 from .enhanced_table.enhanced_tables import OVERFLOW_ROW, EnhancedTable, HEADER_FOOTER, KEEP_TYPE_END, KEEP_TYPE_START, \
     KEEP_TYPE_MIDDLE, KEEP_TYPE_SPAN, KEEP_TYPE_NA
 from .png_images import insert_image, insert_obj
-from .svg_ruler import SVGScaledRuler
-from .svg_scaler import SVGScaler
-from .svglib.svglib import SvgRenderer
+from django_advanced_pdf.engine.svg_tools.svg_ruler import SVGScaledRuler
+from django_advanced_pdf.engine.svg_tools.svg_scaler import SVGScaler
+from .svg_tools.svg_scaled_renderer import SvgScaledRenderer
 from .utils import DocTemplate, get_page_size_from_element, intcomma_currency, ColumnWidthPercentage, \
     MyTDUserHtmlParser, \
     get_boolean_value, ReportXMLError, ObjectPosition
@@ -730,19 +731,46 @@ class ReportXML(object):
                 if display_object is None:
                     display_object = ''
             elif len(td_element) > 0 and td_element[0].tag[-3:] == 'svg':
+                # TODO: merge the logic that svg and ruler both share (e.g get_padding_for_cell)
                 svg = td_element[0]
                 ratio = svg.attrib.get('data-ratio')
-                units = svg.attrib.get('data-units')
                 if ratio:
+                    units = svg.attrib.get('data-units') if svg.attrib.get('data-units') is not None else 'mm'
                     scaler = SVGScaler()
-                    scaler.scale(ratio=ratio, units=units if units else 'mm', svg=svg)
-                display_object = self.svg2rlg_from_node(svg)
+                    scaled_width, scaled_height = scaler.scale(ratio=ratio, units=units, svg=svg)
+                    padding = self.get_padding_for_cell(styles,
+                                                     start_col=col_count + offset,
+                                                     start_row=row_count,
+                                                     end_col=-col_count + offset + col_span,
+                                                     end_row=-row_count + row_span - 1)
+                    scaled_width_mm = (scaled_width + padding) / mm
+                    if col_widths[col_count] is None or col_widths[col_count] < scaled_width_mm:
+                        col_widths[col_count] = scaled_width_mm
+                    display_object = self.svg2rlg_from_node(svg,
+                                                            width=scaled_width,
+                                                            height=scaled_height,
+                                                            units=units)
+                else:
+                    display_object = self.svg2rlg_from_node(svg)
             elif len(td_element) > 0 and td_element[0].tag[-5:] == 'ruler':
                 ruler = td_element[0]
-                ratio = ruler.attrib.get('ratio')
-                real_length = ruler.attrib.get('real-length')
-                scaled_ruler = SVGScaledRuler().render(ratio=ratio, real_length=real_length)
-                display_object = self.svg2rlg_from_node(scaled_ruler)
+                units = ruler.attrib.get('data-units') if 'data-units' in ruler.attrib else 'mm'
+                ratio = ruler.attrib.get('data-ratio')
+                scaled_ruler = SVGScaledRuler().render(ratio=ratio, units=units)
+                scaled_width = float(scaled_ruler.attrib.get('width'))
+                scaled_height = float(scaled_ruler.attrib.get('height'))
+                padding = self.get_padding_for_cell(styles,
+                                                    start_col=col_count + offset,
+                                                    start_row=row_count,
+                                                    end_col=-col_count + offset + col_span - 1,
+                                                    end_row=-row_count + row_span - 1)
+                scaled_width_mm = (scaled_width + padding) / mm
+                if col_widths[col_count] is None or col_widths[col_count] < scaled_width_mm:
+                    col_widths[col_count] = scaled_width_mm
+                display_object = self.svg2rlg_from_node(scaled_ruler,
+                                                        width=scaled_width,
+                                                        height=scaled_height,
+                                                        units=units)
             elif len(td_element) > 0 and td_element[0].tag[-3:] == 'png':
                 display_object = insert_image(td_element[0])
             elif len(td_element) > 0 and td_element[0].tag[-3:] == 'obj':
@@ -1144,8 +1172,11 @@ class ReportXML(object):
         return Spacer(0, height * mm)
 
     @staticmethod
-    def svg2rlg_from_node(node):
-        svg_renderer = SvgRenderer(path=None)
+    def svg2rlg_from_node(node, width=None, height=None, units=None):
+        if width is not None and height is not None and units is not None:
+            svg_renderer = SvgScaledRenderer(path=None, width=width, height=height, units=units)
+        else:
+            svg_renderer = SvgRenderer(path=None)
         drawing = svg_renderer.render(node)
         return drawing
 

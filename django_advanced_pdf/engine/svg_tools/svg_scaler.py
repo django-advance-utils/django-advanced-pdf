@@ -12,13 +12,14 @@ class SVGScaler:
                  '_point_pattern',
                  '_units',
                  '_svg_tag',
+                 '_dropped_attributes',
                  '_standard_attributes',
                  '_other_attributes',
                  '_attributes',
+                 '_removed_attrs',
                  '_attr_handler']
 
     def __init__(self):
-        # TODO: Rule.
         self._ratio = None
         self._ratio_pattern = r'^1:(\d+(\.\d+)?)$'
         self._path_pattern = r'-?\d*\.?\d+'
@@ -26,9 +27,11 @@ class SVGScaler:
         self._point_pattern = r'-?\d+(\.\d+)?'
         self._units = None
         self._svg_tag = None
+        self._dropped_attributes = ['viewBox']
         self._standard_attributes = ['width', 'height', 'x', 'y', 'x1', 'y1', 'x2', 'y2', 'stroke-width', 'text']
         self._other_attributes = ['style', 'transform', 'd', 'points']
         self._attributes = self._standard_attributes + self._other_attributes
+        self._removed_attrs = None
         self._attr_handler = {**{attr: self._set_scaled_value for attr in self._standard_attributes},
                               **{attr: self._match_other_attributes for attr in self._other_attributes}}
 
@@ -38,8 +41,7 @@ class SVGScaler:
 
     @ratio.setter
     def ratio(self, value: str):
-        if isinstance(value, float):
-            self._ratio = value
+        if isinstance(value, float): self._ratio = value
         else:
             match = re.fullmatch(self._ratio_pattern, value)
             if not match:
@@ -164,11 +166,18 @@ class SVGScaler:
             case _:
                 self._open_element(element=element)
 
-    def _drop_attr(self, svg): [svg.attrib.pop(key) for key in self._attributes if key in svg.attrib]
+    def _drop_attr(self, svg):
+        self._removed_attrs = {key: svg.attrib.pop(key) for key in self._dropped_attributes if key in svg.attrib}
+
+    def _restore_attrs(self, svg):
+        for key, value in self._removed_attrs.items():
+            svg.attrib[key] = value
 
     def scale(self, ratio: str, units: str, svg: etree.Element):
         self.ratio = ratio
         self.units = units
-        # self._drop_attr(svg=svg)
+        self._match_element_tag(svg)
         for element in svg.iterchildren():
             self._match_element_tag(element=element)
+        scaled_width, scaled_height = float(svg.attrib['width']), float(svg.attrib['height'])
+        return scaled_width, scaled_height

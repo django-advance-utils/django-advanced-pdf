@@ -562,8 +562,11 @@ class SvgRenderer:
         node = NodeTracker(svg_node)
         view_box = self.get_box(node, default_box=True)
         # Knowing the main box is useful for percentage units
-        self.attrConverter.set_box(view_box)
+        drawing = self.makeDrawing(view_box=view_box, node=node, svg_node=svg_node)
+        return drawing
 
+    def makeDrawing(self, view_box, node, svg_node):
+        self.attrConverter.set_box(view_box)
         main_group = self.renderSvg(node, outermost=True)
         for xlink in self.waiting_use_nodes.keys():
             logger.debug("Ignoring unavailable object width ID '%s'." % xlink)
@@ -899,6 +902,25 @@ class SvgRenderer:
         self.renderNode(node.getchildren()[-1], parent=group)
         self.apply_node_attr_to_group(node, group)
         return group
+
+
+class SvgScaledRenderer(SvgRenderer):
+    def __init__(self, path, units, width, height):
+        super().__init__(path)
+        self.units = units
+        self.width = width
+        self.height = height
+
+    def render(self, svg_node):
+        node = NodeTracker(svg_node)
+        view_box = Box(0, 0, self.width, self.height)
+        main_group = self.renderSvg(node, outermost=True)
+        for xlink in self.waiting_use_nodes.keys():
+            logger.debug("Ignoring unavailable object width ID '%s'." % xlink)
+        main_group.translate(0 - view_box.x, -view_box.height - view_box.y)
+        drawing = Drawing(self.width, self.height)
+        drawing.add(main_group)
+        return drawing
 
 
 class SvgShapeConverter:

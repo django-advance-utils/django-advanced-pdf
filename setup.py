@@ -13,6 +13,10 @@ setuptools.setup(
     url="https://github.com/django-advance-utils/django-advanced-pdf",
     include_package_data=True,
     packages=['django_advanced_pdf'],
+    install_requires=[
+        "svglib>=1.5.1",
+        "reportlab>=4.2.5",
+        "lxml>=5.3.0"],
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",
