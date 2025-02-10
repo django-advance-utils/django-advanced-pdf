@@ -93,7 +93,7 @@ class SVGScaledRuler(SVGScaler):
                 self._draw_line(x1=step, x2=step, y1=self.line_offset, y2=l_tick_sz)
                 self._draw_text(x=step, y=tick_text_offset, text=f'0')
             elif i % 10 == 0:
-                scaled_value = (i*self.inverse)/10
+                scaled_value = (i*self.inverse)
                 tick_text = int(scaled_value)
                 self._draw_line(x1=step, x2=step, y1=self.line_offset, y2=l_tick_sz)
                 self._draw_text(x=step, y=tick_text_offset, text=f'{tick_text}')
