@@ -379,13 +379,13 @@ class EnhancedTable(Table):
 
         # The following add back all the row commands (munged above) for the first n rows
 
-        r0._cr_0(n, A, self._nrows)
+        r0._cr_0(n, A, self._nrows, doInRowSplit)
 
-        r0._cr_0(n, self._bkgrndcmds, self._nrows)
-        r0._cr_0(n, self._spanCmds, self._nrows)
-        r0._cr_0(n, self._nosplitCmds, self._nrows)
+        r0._cr_0(n, self._bkgrndcmds, self._nrows, doInRowSplit)
+        r0._cr_0(n, self._spanCmds, self._nrows, doInRowSplit)
+        r0._cr_0(n, self._nosplitCmds, self._nrows, doInRowSplit)
         # r0._cr_0_footer(n, footer_commands)
-        r0._cr_1_0(HEADER_FOOTER-n, footer_commands)
+        r0._cr_1_0(HEADER_FOOTER-n, footer_commands, doInRowSplit)
 
         # Now we need to add any footer styles back on to the end (with all their cell ranges shifted)
         header_row_data = []
@@ -463,17 +463,17 @@ class EnhancedTable(Table):
         if repeat_rows > 0 or header_rows > 0:
             # the method _cr_1_1_enhaced moves all table row commands (styles) down by adjusting their ranges
             # It leaves styles affecting rows 0 - repeat_rows
-            r1._cr_1_0(HEADER_FOOTER, header_commands)
+            r1._cr_1_0(HEADER_FOOTER, header_commands, doInRowSplit)
             r1._cr_1_1_enhanced(n, repeat_rows, header_rows, A)
             r1._cr_1_1_enhanced(n, repeat_rows, header_rows, self._bkgrndcmds)
             r1._cr_1_1_enhanced(n, repeat_rows, header_rows, self._spanCmds)
             r1._cr_1_1_enhanced(n, repeat_rows, header_rows, self._nosplitCmds)
         else:
             # the method _cr_1_0 moves all line commands down up by n rows
-            r1._cr_1_0(n - header_rows, A)
-            r1._cr_1_0(n - header_rows, self._bkgrndcmds)
-            r1._cr_1_0(n - header_rows, self._spanCmds)
-            r1._cr_1_0(n - header_rows, self._nosplitCmds)
+            r1._cr_1_0(n - header_rows, A, doInRowSplit)
+            r1._cr_1_0(n - header_rows, self._bkgrndcmds, doInRowSplit)
+            r1._cr_1_0(n - header_rows, self._spanCmds, doInRowSplit)
+            r1._cr_1_0(n - header_rows, self._nosplitCmds, doInRowSplit)
 
         # Now we need to add back in the styles for the header rows (leaving their start/end positions as-is).
         if header_rows:
