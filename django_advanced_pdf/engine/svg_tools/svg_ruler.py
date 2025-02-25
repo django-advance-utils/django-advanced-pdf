@@ -3,6 +3,10 @@ import warnings
 
 import math
 from lxml import etree
+from reportlab.graphics import renderPDF
+from reportlab.lib.units import mm
+from svglib.svglib import svg2rlg
+from xml.etree import ElementTree
 
 from django_advanced_pdf.engine.svg_tools.svg_scaler import SVGScaler
 
@@ -102,17 +106,16 @@ class SVGScaledRuler(SVGScaler):
             else:
                 self._draw_line(x1=step, x2=step, y1=self.line_offset, y2=s_tick_sz)
 
-    def render(self, ratio, units):
-        # TODO: allow length again
+    def render(self, ratio, units='mm', offset_y=12, length=50, minor_tick_count=50):
         self.ratio = ratio
         self.units = units
-        self.inverse = 1/self.ratio
-        self.length = 50 * self.inverse
-        self.minor_tick_count = 50
+        self.inverse = 1 / self.ratio
+        self.length = length * self.inverse
+        self.minor_tick_count = minor_tick_count
 
-        self.offset_y = 12*self.inverse
-        self.offset_x = self.length + 2*self.inverse
-        self.line_offset = self.offset_y - 4*self.inverse
+        self.offset_y = offset_y * self.inverse
+        self.offset_x = self.length + 2 * self.inverse
+        self.line_offset = self.offset_y - 4 * self.inverse
 
         self.svg = etree.Element('svg')
         self.svg.attrib['width'] = f'{self.offset_x}'
@@ -122,3 +125,9 @@ class SVGScaledRuler(SVGScaler):
         self.scale(ratio=ratio, units=units, svg=self.svg)
 
         return self.svg
+
+    def draw_to_canvas(self, canvas, x, y, ratio, units='mm', offset_y=12, length=50, minor_tick_count=50):
+        svg = self.render(ratio=ratio, units=units, offset_y=offset_y, length=length, minor_tick_count=minor_tick_count)
+        svg_string = ElementTree.tostring(svg).decode("utf-8")
+        drawing = svg2rlg(io.StringIO(svg_string))
+        renderPDF.draw(drawing, canvas, x * mm, y * mm)
