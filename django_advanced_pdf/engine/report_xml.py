@@ -660,10 +660,12 @@ class ReportXML(object):
 
         rows_variables.append(row_variables)
         col_count = 0
-        for index, td_element in enumerate(tr_element, 0):
+        index = -1
+        for td_element in tr_element:
 
             if td_element.tag != 'td':
                 continue
+            index += 1
             name = td_element.get('name')
             if name is not None and name in hidden_columns:
                 continue
