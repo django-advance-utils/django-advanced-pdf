@@ -673,10 +673,11 @@ class ReportXML(object):
                 continue
 
             hidden_column = td_element.get('hidden_column')
+            show_column = td_element.get('show_column')
             col_span = int(td_element.get('colspan', "1"))
             row_span = int(td_element.get('rowspan', "1"))
 
-            if get_boolean_value(hidden_column):
+            if get_boolean_value(hidden_column) or not get_boolean_value(show_column, default=True):
                 if name is not None:
                     hidden_columns.add(name)
                 else:
