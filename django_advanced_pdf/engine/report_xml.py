@@ -1228,9 +1228,73 @@ class ReportXML(object):
                 for tag in working_tags:
                     next_xml += tag[1]
 
-            return overflow_rows[0], overflow_rows[1:], raw_parts, held_working_tags
-
-        return xml, overflow_rows, raw_parts, held_working_tags
+            return overflow_rows[0], overflow_rows[1:], raw_parts, held_working_tags, False
+        else:
+            if overflow_length == 0:
+                overflow_length = 300
+            overflow_rows = []
+            held_working_tags = []
+            raw_parts = []
+            
+            def find_tags(s):
+                return list(re.finditer(r'</?(\w+)[^<>]*?>', s))
+            
+            def close_open_tags(stack):
+                return ''.join(['</%s>' % tag[0] for tag in reversed(stack)])
+            
+            def reopen_tags(stack):
+                return ''.join([tag[1] for tag in stack])
+            
+            def find_safe_split(text, start, max_len):
+                end = min(start + max_len, len(text))
+                chunk = text[start:end]
+                
+                # Avoid mid-tag
+                lt = chunk.rfind('<')
+                gt = chunk.rfind('>')
+                if lt > gt:
+                    end = start + lt  # Don't split in the middle of a tag
+                else:
+                    # Find last space or > within the chunk to avoid word split
+                    safe = max(chunk.rfind(' '), chunk.rfind('>'))
+                    if safe != -1 and safe + start < end:
+                        end = start + safe + 1  # +1 to keep the delimiter
+                
+                return end
+            
+            open_tags = []
+            pos = 0
+            
+            while pos < len(xml):
+                end = find_safe_split(xml, pos, overflow_length)
+                chunk = xml[pos:end]
+                
+                tags = find_tags(chunk)
+                tag_stack = list(open_tags)
+                
+                for tag in tags:
+                    full_tag = tag.group()
+                    tag_name = tag.group(1)
+                    if full_tag.startswith('</'):
+                        if tag_name == open_tags[-1][0]:
+                            open_tags.pop()
+                            if tag_name == 'td' and len(open_tags) == 0:
+                                break
+                    elif not full_tag.endswith('/>'):
+                        open_tags.append((tag_name, full_tag))
+                
+                if chunk != '\n':
+                    raw_parts.append(chunk)
+                held_working_tags.append(tag_stack)
+                
+                closing = close_open_tags(open_tags)
+                reopening = reopen_tags(tag_stack)
+                full_chunk = reopening + chunk + closing
+                if chunk != '\n':
+                    overflow_rows.append(full_chunk)
+                pos = end
+            
+            return overflow_rows[0], overflow_rows[1:], raw_parts, held_working_tags, True
 
     def overflow_cell(self, td_element, xml, overflow_gt_length, styles, style, other_styles,
                       offset, col_count, row_count, col_span,
@@ -1238,7 +1302,7 @@ class ReportXML(object):
         text = re.sub('<.*?>', '', str(xml))
         if len(text) > overflow_gt_length:
             overflow_length = int(td_element.get('overflow_length', 0))
-            xml, overflow_rows_xml, _, _ = self.split_cell(xml, overflow_length)
+            xml, overflow_rows_xml, _, _, _ = self.split_cell(xml, overflow_length)
 
             if overflow_rows_xml:
                 self.process_css_for_table(tag=td_element,
@@ -1312,7 +1376,7 @@ class ReportXML(object):
         if not isinstance(xml, bytes):
             xml = xml.encode()
 
-        xml, overflow_rows_xml, raw_parts, held_working_tags = self.split_cell(xml=xml, overflow_length=0)
+        xml, overflow_rows_xml, raw_parts, held_working_tags, alt_method = self.split_cell(xml=xml, overflow_length=0)
 
         working_height = 0
         working_xml = b''
@@ -1320,15 +1384,20 @@ class ReportXML(object):
         overflow_row_offset = 0
         for overflow_row_offset, (row_xml, raw_part, working_tags) in\
                 enumerate(zip([xml] + overflow_rows_xml, raw_parts, held_working_tags), 1):
-            working_xml += raw_part + '<br/>'.encode()
-            if raw_part == b'\n':
-                row_xml = row_xml.replace(b'\n', b'M')
+            if not alt_method
+                working_xml += raw_part + '<br/>'.encode()
+                if raw_part == b'\n':
+                    row_xml = row_xml.replace(b'\n', b'M')
+            else:
+                working_xml += row_xml
+                
             p = EnhancedParagraph(row_xml, style, css_classes=self.styles)
             height = p.calc_text_height(avail_width=avail_width)
             working_height += height
             if working_height > overflow_gt_height:
                 for tag in reversed(working_tags):
-                    working_xml += ('</' + tag[0] + '>').encode()
+                    if not alt_method:
+                        working_xml += ('</' + tag[0] + '>').encode()
                     found_break = True
                 break
         overflow_len = len(overflow_rows_xml[overflow_row_offset-1:])
