@@ -52,8 +52,11 @@ class EnhancedParagraph(Paragraph):
             if auto_leading not in ('', 'off'):
                 height = 0
                 if auto_leading == 'max':
-                    for l in bl_para.lines:
-                        height += max(l.ascent - l.descent, leading)
+                    if len(bl_para.lines) == 0:
+                        height += max(bl_para.ascent - bl_para.descent, leading)
+                    else:
+                        for l in bl_para.lines:
+                            height += max(l.ascent - l.descent, leading)
                 elif auto_leading == 'min':
                     for l in bl_para.lines:
                         height += l.ascent - l.descent
@@ -66,5 +69,5 @@ class EnhancedParagraph(Paragraph):
                 leading = max(leading, bl_para.ascent - bl_para.descent)
             elif auto_leading == 'min':
                 leading = bl_para.ascent - bl_para.descent
-            height = len(bl_para.lines) * leading
+            height = max(len(bl_para.lines), 1) * leading
         return height
