@@ -104,6 +104,9 @@ class PDFTests(unittest.TestCase):
     def test_overflow_gt_height(self):
         self.run_report(name='overflow_gt_height', object_lookup=self.get_sample_objects())
 
+    def test_overflow_gt_height_spaces(self):
+        self.run_report(name='overflow_gt_height_spaces')
+
     def test_hidden(self):
         self.run_report(name='hidden')
 

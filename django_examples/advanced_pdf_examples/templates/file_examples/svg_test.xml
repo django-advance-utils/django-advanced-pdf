@@ -1,0 +1,35 @@
+<document title=""
+          page_size="A4"
+          border_right_first="2"
+          border_left_first="2"
+          border_bottom_first="0"
+          border_right_continuation="2"
+          border_left_continuation="2"
+          border_bottom_continuation="0">
+
+
+    <table class="full_table" style="inner_grid:0.25,#000000;box:0.5,#FF0000">
+        <tr>
+            <td style="align:centre;" width="60">
+                <svg width="60mm" height="100mm" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="0" y="0" width="60mm" height="100mm" fill="#8B3A3A"/>
+                </svg>
+            </td>
+        </tr>
+                <tr>
+            <td style="align:centre;" width="60">
+                <svg width="60mm" height="100mm" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="0" y="0" width="60mm" height="100mm" fill="#FF0000"/>
+                </svg>
+            </td>
+        </tr>
+        <tr>
+            <td style="align:centre;" width="60">
+                <svg width="60mm" height="100mm" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="0" y="0" width="60mm" height="100mm" fill="#00FF00"/>
+                </svg>
+            </td>
+        </tr>
+    </table>
+</document>
+

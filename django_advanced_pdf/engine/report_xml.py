@@ -1263,26 +1263,27 @@ class ReportXML(object):
             raw_parts = []
             
             def find_tags(s):
-                return list(re.finditer(r'</?(\w+)[^<>]*?>', s))
+                return list(re.finditer(rb'</?(\w+)[^<>]*?>', s))
             
             def close_open_tags(stack):
-                return ''.join(['</%s>' % tag[0] for tag in reversed(stack)])
+                return b''.join([b'</%s>' % tag[0] for tag in reversed(stack)])
             
             def reopen_tags(stack):
-                return ''.join([tag[1] for tag in stack])
+                return b''.join([tag[1] for tag in stack])
             
             def find_safe_split(text, start, max_len):
-                end = min(start + max_len, len(text))
+                end = int(min(start + max_len, len(text)))
+
                 chunk = text[start:end]
                 
                 # Avoid mid-tag
-                lt = chunk.rfind('<')
-                gt = chunk.rfind('>')
+                lt = chunk.rfind(b'<')
+                gt = chunk.rfind(b'>')
                 if lt > gt:
                     end = start + lt  # Don't split in the middle of a tag
                 else:
                     # Find last space or > within the chunk to avoid word split
-                    safe = max(chunk.rfind(' '), chunk.rfind('>'))
+                    safe = max(chunk.rfind(b' '), chunk.rfind(b'>'))
                     if safe != -1 and safe + start < end:
                         end = start + safe + 1  # +1 to keep the delimiter
                 
@@ -1304,12 +1305,12 @@ class ReportXML(object):
                 for tag in tags:
                     full_tag = tag.group()
                     tag_name = tag.group(1)
-                    if full_tag.startswith('</'):
+                    if full_tag.startswith(b'</'):
                         if tag_name == open_tags[-1][0]:
                             open_tags.pop()
                             if tag_name == 'td' and len(open_tags) == 0:
                                 break
-                    elif not full_tag.endswith('/>'):
+                    elif not full_tag.endswith(b'/>'):
                         open_tags.append((tag_name, full_tag))
                 
                 if chunk != '\n':
