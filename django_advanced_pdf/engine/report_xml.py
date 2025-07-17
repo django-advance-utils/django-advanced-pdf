@@ -661,6 +661,7 @@ class ReportXML(object):
         rows_variables.append(row_variables)
         col_count = 0
         overflow_ccs_elements = []
+        overflow_elements = []
         index = -1
         for td_element in tr_element:
 
@@ -887,6 +888,9 @@ class ReportXML(object):
                         rows_variables=rows_variables,
                         held_cells=held_cells)
 
+                    if overflow_row_count > 0:
+                        overflow_elements.append(td_element)
+
                 elif overflow_gt_length:
                     out_xml, style, overflow_row_count = self.overflow_cell(td_element=td_element,
                                                                             xml=xml,
@@ -902,6 +906,10 @@ class ReportXML(object):
                                                                             row_data=row_data,
                                                                             overflow_rows=overflow_rows,
                                                                             rows_variables=rows_variables)
+                    
+                    if overflow_row_count > 0:
+                        overflow_elements.append(td_element)
+                    
                     display_object = EnhancedParagraph(out_xml, style, css_classes=self.styles)
                 else:
                     display_object = EnhancedParagraph(xml, style, css_classes=self.styles)
@@ -960,6 +968,8 @@ class ReportXML(object):
                                                start_col=0, ignore_lines=True)
                 if i < len(overflow_rows):
                     for td_element, start_col, end_col in overflow_ccs_elements:
+                        if td_element in overflow_elements:
+                            continue
                         self.process_css_for_table(td_element, styles, other_styles,
                                                    start_row=row_count + 1 + i, end_row=row_count + 1 + i,
                                                    start_col=start_col, end_col=end_col, ignore_lines=True)
