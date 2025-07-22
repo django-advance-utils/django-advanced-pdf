@@ -1427,7 +1427,7 @@ class ReportXML(object):
                 enumerate(zip([xml] + overflow_rows_xml, raw_parts, held_working_tags), 1):
             if not alt_method:
                 working_xml += raw_part + '<br/>'.encode('utf_8')
-                if raw_part == b'\n' or b'\n' in raw_part:
+                if raw_part == b'\n':
                     row_xml = row_xml.replace(b'\n', b'M')
             else:
                 working_xml += row_xml
