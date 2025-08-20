@@ -1025,9 +1025,12 @@ class ReportXML(object):
     @staticmethod
     def convert_css_to_style(css, styles, other_styles, start_col=0, start_row=0, end_col=-1, end_row=-1,
                              ignore_lines=False):
+        font_size = 8
         start_tuple = (start_col, start_row)
         end_tuple = (end_col, end_row)
         styles_list = css.split(';')
+        has_font_size_change = 'font_size' in css
+        has_leading_change = 'leading' in css
         for style in styles_list:
             if style == '':
                 continue
@@ -1084,6 +1087,8 @@ class ReportXML(object):
                                 'font_size',
                                 'size'):
                 styles.append((style_type.replace("_", "").upper(), start_tuple, end_tuple, int(style_detail)))
+                if style_type in ['font_size', 'size']:
+                    font_size = int(style_detail)
             elif style_type == 'row_height':
                 other_styles[style_type.upper()] = int(style_detail)
 
@@ -1093,7 +1098,10 @@ class ReportXML(object):
                                 'bullet_indent',
                                 ):
                 other_styles[style_type.upper()] = float(style_detail) * mm
-
+        
+        if has_font_size_change and not has_leading_change:
+            styles.append(('LEADING', start_tuple, end_tuple, font_size * 1.3))
+    
     @staticmethod
     def get_padding_for_cell(styles, start_col=0, start_row=0, end_col=-1, end_row=-1):
         start_tuple = (start_col, start_row)
