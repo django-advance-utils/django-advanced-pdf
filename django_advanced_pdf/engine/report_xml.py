@@ -363,6 +363,8 @@ class ReportXML(object):
         keep_data = []
         other_styles = {}
         held_cells = {}
+        
+        keep_header_rows = []
 
         self.process_css_for_table(table, main_styles, other_styles)
 
@@ -407,6 +409,9 @@ class ReportXML(object):
                                                                    table_width=table_width,
                                                                    hidden_columns=hidden_columns,
                                                                    held_cells=held_cells)
+                
+                keep_row_header = element.get('keep_header_for_split')
+                keep_header_rows.append(keep_row_header)
 
                 if max_row_span > held_row_span:
                     held_row_span = max_row_span
@@ -442,6 +447,10 @@ class ReportXML(object):
                                                                            table_width=table_width,
                                                                            hidden_columns=hidden_columns,
                                                                            held_cells=held_cells)
+                        
+                        keep_row_header = element.get('keep_header_for_split')
+                        keep_header_rows.append(keep_row_header)
+                        
                         if max_row_span > held_row_span:
                             held_row_span = max_row_span
                         if held_row_span > 1 or min_rows_top > 0:
@@ -541,7 +550,8 @@ class ReportXML(object):
                               h_align=h_align,
                               v_align=v_align,
                               col_widths=new_column_widths,
-                              initial=True)
+                              initial=True,
+                              keep_header_rows=keep_header_rows)
 
             if len(rows_variables) > 0 and len(rows_variables[-1]) > 0:
                 self.held_variables = rows_variables[-1]
