@@ -430,7 +430,8 @@ class EnhancedTable(Table):
         addition_len = 0
         repeat_rows = self.repeatRows
         inserted_row = False
-        if self.keep_header_rows and 'true' in self.keep_header_rows[:r0_end] and self.keep_header_rows[n] != 'true':
+        if self.keep_header_rows and 'true' in self.keep_header_rows[:r0_end] and (n > (len(self.keep_header_rows)+1) or
+                                                                                   self.keep_header_rows[n] != 'true'):
             for i, value in enumerate(reversed(self.keep_header_rows[:r0_end])):
                 if value == 'true':
                     inserted_row = True
