@@ -841,10 +841,10 @@ class ReportXML(object):
 
                             row_variables[currency_variable] = currency_value
                             variables[currency_variable] = currency_value
-                    if value is not None and value != '':
+                    try:
                         number_string = "%.2f" % (float(value) / 100.0)
-                        display_object = '%s%s' % (symbol, intcomma_currency(number_string))
-                    else:
+                        display_object = "%s%s" % (symbol, intcomma_currency(number_string))
+                    except (ValueError, TypeError):
                         display_object = ''
 
             elif len(td_element) > 0 or user_html:
