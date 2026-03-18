@@ -28,6 +28,7 @@ class BasePager(canvas.Canvas):
         self._saved_page_states = []
         self.test_mode = test_mode
         self.root_element = root_element
+        self.watermark = self.get_watermark_config()
 
         self.pageused = PageUsed(left=border_left_first,
                                  right=border_right_first,
@@ -48,6 +49,60 @@ class BasePager(canvas.Canvas):
 
         self.add_background_images()
 
+    @staticmethod
+    def get_float_value(value, default):
+        try:
+            return float(value)
+        except (TypeError, ValueError):
+            return default
+
+    def get_watermark_config(self):
+        if self.root_element is None:
+            return None
+
+        watermark_element = self.root_element.find('watermark')
+        if watermark_element is None:
+            return None
+
+        text = watermark_element.get('text')
+        if text is None:
+            text = watermark_element.text
+        if text is None:
+            return None
+
+        text = text.strip()
+        if text == '':
+            return None
+
+        font_name = watermark_element.get('font_name', 'Helvetica-Bold')
+        font_size = self.get_float_value(watermark_element.get('font_size'), 96)
+        if font_size <= 0:
+            font_size = 96
+
+        rotation = self.get_float_value(watermark_element.get('rotation'), 45)
+        opacity = self.get_float_value(watermark_element.get('opacity'), 0.2)
+        opacity = max(0.0, min(1.0, opacity))
+
+        colour = watermark_element.get('color', '#D3D3D3')
+        try:
+            fill_colour = colors.HexColor(colour)
+        except ValueError:
+            fill_colour = colors.HexColor('#D3D3D3')
+
+        page_scope = watermark_element.get('page', 'all').strip().lower()
+        if page_scope not in ('all', 'first', 'remaining'):
+            page_scope = 'all'
+
+        return {
+            'text': text,
+            'font_name': font_name,
+            'font_size': font_size,
+            'rotation': rotation,
+            'opacity': opacity,
+            'fill_colour': fill_colour,
+            'page_scope': page_scope
+        }
+
     def margins(self, first_page=True):
         return {'top': 0, 'bottom': 0, 'left': 0, 'right': 0}
 
@@ -55,9 +110,8 @@ class BasePager(canvas.Canvas):
         pass
 
     def add_background_images(self):
-        if self.background_image_first is not None or self.background_image_remaining is not None:
-            self.draw_first_page_background()
-            self.draw_footer_image_block()
+        self.draw_first_page_background()
+        self.draw_footer_image_block()
 
     def add_draw_method(self, method):
 
@@ -214,17 +268,42 @@ class BasePager(canvas.Canvas):
         if image is not None:
             self.drawImage(ImageReader(image), 0, 0, self.page_width(), self.page_height())
 
+    def draw_watermark(self, first_page):
+        if self.watermark is None:
+            return
+
+        page_scope = self.watermark['page_scope']
+        if page_scope == 'first' and not first_page:
+            return
+        if page_scope == 'remaining' and first_page:
+            return
+
+        self.saveState()
+        try:
+            set_fill_alpha = getattr(self, 'setFillAlpha', None)
+            if callable(set_fill_alpha):
+                set_fill_alpha(self.watermark['opacity'])
+            self.setFillColor(self.watermark['fill_colour'])
+            self.setFont(self.watermark['font_name'], self.watermark['font_size'])
+            self.translate(self.page_width() / 2.0, self.page_height() / 2.0)
+            self.rotate(self.watermark['rotation'])
+            self.drawCentredString(0, -self.watermark['font_size'] / 3.0, self.watermark['text'])
+        finally:
+            self.restoreState()
+
     def draw_first_page_background(self):
         """
         Adds the first page background image to the printout
         """
         self.draw_background(self.background_image_first)
+        self.draw_watermark(first_page=True)
 
     def draw_remaining_page_background(self):
         """
         Adds the background image for the remaining pages in the printout
         """
         self.draw_background(self.background_image_remaining)
+        self.draw_watermark(first_page=False)
 
     def draw_footer_image_block(self):
         """
