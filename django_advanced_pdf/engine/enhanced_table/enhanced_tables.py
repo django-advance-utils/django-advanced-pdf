@@ -21,6 +21,7 @@ KEEP_TYPE_SPAN = 1
 KEEP_TYPE_START = 2
 KEEP_TYPE_MIDDLE = 3
 KEEP_TYPE_END = 4
+KEEP_TYPE_BREAK = 5
 
 
 # noinspection PyPep8Naming
@@ -38,7 +39,7 @@ class EnhancedTable(Table):
                  repeat_rows=0, repeat_cols=0, split_by_row=1, empty_table_action=None, ident=None,
                  h_align=None, v_align=None, normalized_data=0, cell_styles=None,
                  _calc_row_splits=True, initial=False, pos_x=None, pos_y=None, colpositions=None,
-                 keep_header_rows=None):
+                 keep_header_rows=None, check_break=True):
         """
         Class Constructor.
 
@@ -103,7 +104,7 @@ class EnhancedTable(Table):
         self.pos_y = pos_y
         self._colpositions = colpositions
         self.keep_header_rows = keep_header_rows
-
+        self.check_break = check_break
         no_split_cmds = self._calc_nosplit_positions(_calc_row_splits)
 
         if no_split_cmds:
@@ -157,6 +158,9 @@ class EnhancedTable(Table):
                 footer_height = self.footers[footer_index].rows_height
 
             if h + rh > availHeight - footer_height:
+                break
+            if keep_with_next == KEEP_TYPE_BREAK:
+                split_at = n
                 break
 
             if (self.initial or i > number_of_header) and n not in impossible and\
@@ -325,6 +329,7 @@ class EnhancedTable(Table):
                            min_rows_after_header=self.min_rows_after_header,
                            min_rows_before_total=self.min_rows_before_total,
                            _calc_row_splits=False,
+                           check_break=False,
                            colpositions=self._colpositions)
 
         # copy the commands
@@ -792,7 +797,10 @@ class EnhancedTable(Table):
 
     def _calc_height(self, availHeight, availWidth, H=None, W=None):
         height, height_max = self.calc_height_of_table(availHeight, availWidth, H, W)
-        self._height = height
+        if self.check_break and KEEP_TYPE_BREAK in self.keep_with_next:
+            self._height = availHeight + 1
+        else:
+            self._height = height
         self._hmax = height_max
 
     def get_height(self):
