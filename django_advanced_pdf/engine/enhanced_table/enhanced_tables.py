@@ -37,7 +37,8 @@ class EnhancedTable(Table):
                  col_widths=None, row_heights=None, style=None,
                  repeat_rows=0, repeat_cols=0, split_by_row=1, empty_table_action=None, ident=None,
                  h_align=None, v_align=None, normalized_data=0, cell_styles=None,
-                 _calc_row_splits=True, initial=False, pos_x=None, pos_y=None, colpositions=None):
+                 _calc_row_splits=True, initial=False, pos_x=None, pos_y=None, colpositions=None,
+                 keep_header_rows=None):
         """
         Class Constructor.
 
@@ -101,6 +102,7 @@ class EnhancedTable(Table):
         self.pos_x = pos_x
         self.pos_y = pos_y
         self._colpositions = colpositions
+        self.keep_header_rows = keep_header_rows
 
         no_split_cmds = self._calc_nosplit_positions(_calc_row_splits)
 
@@ -420,28 +422,120 @@ class EnhancedTable(Table):
             header_row_properties = [{'row_type': 'HEADING', 'SPLITTABLE': False} for _ in header_row_data]
             header_row_data = self.normalizeData(header_row_data)
             header_commands = header_data.commands
-
+        
+        inserted_header_data = []
+        inserted_header_heights = []
+        inserted_cell_styles = []
+        inserted_row_headers = []
+        addition_len = 0
+        repeat_rows = self.repeatRows
+        inserted_row = False
+        if self.keep_header_rows and 'true' in self.keep_header_rows[:r0_end] and (n > (len(self.keep_header_rows)+1) or
+                                                                                   self.keep_header_rows[n] != 'true'):
+            for i, value in enumerate(reversed(self.keep_header_rows[:r0_end])):
+                if value == 'true':
+                    inserted_row = True
+                    header_row = data[n - (i + 1)]
+                    inserted_header_data.append(header_row)
+                    inserted_header_heights.append(self._argH[n - (i + 1)])
+                    inserted_row_headers.append('true')
+                    cell_styles = self._cellStyles[n - (i + 1)]
+                    for cell_style in cell_styles:
+                        cell_style.name = "(%s, %s)" % (str(n), cell_style.name.split(',')[1].lstrip(' ').rstrip(')'))
+                    inserted_cell_styles.append(cell_styles)
+                    addition_len += 1
+                    
+                    new_colspans = []
+                    for col_span in self._colSpanCells:
+                        if col_span[1] >= n:
+                            col_span = (col_span[0], col_span[1] + 1)
+                        elif col_span[1] == n - (i + 1):
+                            new_colspans.append(col_span)
+                            col_span = (col_span[0], n)
+                        new_colspans.append(col_span)
+                    self._colSpanCells = new_colspans
+                    
+                    new_span_commands = []
+                    for span_cmd in self._spanCmds:
+                        if span_cmd[1][1] >= n:
+                            span_cmd = (span_cmd[0],
+                                        (span_cmd[1][0], span_cmd[1][1] + 1),
+                                        (span_cmd[2][0], span_cmd[2][1] + 1))
+                        elif span_cmd[1][1] == n - (i + 1):
+                            new_span_commands.append(span_cmd)
+                            span_cmd = (span_cmd[0], (span_cmd[1][0], n), (span_cmd[2][0], n))
+                        new_span_commands.append(span_cmd)
+                    self._spanCmds = new_span_commands
+                    
+                    new_bckgrd_commands = []
+                    for bckgrd_cmd in self._bkgrndcmds:
+                        if bckgrd_cmd[1][1] >= n:
+                            bckgrd_cmd = (bckgrd_cmd[0],
+                                          (bckgrd_cmd[1][0], bckgrd_cmd[1][1] + 1),
+                                          (bckgrd_cmd[2][0], bckgrd_cmd[2][1] + 1),
+                                          bckgrd_cmd[3])
+                        elif bckgrd_cmd[1][1] == n - (i + 1):
+                            new_bckgrd_commands.append(bckgrd_cmd)
+                            bckgrd_cmd = (bckgrd_cmd[0],
+                                          (bckgrd_cmd[1][0], n),
+                                          (bckgrd_cmd[2][0], n),
+                                          bckgrd_cmd[3])
+                        new_bckgrd_commands.append(bckgrd_cmd)
+                    self._bkgrndcmds = new_bckgrd_commands
+                    
+                    new_a_list = []
+                    for a in A:
+                        if a[1][1] == n and a[2][1] == n:
+                            new_a_list.append(a)
+                        
+                        if a[1][1] >= n - 1:
+                            new_a1 = a[1][1] + 1
+                        else:
+                            new_a1 = a[1][1]
+                        
+                        if a[2][1] >= n - 1:
+                            new_a2 = a[2][1] + 1
+                        else:
+                            new_a2 = a[2][1]
+                        
+                        try:
+                            if len(a) == 5:
+                                new_a = (a[0], (a[1][0], new_a1), (a[2][0], new_a2), a[3], a[4])
+                            else:
+                                new_a = (
+                                    a[0], (a[1][0], new_a1), (a[2][0], new_a2), a[3], a[4], a[5], a[6], a[7], a[8],
+                                    a[9])
+                            new_a_list.append(new_a)
+                        except:
+                            from reportlab.platypus.doctemplate import LayoutError
+                            raise LayoutError("Encountered an error whilst calculating new "
+                                              "lines for keep header split command: %s" % str(a))
+                    A = new_a_list
+                    break
+        
         # Construct the R1 row data, heights and cell styles.
         # NB. this should work even if repeatRows is 0 (resulting in empty lists, which collapse to nothing)
-
         r1_table_data = {
-            'row_data': data[:repeat_rows] + header_row_data + data[n:],
-            'row_variables': ([{} for _ in range(0, len(data[:repeat_rows]))] +
+            'row_data': inserted_header_data + data[:repeat_rows] + header_row_data + data[n:],
+            'row_variables': ([{} for _ in range(0, len(data[:repeat_rows]) + addition_len)] +
                               header_row_variables + self.variables[n:]),
-            'row_properties': ([{} for _ in range(0, len(data[:repeat_rows]))] +
+            'row_properties': ([{} for _ in range(0, len(data[:repeat_rows]) + addition_len)] +
                                header_row_properties + self.properties[n:]),
-            'keep_with_next': ([{} for _ in range(0, len(data[:repeat_rows]))] +
+            'keep_with_next': ([{} for _ in range(0, len(data[:repeat_rows]) + addition_len)] +
                                header_keep_with_next + self.keep_with_next[n:]),
-            'headers_index': ([None for _ in range(0, len(data[:repeat_rows]))] +
+            'headers_index': ([None for _ in range(0, len(data[:repeat_rows]) + addition_len)] +
                               blank_header_data + self.headers_index[n:]),
-            'footers_index': ([None for _ in range(0, len(data[:repeat_rows]))] +
+            'footers_index': ([None for _ in range(0, len(data[:repeat_rows]) + addition_len)] +
                               blank_header_data + self.footers_index[n:]),
         }
-
-        r1_row_heights = self._argH[:repeat_rows] + header_row_heights + self._argH[n:]
-        r1_cell_styles = self._merge_cell_styles(first=self._cellStyles[:repeat_rows],
-                                                 headers=header_cell_styles,
-                                                 last=self._cellStyles[n:])
+        
+        r1_row_heights = self._argH[:repeat_rows] + header_row_heights + inserted_header_heights + self._argH[n:]
+        r1_cell_styles = inserted_cell_styles + self._merge_cell_styles(first=self._cellStyles[:repeat_rows],
+                                                                        headers=header_cell_styles,
+                                                                        last=self._cellStyles[n:],
+                                                                        inserted_row=inserted_row)
+        r1_keep_header_rows = inserted_row_headers + self.keep_header_rows[n:]
+        
         r1 = EnhancedTable(r1_table_data,
                            col_widths=self._colWidths,
                            row_heights=r1_row_heights,
@@ -454,14 +548,15 @@ class EnhancedTable(Table):
                            min_rows_after_header=self.min_rows_after_header,
                            min_rows_before_total=self.min_rows_before_total,
                            _calc_row_splits=False,
-                           colpositions=self._colpositions)
+                           colpositions=self._colpositions,
+                           keep_header_rows=r1_keep_header_rows)
 
         # Need to account for any header rows added when we call the following otherwise the row
         # styles will get out of step
 
         header_rows = len(header_row_data)
         if repeat_rows > 0 or header_rows > 0:
-            # the method _cr_1_1_enhaced moves all table row commands (styles) down by adjusting their ranges
+            # the method _cr_1_1_enhanced moves all table row commands (styles) down by adjusting their ranges
             # It leaves styles affecting rows 0 - repeat_rows
             r1._cr_1_0(HEADER_FOOTER, header_commands, doInRowSplit)
             r1._cr_1_1_enhanced(n, repeat_rows, header_rows, A)
@@ -489,8 +584,14 @@ class EnhancedTable(Table):
         else:
             return [r0, r1]
 
-    @staticmethod
-    def _merge_cell_styles(first, headers, last):
+    def _merge_cell_styles(self, first, headers, last, inserted_row=False):
+        if inserted_row:
+            for cell_styles in last:
+                for cell_style in cell_styles:
+                    cell_style.name = cell_style.name = "(%s, %s)" % (
+                        str(int(cell_style.name.split(',')[0].lstrip('('))+1),
+                        cell_style.name.split(',')[1].lstrip(' ').rstrip(')'))
+        
         if len(headers) == 0:
             return first + last
 
@@ -638,7 +739,7 @@ class EnhancedTable(Table):
                                         v[0].identity(30), fp_str(dW), fp_str(t), i, j, fp_str(w), self.identity(30)))
                         else:
                             v = (v is not None and str(v) or '').split("\n")
-                            t = (s.leading or 1.2 * s.fontsize) * len(v)
+                            t = (s.leading or 1.3 * s.fontsize) * len(v)
                         t += s.bottomPadding + s.topPadding
                         if span:
                             r0 = span[1]
