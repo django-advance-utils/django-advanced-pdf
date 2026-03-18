@@ -121,7 +121,7 @@ class PDFTests(unittest.TestCase):
 
     def test_watermark_from_xml(self):
         xml = """
-        <document title="Watermark Test">
+        <document title="Watermark Test" page_size="A4">
             <watermark rotation="45" font_size="80">DRAFT</watermark>
             <table>
                 <tr>
