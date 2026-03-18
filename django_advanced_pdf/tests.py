@@ -119,6 +119,23 @@ class PDFTests(unittest.TestCase):
     def test_label(self):
         self.run_report(name='label', object_lookup=self.get_sample_objects())
 
+    def test_watermark_from_xml(self):
+        xml = """
+        <document title="Watermark Test">
+            <watermark rotation="45" font_size="80">DRAFT</watermark>
+            <table>
+                <tr>
+                    <td>Hello world</td>
+                </tr>
+            </table>
+        </document>
+        """
+        report_xml = ReportXML(test_mode=True)
+        result = report_xml.load_xml_and_make_pdf(xml=xml)
+
+        with fitz.open("pdf", result) as doc:
+            self.assertIn("DRAFT", doc[0].get_text(), msg='Watermark text missing from generated PDF')
+
     @staticmethod
     def get_sample_objects():
         # Define the data for the table
