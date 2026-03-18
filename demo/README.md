@@ -3,6 +3,7 @@
 This directory contains an automated demo recording of the example app:
 
 - `django-advanced-pdf-demo.mp4`
+- `django-advanced-pdf-demo-preview.jpg` (6-frame storyboard preview)
 
 To regenerate the video from the repository root:
 
