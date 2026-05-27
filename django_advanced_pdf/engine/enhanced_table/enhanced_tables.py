@@ -143,6 +143,10 @@ class EnhancedTable(Table):
         footer_index = None
 
         split_at = 0  # from this point of view 0 is the first position where the table may *always* be split
+        # forced_split tracks the largest position whose rows physically fit in availHeight,
+        # ignoring keep-with-next/span constraints. It is used by _splitRows as a last resort
+        # to guarantee forward progress when the constrained split_at would not shrink the table.
+        forced_split = 0
         use_middle = True
         for i, (rh, header_index, footer_index, keep_with_next) in enumerate(zip(self._rowHeights,
                                                                                  self.headers_index,
@@ -159,6 +163,8 @@ class EnhancedTable(Table):
 
             if h + rh > availHeight - footer_height:
                 break
+            # rows[0:n] fit within the available height at this point
+            forced_split = n
             if keep_with_next == KEEP_TYPE_BREAK:
                 split_at = n
                 break
@@ -174,7 +180,7 @@ class EnhancedTable(Table):
             h = h + rh
             n += 1
 
-        return split_at, header_index, footer_index
+        return split_at, header_index, footer_index, forced_split
 
     @staticmethod
     def merge_variables_into_data(data, variables):
@@ -254,12 +260,34 @@ class EnhancedTable(Table):
     # noinspection DuplicatedCode
     def _splitRows(self, availHeight, doInRowSplit=0):
 
-        n, header_index, footer_index = self._getFirstPossibleSplitRowPosition(availHeight, ignoreSpans=doInRowSplit)
+        n, header_index, footer_index, forced_split = self._getFirstPossibleSplitRowPosition(
+            availHeight, ignoreSpans=doInRowSplit)
         if n <= self.repeatRows:
             return []
         lim = len(self._rowHeights)
         if n == lim:  # No splitting required
             return [self]
+
+        # No-progress guard.
+        # When the table is split, the remainder (r1) re-adds the repeated rows and the
+        # repeating header (header_rows rows). It therefore contains
+        # (lim - n) + repeatRows + header_rows rows. If the constrained split position n
+        # only carves off those repeated rows (i.e. n <= repeatRows + header_rows) then r1
+        # ends up at least as large as this table, ReportLab tries to split it again, gets
+        # an identical remainder, and loops forever. This happens when a keep-together/span
+        # group (e.g. an image cell spanning rows) is taller than the page and so can never
+        # land on a page alongside the repeated header.
+        # In that case fall back to forced_split - the largest position that physically fits -
+        # which guarantees r1 strictly shrinks (even though it may break the span group).
+        header_rows = self.headers[header_index].row_length if header_index is not None else 0
+        if n <= self.repeatRows + header_rows:
+            if self.repeatRows < forced_split < lim and forced_split > n:
+                n = forced_split
+            else:
+                # Even the single following row cannot be made to fit. Refuse the split and
+                # let ReportLab postpone the table / raise a clear "too large" error rather
+                # than spinning. Returning [] avoids an infinite loop.
+                return []
 
         r0_end = n
 
