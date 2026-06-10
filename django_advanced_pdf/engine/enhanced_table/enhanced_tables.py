@@ -422,6 +422,24 @@ class EnhancedTable(Table):
         # r0._cr_0_footer(n, footer_commands)
         r0._cr_1_0(HEADER_FOOTER-n, footer_commands, doInRowSplit)
 
+        # Defer-to-next-page guard.
+        # The split position above is chosen from the sum of the pre-calculated per-row
+        # heights, but ReportLab places r0 by re-wrapping it on its own. When a keep group
+        # or row-spanning cell (e.g. an item's image + long description) sits at the front
+        # of the remaining data, that re-wrap can come out taller than the height left on a
+        # partly-filled page. ReportLab then fails to add r0 and raises
+        # "Splitting error(n==N)". If r0 does not fit the height left here but would fit on
+        # a fresh full-height frame, refuse the split (return []) so ReportLab postpones the
+        # whole table and re-splits it at the top of the next frame, where the group has a
+        # full page to land on. A group taller than a full page is left to the forced-split
+        # path above / ReportLab's own _postponed "too large" guard, so this cannot loop.
+        frame = getattr(self, '_frame', None)
+        if frame is not None and not frame._atTop:
+            measure_width = self.availWidth or self._width
+            _, r0_height = r0.wrap(measure_width, frame._aH)
+            if availHeight + rl_config._FUZZ < r0_height <= frame._aH + rl_config._FUZZ:
+                return []
+
         # Now we need to add any footer styles back on to the end (with all their cell ranges shifted)
         header_row_data = []
         header_row_heights = []
