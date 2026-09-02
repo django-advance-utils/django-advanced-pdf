@@ -3,6 +3,7 @@ import pathlib
 import unittest
 from pathlib import Path
 import fitz
+from lxml import etree
 from reportlab.lib import colors
 from reportlab.lib.units import mm
 from reportlab.platypus import TableStyle, Table, Image as RLImage
@@ -118,6 +119,69 @@ class PDFTests(unittest.TestCase):
 
     def test_label(self):
         self.run_report(name='label', object_lookup=self.get_sample_objects())
+
+    @staticmethod
+    def column_widths(table_xml, table_width=180 * mm):
+        """
+        Build a single table and return the column widths it ends up with.  _argW is where
+        reportlab keeps the colWidths it was handed, and is the only way to see the column
+        geometry without falling back on comparing rendered pixels.
+        """
+        report_xml = ReportXML(test_mode=True)
+        table = report_xml.process_table(etree.fromstring(table_xml), table_width)
+        return table._argW
+
+    def test_cell_width_under_rowspan(self):
+        """
+        A width on a td belongs to the column the cell is actually placed in.  A rowspan
+        started in an earlier row pushes the cell along, and the width has to follow it.
+        """
+        with_rowspan = self.column_widths("""
+            <table>
+                <tr><td rowspan="2">a</td><td>b</td><td>c</td></tr>
+                <tr><td width="80">d</td><td>e</td></tr>
+            </table>""")
+
+        # the same grid, with the cell written out in full instead of covered by the rowspan
+        without_rowspan = self.column_widths("""
+            <table>
+                <tr><td>a</td><td>b</td><td>c</td></tr>
+                <tr><td>a2</td><td width="80">d</td><td>e</td></tr>
+            </table>""")
+
+        self.assertEqual(without_rowspan, with_rowspan,
+                         msg='rowspan moved the column width onto the wrong column')
+        self.assertEqual(80 * mm, with_rowspan[1], msg='width did not land on column 1')
+
+    def test_cell_width_after_colspan(self):
+        """A colspan earlier in the same row pushes later cells along in the same way."""
+        widths = self.column_widths("""
+            <table>
+                <tr><td colspan="2">a</td><td width="60">b</td><td>c</td></tr>
+                <tr><td>1</td><td>2</td><td>3</td><td>4</td></tr>
+            </table>""")
+
+        self.assertEqual(4, len(widths), msg='table should be four columns wide')
+        self.assertEqual(60 * mm, widths[2], msg='width did not land on column 2')
+
+    def test_spanned_columns_get_their_own_width(self):
+        """
+        Columns only ever reached by a colspan still need a width of their own.  When they are
+        missing reportlab quietly pads the list out with copies of the last width, which is how
+        cells sitting in those columns end up pushed off the edge of the table.
+        """
+        widths = self.column_widths("""
+            <table>
+                <tr><td width="20">a</td><td width="100">b</td></tr>
+                <tr><td colspan="4">wide</td></tr>
+            </table>""")
+
+        self.assertEqual(4, len(widths), msg='spanned columns missing from the column widths')
+        self.assertEqual(20 * mm, widths[0])
+        self.assertEqual(100 * mm, widths[1])
+        self.assertEqual(widths[2], widths[3], msg='both spanned columns should share what is left')
+        self.assertNotEqual(widths[1], widths[2],
+                            msg='spanned columns just repeated the last explicit width')
 
     def test_watermark_from_xml(self):
         xml = """

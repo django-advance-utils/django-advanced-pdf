@@ -701,9 +701,6 @@ class ReportXML(object):
             if td_element.get('hidden'):
                 continue
 
-            if len(col_widths) < col_count + 1:
-                col_widths.append(None)
-
             # check that cell is not marked as a rowspan
             p_offset = span.get('%d-%d' % (row_count, col_count + offset), None)
             while p_offset is not None and p_offset > 0:
@@ -711,6 +708,14 @@ class ReportXML(object):
                     row_data.append('')
                 offset += p_offset
                 p_offset = span.get('%d-%d' % (row_count, col_count + offset), None)
+
+            # the table column this cell actually lands in, once the colspans and rowspans that
+            # pushed it along have been counted.  col_widths is indexed by this rather than by
+            # col_count so that a per cell width lands on the same column the cell is placed in
+            col_index = col_count + offset
+
+            while len(col_widths) < col_index + col_span:
+                col_widths.append(None)
 
             if row_span > max_row_span:
                 max_row_span = row_span
@@ -763,8 +768,8 @@ class ReportXML(object):
                                                      end_col=-col_count + offset + col_span,
                                                      end_row=-row_count + row_span - 1)
                     scaled_width_mm = (scaled_width + padding) / mm
-                    if col_widths[col_count] is None or col_widths[col_count] < scaled_width_mm:
-                        col_widths[col_count] = scaled_width_mm
+                    if col_widths[col_index] is None or col_widths[col_index] < scaled_width_mm:
+                        col_widths[col_index] = scaled_width_mm
                     display_object = self.svg2rlg_from_node(svg,
                                                             width=scaled_width,
                                                             height=scaled_height,
@@ -784,8 +789,8 @@ class ReportXML(object):
                                                     end_col=-col_count + offset + col_span - 1,
                                                     end_row=-row_count + row_span - 1)
                 scaled_width_mm = (scaled_width + padding) / mm
-                if col_widths[col_count] is None or col_widths[col_count] < scaled_width_mm:
-                    col_widths[col_count] = scaled_width_mm
+                if col_widths[col_index] is None or col_widths[col_index] < scaled_width_mm:
+                    col_widths[col_index] = scaled_width_mm
                 display_object = self.svg2rlg_from_node(scaled_ruler,
                                                         width=scaled_width,
                                                         height=scaled_height,
@@ -938,7 +943,7 @@ class ReportXML(object):
 
             width = self.set_column_width(td_element.get('width'))
             if width is not None:
-                col_widths[col_count] = width
+                col_widths[col_index] = width
 
             if col_span > 1 or row_span > 1:
                 for x in range(1, col_span):
