@@ -164,6 +164,52 @@ class PDFTests(unittest.TestCase):
         self.assertEqual(4, len(widths), msg='table should be four columns wide')
         self.assertEqual(60 * mm, widths[2], msg='width did not land on column 2')
 
+    def test_svg_width_under_rowspan(self):
+        """
+        A ratio scaled svg sizes the column it sits in off its own scaled width, so that
+        column has to be the one the cell is placed in once a rowspan has pushed it along.
+        """
+        svg = ('<svg data-ratio="1:1" data-units="mm" width="50" height="50">'
+               '<rect width="50" height="50"/></svg>')
+
+        with_rowspan = self.column_widths(f"""
+            <table>
+                <tr><td rowspan="2">a</td><td>b</td></tr>
+                <tr><td>{svg}</td></tr>
+            </table>""")
+
+        # the same grid, with the cell written out in full instead of covered by the rowspan
+        without_rowspan = self.column_widths(f"""
+            <table>
+                <tr><td>a</td><td>b</td></tr>
+                <tr><td>a2</td><td>{svg}</td></tr>
+            </table>""")
+
+        self.assertEqual(without_rowspan, with_rowspan,
+                         msg='rowspan moved the svg width onto the wrong column')
+        self.assertLess(with_rowspan[1], with_rowspan[0],
+                        msg='column 1 was not sized from the svg')
+
+    def test_ruler_width_after_colspan(self):
+        """A ruler sizes its column the same way, and a colspan pushes it along the same way."""
+        ruler = '<ruler data-ratio="1:10"/>'
+
+        after_colspan = self.column_widths(f"""
+            <table>
+                <tr><td colspan="2">a</td><td>{ruler}</td></tr>
+            </table>""")
+
+        # the same grid, with the colspan written out as two separate cells
+        without_colspan = self.column_widths(f"""
+            <table>
+                <tr><td>a</td><td>a2</td><td>{ruler}</td></tr>
+            </table>""")
+
+        self.assertEqual(without_colspan, after_colspan,
+                         msg='colspan moved the ruler width onto the wrong column')
+        self.assertLess(after_colspan[2], after_colspan[0],
+                        msg='column 2 was not sized from the ruler')
+
     def test_spanned_columns_get_their_own_width(self):
         """
         Columns only ever reached by a colspan still need a width of their own.  When they are
