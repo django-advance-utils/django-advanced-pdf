@@ -9,6 +9,7 @@ from reportlab.lib.units import mm
 from reportlab.platypus import TableStyle, Table, Image as RLImage
 
 from django_advanced_pdf.engine.report_xml import ReportXML
+from django_advanced_pdf.engine.utils import ColumnWidthPercentage
 from PIL import ImageChops, Image
 
 
@@ -320,3 +321,65 @@ class PDFTests(unittest.TestCase):
         return {'sample': table,
                 'sample_label': sample_label,
                 'small_image': small_image}
+
+
+class ColumnWidthTests(unittest.TestCase):
+    """
+    Unit tests for process_column_widths, which the golden image reports barely cover -
+    keep_with_next.xml is the only one using a percentage, and it is a plain 70%.
+    """
+
+    table_width = 200.0  # millimetres, the units process_column_widths expects
+
+    def assert_widths(self, col_widths, expected_mm):
+        """
+        Widths come back in points, so divide by mm to compare them in millimetres.
+        """
+        actual = ReportXML.process_column_widths(col_widths, self.table_width)
+        self.assertEqual(len(actual), len(expected_mm), msg='wrong number of columns')
+        for index, (got, expected) in enumerate(zip(actual, expected_mm)):
+            self.assertAlmostEqual(got / mm, expected, places=6,
+                                   msg=f'column {index} is {got / mm}mm, expected {expected}mm')
+
+    # the units contract, so that "fixing" the mm/points split fails loudly here
+
+    def test_widths_are_returned_in_points(self):
+        widths = ReportXML.process_column_widths([None, None], self.table_width)
+        self.assertAlmostEqual(sum(widths), self.table_width * mm, places=6)
+
+    # percentages over 100 used to push undefined columns negative
+
+    def test_percentage_over_100_does_not_go_negative(self):
+        self.assert_widths([ColumnWidthPercentage(120), None], [240.0, 0.0])
+
+    def test_percentage_over_100_clamps_every_undefined_column(self):
+        self.assert_widths([ColumnWidthPercentage(60), ColumnWidthPercentage(70), None, None],
+                           [120.0, 140.0, 0.0, 0.0])
+
+    def test_percentages_at_100_leave_undefined_column_empty(self):
+        self.assert_widths([ColumnWidthPercentage(100), None], [200.0, 0.0])
+
+    def test_percentages_just_under_100_are_not_clamped(self):
+        self.assert_widths([ColumnWidthPercentage(99.9), None], [199.8, 0.2])
+
+    # behaviour the clamp must leave alone
+
+    def test_undefined_column_takes_the_remaining_percentage(self):
+        self.assert_widths([ColumnWidthPercentage(70), None], [140.0, 60.0])
+
+    def test_undefined_columns_share_the_table_equally(self):
+        third = self.table_width / 3
+        self.assert_widths([None, None, None], [third, third, third])
+
+    def test_percentages_are_shares_of_what_the_fixed_columns_leave(self):
+        # 70% of the remaining 150mm, not 70% of the whole 200mm table
+        self.assert_widths([50.0, ColumnWidthPercentage(70), None], [50.0, 105.0, 45.0])
+
+    def test_percentages_under_100_leave_the_table_short(self):
+        self.assert_widths([ColumnWidthPercentage(70)], [140.0])
+
+    def test_fixed_columns_wider_than_the_table_clamp_the_remainder(self):
+        self.assert_widths([150.0, 100.0, None], [150.0, 100.0, 0.0])
+
+    def test_all_fixed_columns_are_used_as_is(self):
+        self.assert_widths([50.0, 50.0], [50.0, 50.0])

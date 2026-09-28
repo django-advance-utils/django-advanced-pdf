@@ -1191,6 +1191,35 @@ class ReportXML(object):
 
     @staticmethod
     def process_column_widths(col_widths, table_width):
+        """
+        Works out the final column widths for a table, ready for EnhancedTable.
+
+        Note the unit boundary: everything is worked out in millimetres and only
+        converted to points on the way out.
+        :param col_widths: per column, either None (undefined), a ColumnWidthPercentage,
+                           or a float in millimetres (as set_column_width returns)
+        :param table_width: space available to the table, in MILLIMETRES - make_pdf
+                            divides page_width by mm before it reaches here
+        :return: list of widths in POINTS, normally adding up to table_width mm
+                 (see the edge cases below for when they do not)
+
+        Percentages are shares of whatever is left after the fixed columns, not of
+        the whole table, so on a 200mm table [50mm, 70%] gives the second column
+        105mm (70% of the remaining 150mm) rather than 140mm. Undefined columns
+        then split whatever is left of the 100% between them, so [70%, None] on
+        that table gives 140mm + 60mm.
+
+        Worth knowing at the edges:
+        - percentages totalling under 100 with no undefined column leave the table
+          short - [70%] on its own fills only 140mm of a 200mm table
+        - percentages totalling over 100 clamp undefined columns to zero rather
+          than going negative, but the percentage columns themselves are still
+          oversized, so the table overflows - [120%, None] gives 240mm + 0mm
+        - fixed columns wider than the table clamp the remainder to zero, but are
+          left oversized themselves, so the table still overflows
+        - if every column is fixed the widths are used as-is and none of the above
+          applies
+        """
         new_col_widths = copy.copy(col_widths)
         undefined_count = 0
         defined_percentage = 0
@@ -1210,7 +1239,10 @@ class ReportXML(object):
 
         undefined_percentage = 0
         if undefined_count > 0:
-            undefined_percentage = (100 - defined_percentage) / undefined_count
+            remaining_percentage = 100 - defined_percentage
+            if remaining_percentage < 0:
+                remaining_percentage = 0
+            undefined_percentage = remaining_percentage / undefined_count
 
         available_space = table_width - defined_space
         if available_space < 0:
