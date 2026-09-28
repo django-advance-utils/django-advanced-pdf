@@ -537,6 +537,14 @@ class ReportXML(object):
 
         h_align, v_align = self.get_alignment_details(main_styles)
 
+        # col_widths is shared with the header and footer rows, and they can reach further
+        # across than the body does.  These widths belong to the body table, so anything past
+        # the columns it actually has is dropped rather than given a share of the free width.
+        # Header rows with output set are in main_data as well, so they still count.
+        body_col_count = max((len(row) for row in main_data), default=0)
+        if body_col_count:
+            del col_widths[body_col_count:]
+
         new_column_widths = self.process_column_widths(col_widths, table_width)
 
         if main_data:

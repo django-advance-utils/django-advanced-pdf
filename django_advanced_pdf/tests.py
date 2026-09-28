@@ -229,6 +229,37 @@ class PDFTests(unittest.TestCase):
         self.assertNotEqual(widths[1], widths[2],
                             msg='spanned columns just repeated the last explicit width')
 
+    def test_header_wider_than_body_does_not_narrow_it(self):
+        """
+        Header and footer rows share the body's col_widths list but are laid out as their own
+        data.  One reaching further across than the body must not take a share of the width
+        away from the columns the body actually has.
+        """
+        body = '<tr><td>a</td><td>b</td></tr>'
+        on_its_own = self.column_widths(f'<table>{body}</table>')
+
+        with_wide_header = self.column_widths(
+            f'<table><header><tr><td colspan="4">Title</td></tr></header>{body}</table>')
+        with_wide_footer = self.column_widths(
+            f'<table><footer><tr><td colspan="4">Total</td></tr></footer>{body}</table>')
+
+        self.assertEqual(on_its_own, with_wide_header,
+                         msg='the header added columns the body does not have')
+        self.assertEqual(on_its_own, with_wide_footer,
+                         msg='the footer added columns the body does not have')
+
+    def test_full_width_header_over_a_hidden_column(self):
+        """A hidden column leaves the body narrower than the header that spans it."""
+        body = '<tr><td>a</td><td hidden_column="1">b</td><td>c</td></tr>'
+
+        with_header = self.column_widths(
+            f'<table><header><tr><td colspan="3">Title</td></tr></header>{body}</table>')
+        without_header = self.column_widths(f'<table>{body}</table>')
+
+        self.assertEqual(2, len(with_header), msg='the hidden column should be gone')
+        self.assertEqual(without_header, with_header,
+                         msg='the header narrowed the body columns')
+
     def test_watermark_from_xml(self):
         xml = """
         <document title="Watermark Test" page_size="A4">
