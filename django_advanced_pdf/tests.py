@@ -3,6 +3,7 @@ import pathlib
 import unittest
 from pathlib import Path
 import fitz
+from lxml import etree
 from reportlab.lib import colors
 from reportlab.lib.units import mm
 from reportlab.platypus import TableStyle, Table, Image as RLImage
@@ -118,6 +119,146 @@ class PDFTests(unittest.TestCase):
 
     def test_label(self):
         self.run_report(name='label', object_lookup=self.get_sample_objects())
+
+    @staticmethod
+    def column_widths(table_xml, table_width=180 * mm):
+        """
+        Build a single table and return the column widths it ends up with.  _argW is where
+        reportlab keeps the colWidths it was handed, and is the only way to see the column
+        geometry without falling back on comparing rendered pixels.
+        """
+        report_xml = ReportXML(test_mode=True)
+        table = report_xml.process_table(etree.fromstring(table_xml), table_width)
+        return table._argW
+
+    def test_cell_width_under_rowspan(self):
+        """
+        A width on a td belongs to the column the cell is actually placed in.  A rowspan
+        started in an earlier row pushes the cell along, and the width has to follow it.
+        """
+        with_rowspan = self.column_widths("""
+            <table>
+                <tr><td rowspan="2">a</td><td>b</td><td>c</td></tr>
+                <tr><td width="80">d</td><td>e</td></tr>
+            </table>""")
+
+        # the same grid, with the cell written out in full instead of covered by the rowspan
+        without_rowspan = self.column_widths("""
+            <table>
+                <tr><td>a</td><td>b</td><td>c</td></tr>
+                <tr><td>a2</td><td width="80">d</td><td>e</td></tr>
+            </table>""")
+
+        self.assertEqual(without_rowspan, with_rowspan,
+                         msg='rowspan moved the column width onto the wrong column')
+        self.assertEqual(80 * mm, with_rowspan[1], msg='width did not land on column 1')
+
+    def test_cell_width_after_colspan(self):
+        """A colspan earlier in the same row pushes later cells along in the same way."""
+        widths = self.column_widths("""
+            <table>
+                <tr><td colspan="2">a</td><td width="60">b</td><td>c</td></tr>
+                <tr><td>1</td><td>2</td><td>3</td><td>4</td></tr>
+            </table>""")
+
+        self.assertEqual(4, len(widths), msg='table should be four columns wide')
+        self.assertEqual(60 * mm, widths[2], msg='width did not land on column 2')
+
+    def test_svg_width_under_rowspan(self):
+        """
+        A ratio scaled svg sizes the column it sits in off its own scaled width, so that
+        column has to be the one the cell is placed in once a rowspan has pushed it along.
+        """
+        svg = ('<svg data-ratio="1:1" data-units="mm" width="50" height="50">'
+               '<rect width="50" height="50"/></svg>')
+
+        with_rowspan = self.column_widths(f"""
+            <table>
+                <tr><td rowspan="2">a</td><td>b</td></tr>
+                <tr><td>{svg}</td></tr>
+            </table>""")
+
+        # the same grid, with the cell written out in full instead of covered by the rowspan
+        without_rowspan = self.column_widths(f"""
+            <table>
+                <tr><td>a</td><td>b</td></tr>
+                <tr><td>a2</td><td>{svg}</td></tr>
+            </table>""")
+
+        self.assertEqual(without_rowspan, with_rowspan,
+                         msg='rowspan moved the svg width onto the wrong column')
+        self.assertLess(with_rowspan[1], with_rowspan[0],
+                        msg='column 1 was not sized from the svg')
+
+    def test_ruler_width_after_colspan(self):
+        """A ruler sizes its column the same way, and a colspan pushes it along the same way."""
+        ruler = '<ruler data-ratio="1:10"/>'
+
+        after_colspan = self.column_widths(f"""
+            <table>
+                <tr><td colspan="2">a</td><td>{ruler}</td></tr>
+            </table>""")
+
+        # the same grid, with the colspan written out as two separate cells
+        without_colspan = self.column_widths(f"""
+            <table>
+                <tr><td>a</td><td>a2</td><td>{ruler}</td></tr>
+            </table>""")
+
+        self.assertEqual(without_colspan, after_colspan,
+                         msg='colspan moved the ruler width onto the wrong column')
+        self.assertLess(after_colspan[2], after_colspan[0],
+                        msg='column 2 was not sized from the ruler')
+
+    def test_spanned_columns_get_their_own_width(self):
+        """
+        Columns only ever reached by a colspan still need a width of their own.  When they are
+        missing reportlab quietly pads the list out with copies of the last width, which is how
+        cells sitting in those columns end up pushed off the edge of the table.
+        """
+        widths = self.column_widths("""
+            <table>
+                <tr><td width="20">a</td><td width="100">b</td></tr>
+                <tr><td colspan="4">wide</td></tr>
+            </table>""")
+
+        self.assertEqual(4, len(widths), msg='spanned columns missing from the column widths')
+        self.assertEqual(20 * mm, widths[0])
+        self.assertEqual(100 * mm, widths[1])
+        self.assertEqual(widths[2], widths[3], msg='both spanned columns should share what is left')
+        self.assertNotEqual(widths[1], widths[2],
+                            msg='spanned columns just repeated the last explicit width')
+
+    def test_header_wider_than_body_does_not_narrow_it(self):
+        """
+        Header and footer rows share the body's col_widths list but are laid out as their own
+        data.  One reaching further across than the body must not take a share of the width
+        away from the columns the body actually has.
+        """
+        body = '<tr><td>a</td><td>b</td></tr>'
+        on_its_own = self.column_widths(f'<table>{body}</table>')
+
+        with_wide_header = self.column_widths(
+            f'<table><header><tr><td colspan="4">Title</td></tr></header>{body}</table>')
+        with_wide_footer = self.column_widths(
+            f'<table><footer><tr><td colspan="4">Total</td></tr></footer>{body}</table>')
+
+        self.assertEqual(on_its_own, with_wide_header,
+                         msg='the header added columns the body does not have')
+        self.assertEqual(on_its_own, with_wide_footer,
+                         msg='the footer added columns the body does not have')
+
+    def test_full_width_header_over_a_hidden_column(self):
+        """A hidden column leaves the body narrower than the header that spans it."""
+        body = '<tr><td>a</td><td hidden_column="1">b</td><td>c</td></tr>'
+
+        with_header = self.column_widths(
+            f'<table><header><tr><td colspan="3">Title</td></tr></header>{body}</table>')
+        without_header = self.column_widths(f'<table>{body}</table>')
+
+        self.assertEqual(2, len(with_header), msg='the hidden column should be gone')
+        self.assertEqual(without_header, with_header,
+                         msg='the header narrowed the body columns')
 
     def test_watermark_from_xml(self):
         xml = """
