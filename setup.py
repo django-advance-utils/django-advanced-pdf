@@ -12,7 +12,8 @@ setuptools.setup(
     long_description_content_type="text/markdown",
     url="https://github.com/django-advance-utils/django-advanced-pdf",
     include_package_data=True,
-    packages=['django_advanced_pdf'],
+    packages=setuptools.find_packages(
+        include=['django_advanced_pdf', 'django_advanced_pdf.*']),
     install_requires=[
         "svglib>=1.5.1",
         "reportlab>=4.2.5",
