@@ -383,3 +383,102 @@ class ColumnWidthTests(unittest.TestCase):
 
     def test_all_fixed_columns_are_used_as_is(self):
         self.assert_widths([50.0, 50.0], [50.0, 50.0])
+
+
+class ScaledSvgSizeTests(unittest.TestCase):
+    """
+    A ratio scaled svg and a ruler are drawn at true size: measured in the finished pdf, a line
+    n units long at 1:r is n / r millimetres, whichever svglib version draws it.
+    """
+
+    @staticmethod
+    def pdf_from_xml(body):
+        report_xml = ReportXML(test_mode=True)
+        result = report_xml.load_xml_and_make_pdf(
+            f'<document page_size="A4" page_orientation="portrait">{body}</document>')
+        return fitz.open('pdf', result.getvalue())
+
+    @staticmethod
+    def longest_lines_mm(document):
+        """The longest horizontal and the longest vertical line on the first page, in millimetres."""
+        across, down = [0.0], [0.0]
+        for drawing in document[0].get_drawings():
+            for item in drawing['items']:
+                if item[0] != 'l':
+                    continue
+                start, end = item[1], item[2]
+                if abs(start.y - end.y) < 0.01:
+                    across.append(abs(start.x - end.x))
+                if abs(start.x - end.x) < 0.01:
+                    down.append(abs(start.y - end.y))
+        return max(across) / mm, max(down) / mm
+
+    @staticmethod
+    def font_sizes(document):
+        return [span['size'] for block in document[0].get_text('dict')['blocks']
+                for line in block.get('lines', []) for span in line['spans']]
+
+    def test_ratio_svg_is_true_size(self):
+        svg = ('<svg data-ratio="1:10" data-units="mm" width="800" height="2000">'
+               '<line x1="0" y1="0" x2="762" y2="0" stroke="black"/>'
+               '<line x1="0" y1="0" x2="0" y2="1981" stroke="black"/></svg>')
+        across, down = self.longest_lines_mm(self.pdf_from_xml(f'<table><tr><td>{svg}</td></tr></table>'))
+        self.assertAlmostEqual(76.2, across, delta=0.05)
+        self.assertAlmostEqual(198.1, down, delta=0.05)
+
+    def test_ratio_svg_text_keeps_its_size(self):
+        svg = ('<svg data-ratio="1:1" data-units="mm" width="100" height="50">'
+               '<text x="10" y="20">no size</text>'
+               '<text x="10" y="40" font-size="12">twelve</text></svg>')
+        sizes = self.font_sizes(self.pdf_from_xml(f'<table><tr><td>{svg}</td></tr></table>'))
+        self.assertEqual(2, len(sizes))
+        for size in sizes:
+            self.assertAlmostEqual(12, size, delta=0.01)
+
+    def test_ratio_svg_keeps_explicit_units(self):
+        from django_advanced_pdf.engine.svg_tools.svg_scaled_renderer import PX_TO_PT
+
+        texts = []
+        if PX_TO_PT != 1:
+            # svglib 1.5.1 reads pt as 1.25pt, and svglib 1 has no rem
+            texts = ['<text x="10" y="20" font-size="12pt">points</text>',
+                     '<text x="10" y="40" font-size="1rem">root</text>']
+        svg = ('<svg data-ratio="1:1" data-units="mm" width="100" height="50">'
+               '<line x1="0" y1="0" x2="30mm" y2="0" stroke="black"/>'
+               '<line x1="0" y1="0" x2="0" y2="0.5in" stroke="black"/>'
+               f'{"".join(texts)}</svg>')
+        document = self.pdf_from_xml(f'<table><tr><td>{svg}</td></tr></table>')
+        across, down = self.longest_lines_mm(document)
+        self.assertAlmostEqual(30, across, delta=0.05)
+        self.assertAlmostEqual(12.7, down, delta=0.05)
+        sizes = self.font_sizes(document)
+        self.assertEqual(len(texts), len(sizes))
+        for size in sizes:
+            self.assertAlmostEqual(12, size, delta=0.01)
+
+    def test_ratio_svg_applies_its_stylesheet(self):
+        svg = ('<svg data-ratio="1:1" data-units="mm" width="100" height="50">'
+               '<style>.label {font-size:24}</style>'
+               '<text class="label" x="10" y="20">styled</text></svg>')
+        sizes = self.font_sizes(self.pdf_from_xml(f'<table><tr><td>{svg}</td></tr></table>'))
+        self.assertEqual(1, len(sizes))
+        self.assertAlmostEqual(24, sizes[0], delta=0.01)
+
+    def test_ruler_in_a_table_is_true_size(self):
+        across, _ = self.longest_lines_mm(self.pdf_from_xml('<table><tr><td><ruler data-ratio="1:10"/></td></tr></table>'))
+        self.assertAlmostEqual(50, across, delta=0.05)
+
+    def test_ruler_drawn_to_a_canvas_is_true_size(self):
+        from io import BytesIO
+        from reportlab.pdfgen.canvas import Canvas
+        from django_advanced_pdf.engine.svg_tools.svg_ruler import SVGScaledRuler
+
+        buffer = BytesIO()
+        canvas = Canvas(buffer)
+        SVGScaledRuler().draw_to_canvas(canvas=canvas, x=20, y=20, ratio='1:20')
+        canvas.save()
+        document = fitz.open('pdf', buffer.getvalue())
+        across, _ = self.longest_lines_mm(document)
+        self.assertAlmostEqual(50, across, delta=0.05)
+        for size in self.font_sizes(document):
+            self.assertAlmostEqual(12, size, delta=0.01)

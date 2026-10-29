@@ -1,4 +1,3 @@
-import io
 import re
 import warnings
 
@@ -6,9 +5,8 @@ import math
 from lxml import etree
 from reportlab.graphics import renderPDF
 from reportlab.lib.units import mm
-from svglib.svglib import svg2rlg
-from xml.etree import ElementTree
 
+from django_advanced_pdf.engine.svg_tools.svg_scaled_renderer import SvgScaledRenderer
 from django_advanced_pdf.engine.svg_tools.svg_scaler import SVGScaler
 
 
@@ -129,6 +127,8 @@ class SVGScaledRuler(SVGScaler):
 
     def draw_to_canvas(self, canvas, x, y, ratio, units='mm', offset_y=12, length=50, minor_tick_count=50):
         svg = self.render(ratio=ratio, units=units, offset_y=offset_y, length=length, minor_tick_count=minor_tick_count)
-        svg_string = ElementTree.tostring(svg).decode("utf-8")
-        drawing = svg2rlg(io.StringIO(svg_string))
+        drawing = SvgScaledRenderer(path=None,
+                                    units=units,
+                                    width=float(svg.attrib['width']),
+                                    height=float(svg.attrib['height'])).render(svg)
         renderPDF.draw(drawing, canvas, x * mm, y * mm)
