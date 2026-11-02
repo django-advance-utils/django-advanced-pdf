@@ -641,9 +641,10 @@ class ReportXML(object):
 
         for variables_element in tr_element.iter('currency_variables'):
             symbol = variables_element.attrib.get('symbol', '')
+            region = variables_element.attrib.get('region', '')
 
             for variable in variables_element.attrib:
-                if variable == 'symbol':
+                if variable in ('symbol', 'region'):
                     continue
                 value = float(variables_element.get(variable))
                 variables[variable] = value
@@ -653,8 +654,12 @@ class ReportXML(object):
                 variables[symbol_name] = symbol
                 row_variables[symbol_name] = symbol
 
+                region_name = variable + '__region'
+                variables[region_name] = region
+                row_variables[region_name] = region
+
                 currency_variable = variable + '__currency'
-                currency_value = symbol + intcomma_currency(value)
+                currency_value = intcomma_currency(value, symbol=symbol, region=region)
 
                 variables[currency_variable] = currency_value
                 row_variables[currency_variable] = currency_value
@@ -673,7 +678,8 @@ class ReportXML(object):
                 if currency_variable in variables:
                     symbol_name = variables[variable + '__symbol']
 
-                    currency_value = symbol_name + intcomma_currency(float(variables.get(variable)) / 100.0)
+                    currency_value = intcomma_currency(float(variables.get(variable)) / 100.0, symbol=symbol_name,
+                                                       region=variables.get(variable + '__region'))
 
                     row_variables[currency_variable] = currency_value
                     variables[currency_variable] = currency_value
@@ -811,27 +817,33 @@ class ReportXML(object):
                 variable_name = td_element[0].get('variable')
                 qty = int(td_element[0].get('qty'))
 
+                region = td_element[0].get('region')
                 if variable_name is not None:
                     symbol = ''
                     value = variables[variable_name]
                     if symbol == '':
                         symbol = variables.get(variable_name + '__symbol', '')
+                    if not region:
+                        region = variables.get(variable_name + '__region')
                 else:
                     symbol = td_element[0].get('symbol', '')
+                    symbol_from = td_element[0].get('symbol_from', '')
                     if symbol == '':
-                        symbol_from = td_element[0].get('symbol_from', '')
                         symbol = variables.get(symbol_from + '__symbol', '')
+                    if not region:
+                        region = variables.get(symbol_from + '__region')
                     value = td_element[0].get('value')
 
                 unit = (float(value) / qty) / 100.0
 
-                display_str = '%s%s' % (symbol, intcomma_currency(unit, show_more_decimal_places=True))
+                display_str = intcomma_currency(unit, show_more_decimal_places=True, symbol=symbol, region=region)
 
                 style = self.process_css_for_table_paragraph_style(styles, other_styles, row_count, col_count + offset)
                 display_object = EnhancedParagraph(display_str, style, css_classes=self.styles)
 
             elif len(td_element) > 0 and td_element[0].tag[-8:] == 'currency':
                 variable_name = td_element[0].get('variable')
+                region = td_element[0].get('region')
                 if is_header_or_footer:
                     variable_name = td_element[0].get('variable')
                     if variable_name is not None:
@@ -839,7 +851,7 @@ class ReportXML(object):
                     else:
                         value = int(td_element[0].get('value'))
                         number_string = "%.2f" % (float(value) / 100.0)
-                        display_object = '%s' % (intcomma_currency(number_string))
+                        display_object = intcomma_currency(number_string, region=region)
 
                 else:
                     if variable_name is not None:
@@ -847,6 +859,8 @@ class ReportXML(object):
                         value = variables.get(variable_name)
                         if symbol == '':
                             symbol = variables.get(variable_name + '__symbol', '')
+                        if not region:
+                            region = variables.get(variable_name + '__region')
                     else:
                         symbol = td_element[0].get('symbol', '')
                         value = td_element[0].get('value')
@@ -856,19 +870,21 @@ class ReportXML(object):
                     if add_to_variable_name is not None:
                         if symbol == '':
                             symbol = variables.get(add_to_variable_name + '__symbol', '')
+                        if not region:
+                            region = variables.get(add_to_variable_name + '__region')
 
                         variables[add_to_variable_name] += float(value)
                         row_variables[add_to_variable_name] = variables.get(add_to_variable_name)
                         currency_variable = add_to_variable_name + '__currency'
                         if currency_variable in variables:
-                            currency_value = symbol + intcomma_currency(
-                                float(variables.get(add_to_variable_name)) / 100.0)
+                            currency_value = intcomma_currency(float(variables.get(add_to_variable_name)) / 100.0,
+                                                               symbol=symbol, region=region)
 
                             row_variables[currency_variable] = currency_value
                             variables[currency_variable] = currency_value
                     try:
                         number_string = "%.2f" % (float(value) / 100.0)
-                        display_object = "%s%s" % (symbol, intcomma_currency(number_string))
+                        display_object = intcomma_currency(number_string, symbol=symbol, region=region)
                     except (ValueError, TypeError):
                         display_object = ''
 
