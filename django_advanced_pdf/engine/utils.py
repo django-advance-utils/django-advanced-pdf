@@ -333,19 +333,43 @@ class PageUsed:
         self.bottom = bottom
 
 
-def intcomma_currency(value, show_more_decimal_places=False):
+# How each region writes an amount.  A region not listed here is written the default way: 1,234.56
+# with the symbol in front.  'eu' is 1.234,56 with the symbol after the number.
+CURRENCY_REGIONS = {
+    'eu': {'thousand_separator': '.', 'decimal_separator': ',', 'symbol_after': True},
+}
 
+
+def intcomma_currency(value, show_more_decimal_places=False, symbol='', region=None):
+    """
+    Formats value (in whole currency units, not cents) to two decimal places with thousand separators.
+
+    With show_more_decimal_places up to three further digits are kept, wrapped in a
+    currency_extra_digits span.  symbol is placed before the number, or after it for a region
+    whose amounts are written that way.  region picks the separators, see CURRENCY_REGIONS.
+    """
+    extra_numbers = ''
     if show_more_decimal_places:
         display_number = "%.5f" % float(value)
         main_number = display_number[:-3]
-        extra_numbers = display_number[-3:]
-        extra_numbers = extra_numbers.rstrip("0")
+        extra_numbers = display_number[-3:].rstrip("0")
         value = intcomma("%.2f" % float(main_number))
-        if extra_numbers != '':
-            value += '<span class="currency_extra_digits">%s</span>' % extra_numbers
     else:
         value = intcomma("%.2f" % float(value))
-    return value
+
+    region_format = CURRENCY_REGIONS.get(region)
+    if region_format is not None:
+        value = value.translate(str.maketrans({',': region_format['thousand_separator'],
+                                               '.': region_format['decimal_separator']}))
+
+    if extra_numbers != '':
+        value += '<span class="currency_extra_digits">%s</span>' % extra_numbers
+
+    if not symbol:
+        return value
+    if region_format is not None and region_format['symbol_after']:
+        return '%s %s' % (value, symbol)
+    return symbol + value
 
 
 class ColumnWidthPercentage(object):
