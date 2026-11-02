@@ -9,7 +9,7 @@ from reportlab.lib.units import mm
 from reportlab.platypus import TableStyle, Table, Image as RLImage
 
 from django_advanced_pdf.engine.report_xml import ReportXML
-from django_advanced_pdf.engine.utils import ColumnWidthPercentage
+from django_advanced_pdf.engine.utils import ColumnWidthPercentage, intcomma_currency
 from PIL import ImageChops, Image
 
 
@@ -482,3 +482,80 @@ class ScaledSvgSizeTests(unittest.TestCase):
         self.assertAlmostEqual(50, across, delta=0.05)
         for size in self.font_sizes(document):
             self.assertAlmostEqual(12, size, delta=0.01)
+
+
+class CurrencyFormatTests(unittest.TestCase):
+
+    def test_default_format(self):
+        self.assertEqual('1,234,567.89', intcomma_currency(1234567.891))
+
+    def test_default_symbol_goes_in_front(self):
+        self.assertEqual('£1,234.50', intcomma_currency('1234.5', symbol='£'))
+
+    def test_eu_swaps_separators_and_puts_symbol_after(self):
+        self.assertEqual('1.234.567,89 €', intcomma_currency(1234567.891, symbol='€', region='eu'))
+
+    def test_eu_without_symbol_has_no_trailing_space(self):
+        self.assertEqual('1.234,50', intcomma_currency(1234.5, region='eu'))
+
+    def test_negative_eu(self):
+        self.assertEqual('-1.234,50 €', intcomma_currency(-1234.5, symbol='€', region='eu'))
+
+    def test_unknown_or_empty_region_uses_default(self):
+        for region in (None, '', 'us'):
+            self.assertEqual('$1,234.50', intcomma_currency(1234.5, symbol='$', region=region))
+
+    def test_extra_decimal_places_are_not_converted(self):
+        self.assertEqual('1.234,56<span class="currency_extra_digits">7</span> €',
+                         intcomma_currency(1234.567, show_more_decimal_places=True, symbol='€', region='eu'))
+        self.assertEqual('£1,234.56<span class="currency_extra_digits">7</span>',
+                         intcomma_currency(1234.567, show_more_decimal_places=True, symbol='£'))
+
+
+class CurrencyRegionPdfTests(unittest.TestCase):
+    """The region on a currency tag, or on the currency variable it uses, reaches the finished pdf."""
+
+    @staticmethod
+    def pdf_text(body):
+        report_xml = ReportXML(test_mode=True)
+        result = report_xml.load_xml_and_make_pdf(
+            f'<document page_size="A4" page_orientation="portrait">{body}</document>')
+        with fitz.open('pdf', result.getvalue()) as document:
+            return document[0].get_text()
+
+    def test_currency_value(self):
+        text = self.pdf_text('<table>'
+                             '<tr><td><currency value="123456" symbol="€" region="eu"/></td></tr>'
+                             '<tr><td><currency value="123456" symbol="£"/></td></tr>'
+                             '</table>')
+        self.assertIn('1.234,56 €', text)
+        self.assertIn('£1,234.56', text)
+
+    def test_currency_qty(self):
+        text = self.pdf_text('<table><tr>'
+                             '<td><currency_qty qty="3" value="370370" symbol="€" region="eu"/></td>'
+                             '</tr></table>')
+        self.assertIn('1.234,56', text)
+        self.assertIn('€', text)
+
+    def test_running_total_uses_the_variable_region(self):
+        text = self.pdf_text('<table>'
+                             '<tr><currency_variables total="0" symbol="€" region="eu"/>'
+                             '<td><currency value="100000" add_to="total"/></td></tr>'
+                             '<tr><td><currency value="50050" add_to="total"/></td></tr>'
+                             '<tr><td>Total <currency variable="total"/></td></tr>'
+                             '</table>')
+        self.assertIn('1.000,00 €', text)
+        self.assertIn('500,50 €', text)
+        self.assertIn('1.500,50 €', text)
+
+    def test_currency_variable_without_region_is_unchanged(self):
+        text = self.pdf_text('<table>'
+                             '<tr><currency_variables total="0" symbol="£"/>'
+                             '<td><currency value="100000" add_to="total"/></td></tr>'
+                             '<tr><td><currency value="50050" add_to="total"/></td></tr>'
+                             '<tr><td><currency variable="total"/></td></tr>'
+                             '</table>')
+        self.assertIn('£1,000.00', text)
+        self.assertIn('£500.50', text)
+        self.assertIn('£1,500.50', text)
