@@ -124,19 +124,26 @@ class BasePager(canvas.Canvas):
 
         self.drawmethods.append(method)
 
-    def set_page_used(self, left=0, right=0, top=0, bottom=0):
-        if left > self.pageused.left:
-            self.pageused.left = left
-            self.pageused2.left = left
-        if right > self.pageused.right:
-            self.pageused.right = right
-            self.pageused2.right = right
-        if top > self.pageused.top:
-            self.pageused.top = top
-            self.pageused2.top = top
-        if bottom > self.pageused.bottom:
-            self.pageused.bottom = bottom
-            self.pageused2.bottom = bottom
+    def set_page_used(self, left=0, right=0, top=0, bottom=0,
+                      left_continuation=None, right_continuation=None,
+                      top_continuation=None, bottom_continuation=None):
+        """
+        Reserves space at the edges of the page, e.g. for a pager's header and footer.  Each value only
+        ever grows the space already reserved.
+
+        left/right/top/bottom are for the first page.  By default they are copied to the continuation
+        pages as well; pass the matching *_continuation value to reserve a different amount there.
+        """
+        for side, first, continuation in (('left', left, left_continuation),
+                                          ('right', right, right_continuation),
+                                          ('top', top, top_continuation),
+                                          ('bottom', bottom, bottom_continuation)):
+            if first > getattr(self.pageused, side):
+                setattr(self.pageused, side, first)
+                if continuation is None:
+                    setattr(self.pageused2, side, first)
+            if continuation is not None and continuation > getattr(self.pageused2, side):
+                setattr(self.pageused2, side, continuation)
 
     def get_page_used(self, first_page=True):
         if first_page:

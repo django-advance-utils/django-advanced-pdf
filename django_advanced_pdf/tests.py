@@ -10,6 +10,7 @@ from reportlab.platypus import TableStyle, Table, Image as RLImage
 
 from django_advanced_pdf.engine.report_xml import ReportXML
 from django_advanced_pdf.engine.utils import ColumnWidthPercentage
+from django_advanced_pdf.pagers.base import BasePager
 from PIL import ImageChops, Image
 
 
@@ -482,3 +483,55 @@ class ScaledSvgSizeTests(unittest.TestCase):
         self.assertAlmostEqual(50, across, delta=0.05)
         for size in self.font_sizes(document):
             self.assertAlmostEqual(12, size, delta=0.01)
+
+
+class ContinuationPageUsedTests(unittest.TestCase):
+
+    @staticmethod
+    def pager():
+        from io import BytesIO
+        from reportlab.lib.pagesizes import A4
+        return BasePager(heading='', filename=BytesIO(), pagesize=A4,
+                         border_top_continuation=5 * mm)
+
+    def test_first_page_values_are_copied_to_continuation_pages(self):
+        pager = self.pager()
+        pager.set_page_used(left=10 * mm, top=20 * mm)
+        self.assertEqual(10 * mm, pager.page_used_left(first_page=False))
+        self.assertEqual(20 * mm, pager.page_used_top(first_page=False))
+
+    def test_continuation_values_are_set_separately(self):
+        pager = self.pager()
+        pager.set_page_used(top=20 * mm, bottom=15 * mm, top_continuation=40 * mm)
+        self.assertEqual(20 * mm, pager.page_used_top())
+        self.assertEqual(40 * mm, pager.page_used_top(first_page=False))
+        # bottom has no continuation value, so it is copied as before
+        self.assertEqual(15 * mm, pager.page_used_bottom(first_page=False))
+
+    def test_continuation_value_can_be_smaller_than_the_first_page(self):
+        pager = self.pager()
+        pager.set_page_used(top=40 * mm, top_continuation=10 * mm)
+        self.assertEqual(40 * mm, pager.page_used_top())
+        self.assertEqual(10 * mm, pager.page_used_top(first_page=False))
+
+    def test_continuation_value_never_shrinks_the_space_already_reserved(self):
+        pager = self.pager()
+        pager.set_page_used(top_continuation=2 * mm)
+        self.assertEqual(5 * mm, pager.page_used_top(first_page=False))
+
+    def test_continuation_pages_start_lower_in_the_pdf(self):
+        class TallContinuationPager(BasePager):
+            def __init__(self, *args, **kwargs):
+                super().__init__(*args, **kwargs)
+                self.set_page_used(top=20 * mm, top_continuation=60 * mm)
+
+        class TallContinuationReport(ReportXML):
+            default_pager = TallContinuationPager
+
+        paragraphs = ''.join(f'<p>line {n}</p>' for n in range(120))
+        result = TallContinuationReport(test_mode=True).load_xml_and_make_pdf(
+            f'<document page_size="A4" page_orientation="portrait">{paragraphs}</document>')
+        with fitz.open('pdf', result.getvalue()) as document:
+            self.assertGreater(len(document), 1)
+            first_line_top = [min(block[1] for block in page.get_text('blocks')) / mm for page in document]
+        self.assertAlmostEqual(40, first_line_top[1] - first_line_top[0], delta=0.5)
