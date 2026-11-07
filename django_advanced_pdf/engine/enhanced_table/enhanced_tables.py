@@ -262,9 +262,19 @@ class EnhancedTable(Table):
 
         n, header_index, footer_index, forced_split = self._getFirstPossibleSplitRowPosition(
             availHeight, ignoreSpans=doInRowSplit)
-        if n <= self.repeatRows:
-            return []
         lim = len(self._rowHeights)
+        if n <= self.repeatRows:
+            # Last resort for a table ReportLab has already moved to a fresh frame once.
+            # Refusing again there makes it raise LayoutError ("too large"), so take the
+            # largest position that physically fits instead. The usual case: a continuation
+            # table (not ``initial``) with no repeating header may not split after its first
+            # row, so it needs its first two rows to fit together; when each fits a page but
+            # no two do, nothing else can place it. Anywhere else, refusing still lets
+            # ReportLab try the next frame, so every layout that worked before is unchanged.
+            if getattr(self, '_postponed', False) and self.repeatRows < forced_split < lim:
+                n = forced_split
+            else:
+                return []
         if n == lim:  # No splitting required
             return [self]
 

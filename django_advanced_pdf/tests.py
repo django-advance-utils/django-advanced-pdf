@@ -323,6 +323,46 @@ class PDFTests(unittest.TestCase):
                 'small_image': small_image}
 
 
+class TableSplitTests(unittest.TestCase):
+    """Where a table may break across pages."""
+
+    @staticmethod
+    def pages(rows_xml):
+        xml = f"""
+        <document title="Split Test" page_size="A4" page_orientation="portrait" page_style="blank"
+                  border_top_first="10" border_bottom_first="10"
+                  border_top_continuation="10" border_bottom_continuation="10">
+            <table>{rows_xml}</table>
+        </document>
+        """
+        result = ReportXML(test_mode=True).load_xml_and_make_pdf(xml=xml)
+        with fitz.open("pdf", result) as doc:
+            return [page.get_text() for page in doc]
+
+    def test_a_row_too_tall_to_share_a_page_with_the_next_gets_a_page_of_its_own(self):
+        """
+        Every row (180mm) fits a page (277mm), but no two fit together. The first page took one row; the
+        rest of the table could not be split after its own first row, so after being moved to
+        a fresh page it still could not be placed and the build raised a LayoutError.
+        """
+        rows = ''.join(f'<tr row_height="180"><td>row {number}</td></tr>' for number in range(1, 5))
+
+        pages = self.pages(rows)
+
+        self.assertEqual(4, len(pages))
+        for number, text in enumerate(pages, 1):
+            self.assertIn(f'row {number}', text)
+
+    def test_rows_that_fit_together_still_share_a_page(self):
+        """The last resort is taken only where the table could not otherwise be placed."""
+        rows = ''.join(f'<tr row_height="85"><td>row {number}</td></tr>' for number in range(1, 7))
+
+        pages = self.pages(rows)
+
+        self.assertEqual(['row 1', 'row 2', 'row 3'], [line for line in pages[0].splitlines() if line.startswith('row')])
+        self.assertEqual(['row 4', 'row 5', 'row 6'], [line for line in pages[1].splitlines() if line.startswith('row')])
+
+
 class ColumnWidthTests(unittest.TestCase):
     """
     Unit tests for process_column_widths, which the golden image reports barely cover -
