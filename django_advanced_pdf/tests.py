@@ -353,6 +353,33 @@ class TableSplitTests(unittest.TestCase):
         for number, text in enumerate(pages, 1):
             self.assertIn(f'row {number}', text)
 
+    def test_under_a_footer_each_tall_row_still_gets_the_next_page(self):
+        """
+        With a footer the split puts a page break before the rest of the table, so the rest
+        starts on a fresh page without ReportLab having moved it there. Unmarked, it was refused
+        once and moved on, leaving an empty page before every row after the first.
+        """
+        rows = ''.join(f'<tr row_height="170"><td>row {number}</td></tr>' for number in range(1, 5))
+
+        pages = self.pages(f'<footer><tr><td>Total</td></tr></footer>{rows}')
+
+        self.assertEqual([[f'row {number}'] for number in range(1, 5)],
+                         [[line for line in text.splitlines() if line.startswith('row')] for text in pages])
+
+    @unittest.expectedFailure
+    def test_under_a_header_each_tall_row_gets_a_page_of_its_own(self):
+        """
+        Not covered yet: under a <header> the same rows still raise LayoutError. The first
+        table's no-progress guard counts the header the rest will repeat and refuses to split
+        after one row. Letting it would also leave one row at the foot of a part-filled page
+        where today the whole table moves on, so it needs its own change.
+        """
+        rows = ''.join(f'<tr row_height="170"><td>row {number}</td></tr>' for number in range(1, 5))
+
+        pages = self.pages(f'<header><tr><td>Head</td></tr></header>{rows}')
+
+        self.assertEqual(4, len(pages))
+
     def test_rows_that_fit_together_still_share_a_page(self):
         """The last resort is taken only where the table could not otherwise be placed."""
         rows = ''.join(f'<tr row_height="85"><td>row {number}</td></tr>' for number in range(1, 7))

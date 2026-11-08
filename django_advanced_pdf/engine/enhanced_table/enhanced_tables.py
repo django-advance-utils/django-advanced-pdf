@@ -641,6 +641,11 @@ class EnhancedTable(Table):
         self.onSplit(r1)
 
         if insert_pagebreak:
+            # After the page break the remainder starts at the top of a fresh frame, which is all
+            # ReportLab's postponing would give it, so mark it as postponed already. Otherwise a
+            # remainder that can only take the last resort in the guard at the top of this method
+            # is refused once and moved on, leaving an empty page before it.
+            r1._postponed = 1
             return [r0, PageBreak(), r1]
         else:
             return [r0, r1]
