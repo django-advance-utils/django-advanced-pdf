@@ -257,6 +257,26 @@ class EnhancedTable(Table):
             er += n
             self._addCommand((c[0],) + ((sc, sr), (ec, er)) + c[3:])
 
+    def _no_roomier_frame_ahead(self, availHeight):
+        """
+        True when this table is at the top of a frame and no frame in the document is taller or
+        wider. Moving it on could then only leave this frame empty, as the next frame would offer
+        no more room. ReportLab sets ``_frame`` and ``canv`` on a flowable while splitting it, and
+        ``canv._doctemplate`` while building; without them, assume a roomier frame may exist.
+        """
+        frame = getattr(self, '_frame', None)
+        doc = getattr(getattr(self, 'canv', None), '_doctemplate', None)
+        if frame is None or doc is None or not frame._atTop:
+            return False
+        width = frame._getAvailableWidth()
+        for template in doc.pageTemplates:
+            for other in template.frames:
+                other_width = other._width - other._leftPadding - other._rightPadding
+                other_height = other._height - other._topPadding - other._bottomPadding
+                if other_height > availHeight + rl_config._FUZZ or other_width > width + rl_config._FUZZ:
+                    return False
+        return True
+
     # noinspection DuplicatedCode
     def _splitRows(self, availHeight, doInRowSplit=0):
 
@@ -275,7 +295,11 @@ class EnhancedTable(Table):
             # flowable it moves to a new frame, and raises "too large" if that one still won't
             # split. Forcing a split may cut through a row span (as the no-progress guard
             # below can), which beats raising.
-            if getattr(self, '_postponed', False) and self.repeatRows < forced_split < lim:
+            # At the top of a frame no smaller than any other, moving on gains nothing either:
+            # it would only leave this frame empty before the table was postponed and forced
+            # anyway, so take the last resort here.
+            if ((getattr(self, '_postponed', False) or self._no_roomier_frame_ahead(availHeight))
+                    and self.repeatRows < forced_split < lim):
                 n = forced_split
             else:
                 return []

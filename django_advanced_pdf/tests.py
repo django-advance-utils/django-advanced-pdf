@@ -387,19 +387,42 @@ class TableSplitTests(unittest.TestCase):
         """
         Two 180mm rows sharing a spanned cell cannot fit one page. That raised LayoutError; now
         the span is cut, as the no-progress guard already does for spans taller than a page.
-        The first page is left empty: the table cannot split there, so ReportLab moves it on
-        before the last resort applies.
+        The cut starts on the first page: moving on to a page no bigger only left it empty.
         """
         rows = ('<tr row_height="180"><td rowspan="2">span</td><td>s1</td></tr>'
                 '<tr row_height="180"><td>s2</td></tr>'
                 '<tr row_height="180"><td>after</td><td>a</td></tr>')
 
-        pages = [text for text in self.pages(rows) if 'Page 1 of' not in text]
+        pages = self.pages(rows)
 
         self.assertEqual(3, len(pages))
         self.assertIn('s1', pages[0])
         self.assertIn('s2', pages[1])
         self.assertIn('after', pages[2])
+
+    def test_a_span_that_fits_a_roomier_later_page_still_moves_on(self):
+        """
+        The first page has a deeper top border than the rest. A 240mm span does not fit the
+        first page but does fit the next, so the table moves on whole rather than being cut.
+        """
+        xml = """
+        <document title="Split Test" page_size="A4" page_orientation="portrait" page_style="blank"
+                  border_top_first="60" border_bottom_first="10"
+                  border_top_continuation="10" border_bottom_continuation="10">
+            <table>
+                <tr row_height="120"><td rowspan="2">span</td><td>s1</td></tr>
+                <tr row_height="120"><td>s2</td></tr>
+            </table>
+        </document>
+        """
+        result = ReportXML(test_mode=True).load_xml_and_make_pdf(xml=xml)
+        with fitz.open("pdf", result) as doc:
+            pages = [page.get_text() for page in doc]
+
+        self.assertEqual(2, len(pages))
+        self.assertNotIn('s1', pages[0])
+        self.assertIn('s1', pages[1])
+        self.assertIn('s2', pages[1])
 
     def test_rows_that_fit_together_still_share_a_page(self):
         """The last resort is taken only where the table could not otherwise be placed."""
@@ -474,8 +497,7 @@ class TableSplitTests(unittest.TestCase):
         """
         Row types are not settable from XML, so build the table directly. No two rows fit a
         page, so the split goes after the first row. That row is blank, and dropping blank rows
-        at a split left the first part with no rows, which ReportLab refused to build. As with
-        a row span, the first page is left empty before the last resort applies.
+        at a split left the first part with no rows, which ReportLab refused to build.
         """
         rows = 4
         table = EnhancedTable({'row_data': [['']] + [[f'row {number}'] for number in range(1, rows)],
@@ -490,10 +512,10 @@ class TableSplitTests(unittest.TestCase):
 
         with fitz.open('pdf', buffer.getvalue()) as doc:
             pages = [page.get_text() for page in doc]
-        self.assertEqual(rows + 1, len(pages))
-        self.assertEqual(['', ''], [text.strip() for text in pages[:2]])
+        self.assertEqual(rows, len(pages))
+        self.assertEqual('', pages[0].strip())
         for number in range(1, rows):
-            self.assertIn(f'row {number}', pages[number + 1])
+            self.assertIn(f'row {number}', pages[number])
 
 
 class ColumnWidthTests(unittest.TestCase):
