@@ -1,5 +1,6 @@
 import os
 import pathlib
+import signal
 import unittest
 from pathlib import Path
 import fitz
@@ -7,6 +8,7 @@ from lxml import etree
 from reportlab.lib import colors
 from reportlab.lib.units import mm
 from reportlab.platypus import TableStyle, Table, Image as RLImage
+from reportlab.platypus.doctemplate import LayoutError
 
 from django_advanced_pdf.engine.report_xml import ReportXML
 from django_advanced_pdf.engine.utils import ColumnWidthPercentage
@@ -388,6 +390,55 @@ class TableSplitTests(unittest.TestCase):
 
         self.assertEqual(['row 1', 'row 2', 'row 3'], [line for line in pages[0].splitlines() if line.startswith('row')])
         self.assertEqual(['row 4', 'row 5', 'row 6'], [line for line in pages[1].splitlines() if line.startswith('row')])
+
+
+    KEPT_HEADER = '<tr row_height="20" keep_header_for_split="true"><td colspan="2">Kept</td></tr>'
+
+    def kept_header_pages(self, heights, footer=''):
+        """
+        Build a two column table under a kept header, failing rather than hanging if the build
+        does not finish.
+        """
+        rows = ''.join(f'<tr row_height="{height}"><td>row {number}</td><td>x</td></tr>'
+                       for number, height in enumerate(heights, 1))
+
+        def timed_out(*_):
+            raise TimeoutError('the table was split forever')
+
+        previous = signal.signal(signal.SIGALRM, timed_out)
+        signal.alarm(20)
+        try:
+            return self.pages(footer + self.KEPT_HEADER + rows)
+        finally:
+            signal.alarm(0)
+            signal.signal(signal.SIGALRM, previous)
+
+    @unittest.skipUnless(hasattr(signal, 'SIGALRM'), 'needs SIGALRM to stop a runaway build')
+    def test_a_row_too_tall_to_sit_under_a_kept_header_raises_rather_than_looping(self):
+        """
+        The 270mm row cannot share a page with the 20mm kept header. Splitting after the kept
+        header alone gave a remainder that was the same table again, so the build made pages
+        holding only the header until it ran out of memory.
+        """
+        footer = '<footer><tr><td>Total</td><td>t</td></tr></footer>'
+        cases = [
+            ([100, 100, 270, 100], ''),
+            ([270, 270, 270], ''),
+            # 255mm fits under the kept header alone, but not with the footer as well
+            ([100, 100, 255, 100], footer),
+        ]
+        for heights, table_footer in cases:
+            with self.subTest(heights=heights, footer=bool(table_footer)):
+                with self.assertRaises(LayoutError):
+                    self.kept_header_pages(heights, table_footer)
+
+    @unittest.skipUnless(hasattr(signal, 'SIGALRM'), 'needs SIGALRM to stop a runaway build')
+    def test_a_kept_header_is_repeated_on_each_page(self):
+        pages = self.kept_header_pages([100, 100, 100, 100])
+
+        self.assertEqual(2, len(pages))
+        for text in pages:
+            self.assertIn('Kept', text)
 
 
 class ColumnWidthTests(unittest.TestCase):

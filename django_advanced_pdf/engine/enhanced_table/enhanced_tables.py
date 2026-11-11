@@ -491,8 +491,18 @@ class EnhancedTable(Table):
         addition_len = 0
         repeat_rows = self.repeatRows
         inserted_row = False
-        if self.keep_header_rows and 'true' in self.keep_header_rows[:r0_end] and (n > (len(self.keep_header_rows)+1) or
-                                                                                   self.keep_header_rows[n] != 'true'):
+        keep_header = bool(self.keep_header_rows and 'true' in self.keep_header_rows[:r0_end] and
+                           (n > (len(self.keep_header_rows)+1) or self.keep_header_rows[n] != 'true'))
+
+        # Progress guard, checked before anything below mutates this table. The remainder (r1) holds
+        # the repeated rows, the repeating header, at most one kept header row (the loop below
+        # breaks after the first) and rows n onwards. If that is not strictly fewer rows than this
+        # table, r1 is this table again and ReportLab would split it forever, e.g. when a row is too
+        # tall to sit under a kept header. Refuse, so ReportLab raises its "too large" error instead.
+        if repeat_rows + len(header_row_data) + (1 if keep_header else 0) + (lim - n) >= lim:
+            return []
+
+        if keep_header:
             for i, value in enumerate(reversed(self.keep_header_rows[:r0_end])):
                 if value == 'true':
                     inserted_row = True
