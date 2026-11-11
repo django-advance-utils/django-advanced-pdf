@@ -271,6 +271,10 @@ class EnhancedTable(Table):
             # row, so it needs its first two rows to fit together; when each fits a page but
             # no two do, nothing else can place it. Anywhere else, refusing still lets
             # ReportLab try the next frame, so every layout that worked before is unchanged.
+            # ``_postponed`` is private to ReportLab: doctemplate.handle_flowable sets it on a
+            # flowable it moves to a new frame, and raises "too large" if that one still won't
+            # split. Forcing a split may cut through a row span (as the no-progress guard
+            # below can), which beats raising.
             if getattr(self, '_postponed', False) and self.repeatRows < forced_split < lim:
                 n = forced_split
             else:
@@ -305,9 +309,11 @@ class EnhancedTable(Table):
         # If it is then we can actually ignore it - i.e. end the first split section (RO) one row earlier.
         # This will probably have adverse side effects if the row had commands associated with it
 
+        # Only when rows beyond the repeated ones are left: a forced split after a blank first row
+        # would otherwise leave r0 with no rows at all, which ReportLab refuses to build.
         insert_pagebreak = False
         try:
-            if n > 0 and self.properties[n - 1]['row_type'].upper() == 'BLANK':
+            if n - 1 > self.repeatRows and self.properties[n - 1]['row_type'].upper() == 'BLANK':
                 insert_pagebreak = True  # Otherwise reportlab can squeeze in more stuff afterwards, which is bad
                 r0_end = n - 1
         except KeyError:  # row_type not specified
@@ -517,7 +523,8 @@ class EnhancedTable(Table):
                     addition_len += 1
                     
                     new_colspans = []
-                    for col_span in self._colSpanCells:
+                    # ReportLab only sets _colSpanCells when the table has spans
+                    for col_span in getattr(self, '_colSpanCells', []):
                         if col_span[1] >= n:
                             col_span = (col_span[0], col_span[1] + 1)
                         elif col_span[1] == n - (i + 1):

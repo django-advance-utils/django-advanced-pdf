@@ -1,3 +1,4 @@
+import io
 import os
 import pathlib
 import signal
@@ -7,9 +8,10 @@ import fitz
 from lxml import etree
 from reportlab.lib import colors
 from reportlab.lib.units import mm
-from reportlab.platypus import TableStyle, Table, Image as RLImage
+from reportlab.platypus import SimpleDocTemplate, TableStyle, Table, Image as RLImage
 from reportlab.platypus.doctemplate import LayoutError
 
+from django_advanced_pdf.engine.enhanced_table.enhanced_tables import EnhancedTable
 from django_advanced_pdf.engine.report_xml import ReportXML
 from django_advanced_pdf.engine.utils import ColumnWidthPercentage
 from PIL import ImageChops, Image
@@ -368,19 +370,36 @@ class TableSplitTests(unittest.TestCase):
         self.assertEqual([[f'row {number}'] for number in range(1, 5)],
                          [[line for line in text.splitlines() if line.startswith('row')] for text in pages])
 
-    @unittest.expectedFailure
-    def test_under_a_header_each_tall_row_gets_a_page_of_its_own(self):
+    def test_under_a_header_tall_rows_still_raise(self):
         """
         Not covered yet: under a <header> the same rows still raise LayoutError. The first
         table's no-progress guard counts the header the rest will repeat and refuses to split
         after one row. Letting it would also leave one row at the foot of a part-filled page
-        where today the whole table moves on, so it needs its own change.
+        where today the whole table moves on, so it needs its own change. When it lands, this
+        should give each row a page of its own.
         """
         rows = ''.join(f'<tr row_height="170"><td>row {number}</td></tr>' for number in range(1, 5))
 
-        pages = self.pages(f'<header><tr><td>Head</td></tr></header>{rows}')
+        with self.assertRaises(LayoutError):
+            self.pages(f'<header><tr><td>Head</td></tr></header>{rows}')
 
-        self.assertEqual(4, len(pages))
+    def test_a_row_span_taller_than_a_page_is_split_across_pages(self):
+        """
+        Two 180mm rows sharing a spanned cell cannot fit one page. That raised LayoutError; now
+        the span is cut, as the no-progress guard already does for spans taller than a page.
+        The first page is left empty: the table cannot split there, so ReportLab moves it on
+        before the last resort applies.
+        """
+        rows = ('<tr row_height="180"><td rowspan="2">span</td><td>s1</td></tr>'
+                '<tr row_height="180"><td>s2</td></tr>'
+                '<tr row_height="180"><td>after</td><td>a</td></tr>')
+
+        pages = [text for text in self.pages(rows) if 'Page 1 of' not in text]
+
+        self.assertEqual(3, len(pages))
+        self.assertIn('s1', pages[0])
+        self.assertIn('s2', pages[1])
+        self.assertIn('after', pages[2])
 
     def test_rows_that_fit_together_still_share_a_page(self):
         """The last resort is taken only where the table could not otherwise be placed."""
@@ -439,6 +458,42 @@ class TableSplitTests(unittest.TestCase):
         self.assertEqual(2, len(pages))
         for text in pages:
             self.assertIn('Kept', text)
+
+    def test_a_kept_header_without_any_spans_is_repeated_on_each_page(self):
+        """ReportLab only sets _colSpanCells on a table with spans, so splitting one without crashed."""
+        header = '<tr row_height="20" keep_header_for_split="true"><td>Kept</td><td>k</td></tr>'
+        rows = ''.join(f'<tr row_height="100"><td>row {number}</td><td>x</td></tr>' for number in range(1, 5))
+
+        pages = self.pages(header + rows)
+
+        self.assertEqual(2, len(pages))
+        for text in pages:
+            self.assertIn('Kept', text)
+
+    def test_a_forced_split_after_a_blank_first_row_keeps_the_row(self):
+        """
+        Row types are not settable from XML, so build the table directly. No two rows fit a
+        page, so the split goes after the first row. That row is blank, and dropping blank rows
+        at a split left the first part with no rows, which ReportLab refused to build. As with
+        a row span, the first page is left empty before the last resort applies.
+        """
+        rows = 4
+        table = EnhancedTable({'row_data': [['']] + [[f'row {number}'] for number in range(1, rows)],
+                               'row_properties': [{'row_type': 'BLANK'}] + [{} for _ in range(1, rows)],
+                               'headers_index': [None] * rows,
+                               'footers_index': [None] * rows},
+                              headers=[], footers=[], keep_header_rows=[None] * rows,
+                              row_heights=[180 * mm] * rows)
+        buffer = io.BytesIO()
+
+        SimpleDocTemplate(buffer, topMargin=10 * mm, bottomMargin=10 * mm).build([table])
+
+        with fitz.open('pdf', buffer.getvalue()) as doc:
+            pages = [page.get_text() for page in doc]
+        self.assertEqual(rows + 1, len(pages))
+        self.assertEqual(['', ''], [text.strip() for text in pages[:2]])
+        for number in range(1, rows):
+            self.assertIn(f'row {number}', pages[number + 1])
 
 
 class ColumnWidthTests(unittest.TestCase):
