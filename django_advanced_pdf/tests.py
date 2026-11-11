@@ -2,7 +2,9 @@ import io
 import os
 import pathlib
 import signal
+import threading
 import unittest
+from unittest import mock
 from pathlib import Path
 import fitz
 from lxml import etree
@@ -13,7 +15,7 @@ from reportlab.platypus.doctemplate import LayoutError
 
 from django_advanced_pdf.engine.enhanced_table.enhanced_tables import EnhancedTable
 from django_advanced_pdf.engine.report_xml import ReportXML
-from django_advanced_pdf.engine.utils import ColumnWidthPercentage
+from django_advanced_pdf.engine.utils import ColumnWidthPercentage, DocTemplate
 from PIL import ImageChops, Image
 
 
@@ -327,21 +329,47 @@ class PDFTests(unittest.TestCase):
                 'small_image': small_image}
 
 
+def can_time_out():
+    """A build can be stopped with SIGALRM only where it exists, and only on the main thread."""
+    return hasattr(signal, 'SIGALRM') and threading.current_thread() is threading.main_thread()
+
+
 class TableSplitTests(unittest.TestCase):
     """Where a table may break across pages."""
 
     @staticmethod
-    def pages(rows_xml):
+    def pages(rows_xml, before='', top_first=10, top_continuation=10):
+        """
+        Build a document holding one table, and return each page's text. Where it can, fail
+        after a few seconds rather than hang if the table is split forever.
+        """
         xml = f"""
         <document title="Split Test" page_size="A4" page_orientation="portrait" page_style="blank"
-                  border_top_first="10" border_bottom_first="10"
-                  border_top_continuation="10" border_bottom_continuation="10">
-            <table>{rows_xml}</table>
+                  border_top_first="{top_first}" border_bottom_first="10"
+                  border_top_continuation="{top_continuation}" border_bottom_continuation="10">
+            {before}<table>{rows_xml}</table>
         </document>
         """
-        result = ReportXML(test_mode=True).load_xml_and_make_pdf(xml=xml)
+
+        def timed_out(*_):
+            raise TimeoutError('the table was split forever')
+
+        if can_time_out():
+            previous = signal.signal(signal.SIGALRM, timed_out)
+            signal.alarm(5)
+        try:
+            result = ReportXML(test_mode=True).load_xml_and_make_pdf(xml=xml)
+        finally:
+            if can_time_out():
+                signal.alarm(0)
+                signal.signal(signal.SIGALRM, previous)
         with fitz.open("pdf", result) as doc:
             return [page.get_text() for page in doc]
+
+    @staticmethod
+    def rows_by_page(pages, prefix='r'):
+        """The words starting with prefix on each page, so tests can compare layouts in one go."""
+        return [[word for word in text.split() if word.startswith(prefix)] for text in pages]
 
     def test_a_row_too_tall_to_share_a_page_with_the_next_gets_a_page_of_its_own(self):
         """
@@ -437,25 +465,12 @@ class TableSplitTests(unittest.TestCase):
     KEPT_HEADER = '<tr row_height="20" keep_header_for_split="true"><td colspan="2">Kept</td></tr>'
 
     def kept_header_pages(self, heights, footer=''):
-        """
-        Build a two column table under a kept header, failing rather than hanging if the build
-        does not finish.
-        """
+        """Build a two column table under a kept header."""
         rows = ''.join(f'<tr row_height="{height}"><td>row {number}</td><td>x</td></tr>'
                        for number, height in enumerate(heights, 1))
+        return self.pages(footer + self.KEPT_HEADER + rows)
 
-        def timed_out(*_):
-            raise TimeoutError('the table was split forever')
-
-        previous = signal.signal(signal.SIGALRM, timed_out)
-        signal.alarm(20)
-        try:
-            return self.pages(footer + self.KEPT_HEADER + rows)
-        finally:
-            signal.alarm(0)
-            signal.signal(signal.SIGALRM, previous)
-
-    @unittest.skipUnless(hasattr(signal, 'SIGALRM'), 'needs SIGALRM to stop a runaway build')
+    @unittest.skipUnless(can_time_out(), 'needs SIGALRM on the main thread to stop a runaway build')
     def test_a_row_too_tall_to_sit_under_a_kept_header_raises_rather_than_looping(self):
         """
         The 270mm row cannot share a page with the 20mm kept header. Splitting after the kept
@@ -474,7 +489,6 @@ class TableSplitTests(unittest.TestCase):
                 with self.assertRaises(LayoutError):
                     self.kept_header_pages(heights, table_footer)
 
-    @unittest.skipUnless(hasattr(signal, 'SIGALRM'), 'needs SIGALRM to stop a runaway build')
     def test_a_kept_header_is_repeated_on_each_page(self):
         pages = self.kept_header_pages([100, 100, 100, 100])
 
@@ -516,6 +530,94 @@ class TableSplitTests(unittest.TestCase):
         self.assertEqual('', pages[0].strip())
         for number in range(1, rows):
             self.assertIn(f'row {number}', pages[number])
+
+
+    # Layouts that built before the last resort existed must come out the same.
+
+    HEADER = ('<header><tr row_height="10"><td>Head</td><td>h</td></tr>'
+              '<tr row_height="10"><td>Head2</td><td>h</td></tr></header>')
+
+    @staticmethod
+    def row(height, name):
+        return f'<tr row_height="{height}"><td>{name}</td><td>x</td></tr>'
+
+    def test_under_a_header_a_keep_group_still_moves_on_whole(self):
+        """
+        The first table's remainder gains the header rows, so it has as many rows as the table
+        though it is not the same table. The progress guard took that for no progress and raised.
+        """
+        rows = (self.row(100, 'r1') + '<keep>' + self.row(150, 'r2') + self.row(100, 'r3') + '</keep>' +
+                self.row(100, 'r4'))
+
+        pages = self.pages(self.HEADER + rows)
+
+        self.assertEqual([['r1', 'r2'], ['r3', 'r4']], self.rows_by_page(pages))
+        self.assertIn('Head2', pages[1])
+
+    def test_a_kept_header_above_a_keep_group_taller_than_a_page_is_left_alone(self):
+        """Only the kept header fits the first page, and the group then splits as it always did."""
+        rows = '<keep>' + self.row(60, 'r1') + self.row(180, 'r2') + self.row(60, 'r3') + '</keep>'
+
+        pages = self.pages(self.KEPT_HEADER + rows)
+
+        self.assertEqual([[], ['r1', 'r2'], ['r3']], self.rows_by_page(pages))
+        for text in pages:
+            self.assertIn('Kept', text)
+
+    def test_a_kept_header_under_a_header_is_repeated(self):
+        """
+        A remainder's kept header markers skipped the header rows it gained, so splitting it again
+        looked up the wrong rows and ran off the end of the list (IndexError).
+        """
+        rows = ''.join(self.row(height, f'r{number}') for number, height in enumerate([60, 60, 180, 250, 180], 1))
+
+        pages = self.pages('<header><tr row_height="10"><td>Head</td><td>h</td></tr></header>' +
+                           self.KEPT_HEADER + rows)
+
+        self.assertEqual([['r1', 'r2'], ['r3'], ['r4'], ['r5']], self.rows_by_page(pages))
+        for text in pages:
+            self.assertIn('Kept', text)
+
+    # No page is left empty only to force the split on the next.
+
+    def test_after_a_page_break_a_taller_first_page_does_not_leave_a_page_empty(self):
+        """
+        The span (280mm) would fit the first page, which has the shallower top border, but not a
+        continuation page. The first page never recurs, so moving on cannot help.
+        """
+        span = ('<tr row_height="140"><td rowspan="2">span</td><td>r1</td></tr>'
+                '<tr row_height="140"><td>r2</td></tr>')
+
+        pages = self.pages(span, before=f'<table>{self.row(30, "r0")}</table><page_break/>', top_first=5)
+
+        self.assertEqual([['r0'], ['r1'], ['r2']], self.rows_by_page(pages))
+
+    def test_a_keep_group_too_tall_for_any_page_starts_on_the_first(self):
+        """
+        The continuation pages are taller, but the group fits none of them, so moving the table
+        on would only have left the first page empty before cutting the group anyway.
+        """
+        rows = '<keep>' + self.row(130, 'r1') + self.row(130, 'r2') + '</keep>' + self.row(130, 'r3')
+
+        pages = self.pages(rows, top_first=60, top_continuation=40)
+
+        self.assertEqual([['r1'], ['r2'], ['r3']], self.rows_by_page(pages))
+
+    def test_after_a_page_break_the_rest_is_not_moved_on_again(self):
+        """
+        With a footer the rest of the table follows a page break, so it is marked as moved on
+        already. Without that, a doc that cannot say which page templates come next (here, with
+        DocTemplate's answer removed) counts the taller first page as one it might move to, where
+        two 134mm rows and the footer would fit together: the rest is refused once and moved on,
+        leaving the second page empty.
+        """
+        rows = ''.join(self.row(134, f'r{number}') for number in range(1, 6))
+
+        with mock.patch.object(DocTemplate, 'following_page_templates', None):
+            pages = self.pages(f'<footer><tr row_height="10"><td>Total</td><td>t</td></tr></footer>{rows}',
+                               top_first=5)
+
+        self.assertEqual([['r1', 'r2'], ['r3'], ['r4', 'r5']], self.rows_by_page(pages))
 
 
 class ColumnWidthTests(unittest.TestCase):
