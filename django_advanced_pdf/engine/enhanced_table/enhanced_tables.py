@@ -104,6 +104,8 @@ class EnhancedTable(Table):
         self.pos_y = pos_y
         self._colpositions = colpositions
         self.keep_header_rows = keep_header_rows
+        # Set on a remainder whose first row is a kept header put back by the split that made it
+        self._kept_header_inserted = False
         self.check_break = check_break
         no_split_cmds = self._calc_nosplit_positions(_calc_row_splits)
 
@@ -260,16 +262,20 @@ class EnhancedTable(Table):
     def _moving_on_cannot_help(self, availHeight, doInRowSplit):
         """
         True when this table is at the top of a frame and no frame it could move on to would let
-        it split: none is wider, and even the tallest still gives no split position past the
-        repeated rows. Moving it on would then only leave this frame empty before forcing the
-        split anyway. ReportLab sets ``_frame`` and ``canv`` on a flowable while splitting it, and
-        ``canv._doctemplate`` while building; without them, assume moving on may help.
+        it fit or split: even in the tallest, the table does not fit whole and gives no split
+        position past the repeated rows. Moving it on would then only leave this frame empty before
+        forcing the split anyway. ReportLab sets ``_frame`` and ``canv`` on a flowable while
+        splitting it, and ``canv._doctemplate`` while building; without them, assume moving on may
+        help.
         """
         frame = getattr(self, '_frame', None)
         doc = getattr(getattr(self, 'canv', None), '_doctemplate', None)
         if frame is None or doc is None or not frame._atTop:
             return False
-        width = frame._getAvailableWidth()
+        # With every column a fixed width (as from XML) the row heights are the same in any frame.
+        # Otherwise a wider frame may wrap rows shorter, and these heights say nothing about it.
+        fixed_widths = all(isinstance(width, (int, float)) for width in self._argW)
+        width = frame._width - frame._leftPadding - frame._rightPadding
         # The current page's template, and those of the pages to come. A doc can say which those
         # are (DocTemplate's first page template never recurs); otherwise assume any of them.
         following = getattr(doc, 'following_page_templates', None)
@@ -277,11 +283,14 @@ class EnhancedTable(Table):
         tallest = availHeight
         for template in templates:
             for other in template.frames:
-                if other._width - other._leftPadding - other._rightPadding > width + rl_config._FUZZ:
-                    return False  # rows may wrap shorter there, so this table's heights don't apply
+                other_width = other._width - other._leftPadding - other._rightPadding
+                if not fixed_widths and other_width > width + rl_config._FUZZ:
+                    return False
                 tallest = max(tallest, other._height - other._topPadding - other._bottomPadding)
         if tallest <= availHeight + rl_config._FUZZ:
             return True
+        if sum(self._rowHeights) <= tallest + rl_config._FUZZ:
+            return False  # it fits whole there
         n = self._getFirstPossibleSplitRowPosition(tallest, ignoreSpans=doInRowSplit)[0]
         return n <= self.repeatRows
 
@@ -292,20 +301,19 @@ class EnhancedTable(Table):
             availHeight, ignoreSpans=doInRowSplit)
         lim = len(self._rowHeights)
         if n <= self.repeatRows:
-            # Last resort for a table ReportLab has already moved to a fresh frame once.
-            # Refusing again there makes it raise LayoutError ("too large"), so take the
-            # largest position that physically fits instead. The usual case: a continuation
-            # table (not ``initial``) with no repeating header may not split after its first
-            # row, so it needs its first two rows to fit together; when each fits a page but
-            # no two do, nothing else can place it. Elsewhere, refusing lets ReportLab try
-            # the next frame, where the table may fit better.
-            # ``_postponed`` is private to ReportLab: doctemplate.handle_flowable sets it on a
-            # flowable it moves to a new frame, and raises "too large" if that one still won't
-            # split. Forcing a split may cut through a row span (as the no-progress guard
+            # Last resort: take the largest position that physically fits, where refusing
+            # cannot help. That is either
+            # - a table ReportLab has already moved to a fresh frame once (``_postponed``,
+            #   private to ReportLab: doctemplate.handle_flowable sets it, and raises LayoutError
+            #   "too large" if the table still won't split), or
+            # - a table at the top of a frame where no frame to come would let it fit or split
+            #   either (_moving_on_cannot_help), so moving on would only leave this one empty.
+            # The usual case: a continuation table (not ``initial``) with no repeating header
+            # may not split after its first row, so it needs its first two rows to fit
+            # together; when each fits a page but no two do, nothing else can place it.
+            # Elsewhere, refusing lets ReportLab try the next frame, where the table may fit
+            # better. Forcing a split may cut through a row span (as the no-progress guard
             # below can), which beats raising.
-            # At the top of a frame where no frame to come would let it split either, moving on
-            # gains nothing: it would only leave this frame empty before the table was
-            # postponed and forced anyway, so take the last resort here.
             if ((getattr(self, '_postponed', False) or self._moving_on_cannot_help(availHeight, doInRowSplit))
                     and self.repeatRows < forced_split < lim):
                 n = forced_split
@@ -341,11 +349,11 @@ class EnhancedTable(Table):
         # If it is then we can actually ignore it - i.e. end the first split section (RO) one row earlier.
         # This will probably have adverse side effects if the row had commands associated with it
 
-        # Only when rows beyond the repeated ones are left: a forced split after a blank first row
-        # would otherwise leave r0 with no rows at all, which ReportLab refuses to build.
+        # Not for the first row: a forced split after a blank first row would otherwise leave r0
+        # with no rows at all, which ReportLab refuses to build.
         insert_pagebreak = False
         try:
-            if n - 1 > self.repeatRows and self.properties[n - 1]['row_type'].upper() == 'BLANK':
+            if n > 1 and self.properties[n - 1]['row_type'].upper() == 'BLANK':
                 insert_pagebreak = True  # Otherwise reportlab can squeeze in more stuff afterwards, which is bad
                 r0_end = n - 1
         except KeyError:  # row_type not specified
@@ -534,13 +542,15 @@ class EnhancedTable(Table):
 
         # Progress guard, checked before anything below mutates this table. The remainder (r1) holds
         # the repeated rows, the repeating header, at most one kept header row (the loop below
-        # breaks after the first) and rows n onwards. For a continuation table, an r1 that is not
-        # strictly shorter is this table again, and ReportLab would split it forever, e.g. when a
-        # row is too tall to sit under a kept header. Refuse, so ReportLab raises its "too large"
-        # error instead. The initial table is exempt: its r1 is a continuation table, which splits
-        # by different rules and gains the header rows, so it is never the same table again.
-        if (not self.initial and
-                repeat_rows + len(header_row_data) + (1 if keep_header else 0) + (lim - n) >= lim):
+        # breaks after the first) and rows n onwards. If this table's own first row is a kept
+        # header put back by the split that made it, and r1 is not strictly shorter, r1 is this
+        # table again and ReportLab would split it forever, e.g. when a row is too tall to sit
+        # under a kept header. Refuse, so ReportLab raises its "too large" error instead.
+        # Otherwise r1 differs even at the same length: the initial table's r1 is a continuation,
+        # which gains the header rows and splits by different rules, and a kept header that was
+        # an original row (perhaps with break="true") is replaced by a plain copy.
+        if (keep_header and self._kept_header_inserted and
+                repeat_rows + len(header_row_data) + 1 + (lim - n) >= lim):
             return []
 
         if keep_header:
@@ -642,7 +652,8 @@ class EnhancedTable(Table):
                               blank_header_data + self.footers_index[n:]),
         }
         
-        r1_row_heights = self._argH[:repeat_rows] + header_row_heights + inserted_header_heights + self._argH[n:]
+        # In the order of r1_table_data['row_data']: kept header, repeated rows, header, the rest
+        r1_row_heights = inserted_header_heights + self._argH[:repeat_rows] + header_row_heights + self._argH[n:]
         r1_cell_styles = inserted_cell_styles + self._merge_cell_styles(first=self._cellStyles[:repeat_rows],
                                                                         headers=header_cell_styles,
                                                                         last=self._cellStyles[n:],
@@ -666,6 +677,7 @@ class EnhancedTable(Table):
                            _calc_row_splits=False,
                            colpositions=self._colpositions,
                            keep_header_rows=r1_keep_header_rows)
+        r1._kept_header_inserted = inserted_row
 
         # Need to account for any header rows added when we call the following otherwise the row
         # styles will get out of step
