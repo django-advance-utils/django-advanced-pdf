@@ -6,18 +6,19 @@ import re
 import signal
 import threading
 import unittest
-from unittest import mock
 from pathlib import Path
 import fitz
 from lxml import etree
 from reportlab.lib import colors
 from reportlab.lib.units import mm
-from reportlab.platypus import PageBreak, SimpleDocTemplate, TableStyle, Table, Image as RLImage
+from reportlab.platypus import (BaseDocTemplate, Frame, PageBreak, PageTemplate, SimpleDocTemplate, TableStyle, Table,
+                                Image as RLImage)
 from reportlab.platypus.doctemplate import LayoutError
 
-from django_advanced_pdf.engine.enhanced_table.enhanced_tables import EnhancedTable
+from django_advanced_pdf.engine.enhanced_table.enhanced_tables import (EnhancedTable, KEEP_TYPE_END, KEEP_TYPE_NA,
+                                                                     KEEP_TYPE_START)
 from django_advanced_pdf.engine.report_xml import ReportXML
-from django_advanced_pdf.engine.utils import ColumnWidthPercentage, DocTemplate
+from django_advanced_pdf.engine.utils import ColumnWidthPercentage
 from PIL import ImageChops, Image
 
 
@@ -411,7 +412,7 @@ class TableSplitTests(unittest.TestCase):
         self.assertEqual([['r1'], ['r2'], ['r3'], ['r4']], self.rows_by_page(self.rows(180, 180, 180, 180)))
 
     def test_rows_that_fit_together_still_share_a_page(self):
-        """The last resort is taken only where the table could not otherwise be placed."""
+        """A table that splits as it always did is laid out as before."""
         self.assertEqual([['r1', 'r2', 'r3'], ['r4', 'r5', 'r6']],
                          self.rows_by_page(self.rows(85, 85, 85, 85, 85, 85)))
 
@@ -423,17 +424,33 @@ class TableSplitTests(unittest.TestCase):
         self.assertEqual([['r1'], ['r2'], ['r3'], ['r4']],
                          self.rows_by_page(self.FOOTER + self.rows(170, 170, 170, 170)))
 
-    def test_after_a_page_break_the_rest_is_not_moved_on_again(self):
+    def test_after_a_page_break_the_rest_may_still_move_on_to_a_taller_frame(self):
         """
-        The rest of a table after a page break is marked as moved on already. That matters for a
-        doc that cannot say which page templates come next (here, DocTemplate with its answer
-        removed): it counts the taller first page as one the rest might move to, where two 134mm
-        rows and the footer would fit, so unmarked it was moved on, leaving the second page empty.
+        Each page has a 120mm frame then a 277mm one. A blank row puts a page break before the rest
+        of the table, which lands in the short frame. ReportLab must still be free to move it on to
+        the tall frame, where r2 fits, or a keep group fits whole, rather than force it.
         """
-        with mock.patch.object(DocTemplate, 'following_page_templates', None):
-            pages = self.rows_by_page(self.FOOTER + self.rows(134, 134, 134, 134, 134), top_first=5)
+        cases = {
+            'too tall for the short frame': ([100, 5, 130, 20], [KEEP_TYPE_NA] * 4),
+            'keep group': ([100, 5, 100, 50], [KEEP_TYPE_NA, KEEP_TYPE_NA, KEEP_TYPE_START, KEEP_TYPE_END]),
+        }
+        for name, (heights, keep_with_next) in cases.items():
+            with self.subTest(name):
+                table = self.blank_table(['data', 'BLANK', 'data', 'data'], heights, keep_with_next=keep_with_next)
+                buffer = io.BytesIO()
+                doc = BaseDocTemplate(buffer)
+                width, height = doc.pagesize
+                doc.addPageTemplates([PageTemplate('page', [
+                    Frame(10, height - 130 * mm, 280, 120 * mm, 0, 0, 0, 0, id='short'),
+                    Frame(300, 10 * mm, 280, 277 * mm, 0, 0, 0, 0, id='tall')])])
 
-        self.assertEqual([['r1', 'r2'], ['r3'], ['r4', 'r5']], pages)
+                with no_runaway_build():
+                    doc.build([table])
+
+                with fitz.open('pdf', buffer.getvalue()) as pdf:
+                    frames = [[(word[4], 'short' if word[0] < 290 else 'tall') for word in page.get_text('words')]
+                              for page in pdf]
+                self.assertEqual([[('r0', 'short')], [('r2', 'tall'), ('r3', 'tall')]], frames)
 
     def test_under_a_header_tall_rows_still_raise(self):
         """
@@ -581,21 +598,44 @@ class TableSplitTests(unittest.TestCase):
         for words in pages:
             self.assertIn('Kept', words)
 
-    def test_a_kept_header_under_a_header_keeps_its_place_and_height(self):
+    def test_a_kept_header_under_a_header_keeps_its_own_height_and_style(self):
         """
-        A table's rest gains the kept header and the header rows. Its kept header markers skipped
-        the header rows, so splitting it again ran off the end of the list (IndexError). Its row
-        heights put the header first, so the kept header was drawn at the header's 10mm height.
+        A table's rest gains the header rows and the kept header, and puts the header first. Its
+        style commands always did, but its rows, heights and cell styles put the kept header first,
+        so on continuation pages each took the other's height, background and lines. Its kept header
+        markers also skipped the header rows, so splitting it again ran off the end (IndexError).
         """
-        words = self.words(self.HEADER + self.KEPT_HEADER + self.rows(60, 60, 180, 240, 180))
+        header = '<header><tr row_height="10" style="background:#ff0000"><td>Head</td><td>h</td></tr></header>'
+        kept = ('<tr row_height="20" style="background:#0000ff" keep_header_for_split="true">'
+                '<td colspan="2">Kept</td></tr>')
+        xml = f"""
+        <document title="Split Test" page_size="A4" page_orientation="portrait" page_style="blank"
+                  border_top_first="10" border_bottom_first="10"
+                  border_top_continuation="10" border_bottom_continuation="10">
+            <table>{header}{kept}{self.rows(60, 60, 180, 240, 180)}</table>
+        </document>
+        """
+        with no_runaway_build():
+            result = ReportXML(test_mode=True).load_xml_and_make_pdf(xml=xml)
 
+        with fitz.open("pdf", result) as doc:
+            pages = [([(word[4], word[1] / mm) for word in page.get_text('words')],
+                      {self.colour(drawing['fill']): (drawing['rect'].y0 / mm, drawing['rect'].y1 / mm)
+                       for drawing in page.get_drawings() if drawing.get('fill')})
+                     for page in doc]
         self.assertEqual([['r1', 'r2'], ['r3'], ['r4'], ['r5']],
-                         [self.row_names(word for word, _ in page) for page in words])
-        for number, page in enumerate(words[1:], 2):
+                         [self.row_names(word for word, _ in words) for words, _ in pages])
+        for number, (words, bands) in enumerate(pages[1:], 2):
             with self.subTest(page=number):
-                tops = dict(page)
-                # cell text sits at the foot of its row, so the 10mm header's text is 10mm below the kept header's
-                self.assertAlmostEqual(10, tops['Head'] - tops['Kept'], places=0)
+                tops = dict(words)
+                self.assertEqual(['Head', 'h', 'Kept'], [word for word, _ in words][:3])
+                self.assertEqual((10, 20), tuple(round(y) for y in bands['ff0000']))
+                self.assertEqual((20, 40), tuple(round(y) for y in bands['0000ff']))
+                self.assertTrue(20 < tops['Kept'] < 40)
+
+    @staticmethod
+    def colour(rgb):
+        return ''.join(f'{round(channel * 255):02x}' for channel in rgb)
 
     def test_a_kept_header_after_a_header_is_repeated_in_place_of_the_row_before(self):
         """
@@ -608,7 +648,7 @@ class TableSplitTests(unittest.TestCase):
         pages = self.pages(self.HEADER + rows)
 
         self.assertEqual(3, len(pages))
-        self.assertEqual(['Kept', 'Head', 'r9', 'r10'],
+        self.assertEqual(['Head', 'Kept', 'r9', 'r10'],
                          [word for word in pages[2] if word in ('Kept', 'Head') or re.fullmatch(r'r\d+', word)])
 
     def test_under_a_header_a_keep_group_still_moves_on_whole(self):
@@ -624,17 +664,86 @@ class TableSplitTests(unittest.TestCase):
         self.assertEqual([['r1', 'r2'], ['r3', 'r4']], [self.row_names(page) for page in pages])
         self.assertIn('Head2', pages[1])
 
+    def test_a_header_that_grows_part_way_through_still_splits(self):
+        """
+        The header changes to a two row one for r4. The rest after r3 is then as long as the table
+        it came from, though r3 was placed, so the progress guards took it for no progress.
+        """
+        header = self.HEADER.replace('<header>', '<header output="0">')
+        longer = ('<header output="0"><tr row_height="10"><td>HeadA</td><td>h</td></tr>'
+                  '<tr row_height="10"><td>HeadB</td><td>h</td></tr></header>')
+
+        pages = self.pages(header + self.KEPT_HEADER + self.rows(100, 100, 100) + longer +
+                           self.row(150, 'r4') + self.row(60, 'r5'))
+
+        self.assertEqual([['r1', 'r2'], ['r3'], ['r4', 'r5']], [self.row_names(page) for page in pages])
+        self.assertEqual(['HeadA', 'HeadB', 'Kept'], [word for word in pages[2] if word in ('HeadA', 'HeadB', 'Kept')])
+
+    def test_a_keep_group_under_a_header_and_a_taller_kept_header_is_cut_rather_than_raise(self):
+        """
+        The keep group (260mm) cannot sit under the 6mm header and 30mm kept header on any page.
+        0.2.25 only fitted it by drawing that header band 12mm tall; at the right height the split
+        falls back to the largest position that fits, as it does for any group too tall for a page.
+        """
+        header = '<header><tr row_height="6"><td>Head</td><td>h</td></tr></header>'
+        kept = '<tr row_height="30" keep_header_for_split="true"><td colspan="2">Kept</td></tr>'
+        rows = self.rows(200, 200) + '<keep>' + self.row(130, 'r3') + self.row(130, 'r4') + '</keep>'
+
+        self.assertEqual([['r1'], ['r2'], ['r3'], ['r4']], self.rows_by_page(header + kept + rows))
+
+    def test_a_row_span_cut_under_a_kept_header_starts_below_it(self):
+        """
+        The rest of a cut row span was not moved down for the kept header put back above it, so the
+        span took in the kept header's row and drew "Kept" inside it.
+        """
+        span = ('<tr row_height="200"><td rowspan="3">span</td><td>r1</td></tr>'
+                '<tr row_height="60"><td>r2</td></tr><tr row_height="60"><td>r3</td></tr>')
+
+        words = self.words(self.KEPT_HEADER + span + self.row(60, 'r4'))
+
+        last = dict(words[-1])
+        self.assertEqual(['r2', 'r3', 'r4'], self.row_names(word for word, _ in words[-1]))
+        self.assertLess(last['Kept'], 30)  # the kept header's own 20mm row at the top of the page
+
+    def test_a_kept_header_is_not_repeated_straight_under_itself(self):
+        """
+        Only the kept header fits under itself before a row span taller than the rest of the page.
+        The rest of the table is not forced part way down the first page, which would print the
+        kept header twice in a row; it moves on.
+        """
+        span = ('<tr row_height="200"><td rowspan="3">span</td><td>r1</td></tr>'
+                '<tr row_height="60"><td>r2</td></tr><tr row_height="60"><td>r3</td></tr>')
+
+        pages = self.pages(self.KEPT_HEADER + span)
+
+        self.assertEqual([1, 1, 1], [page.count('Kept') for page in pages])
+
+    def test_auto_height_rows_do_not_count_as_fitting_a_later_page(self):
+        """
+        With auto row heights and a row span, ReportLab marks rows past the frame with negative
+        placeholder heights. Summed, they read as fitting a taller page to come, so the table was
+        moved on past an empty first page before being split all the same.
+        """
+        rows = ('<tr><td rowspan="2">sp</td><td>r1</td></tr><tr><td>r2</td></tr>' + self.row(140, 'r3') +
+                self.row(140, 'r4') + ''.join(f'<tr><td>r{number}</td><td>x</td></tr>' for number in range(5, 8)))
+
+        pages = self.rows_by_page(rows, table_attributes='min_rows_top="4"', top_first=60)
+
+        self.assertEqual([['r1', 'r2', 'r3'], ['r4', 'r5', 'r6', 'r7']], pages)
+
     # BLANK rows (row types cannot be set from XML, so these build tables directly)
 
     @staticmethod
-    def blank_table(row_types, heights, repeat_rows=0):
+    def blank_table(row_types, heights, repeat_rows=0, keep_with_next=None, keep_header_rows=()):
         count = len(row_types)
         return EnhancedTable({'row_data': [[f'r{number}' if row_type != 'BLANK' else '']
                                            for number, row_type in enumerate(row_types)],
                               'row_properties': [{'row_type': row_type} for row_type in row_types],
+                              'keep_with_next': keep_with_next or [KEEP_TYPE_NA] * count,
                               'headers_index': [None] * count,
                               'footers_index': [None] * count},
-                             headers=[], footers=[], keep_header_rows=[None] * count,
+                             headers=[], footers=[],
+                             keep_header_rows=[None] * count if keep_header_rows == () else keep_header_rows,
                              row_heights=[height * mm for height in heights], repeat_rows=repeat_rows,
                              initial=True)
 
@@ -652,6 +761,31 @@ class TableSplitTests(unittest.TestCase):
         with fitz.open('pdf', buffer.getvalue()) as doc:
             pages = [page.get_text().split() for page in doc]
         self.assertEqual([[], ['r1'], ['r2'], ['r3']], pages)
+
+    @staticmethod
+    def build_pages(table):
+        """Build a table on A4 with 10mm top and bottom margins, and return each page's words."""
+        buffer = io.BytesIO()
+        with no_runaway_build():
+            SimpleDocTemplate(buffer, topMargin=10 * mm, bottomMargin=10 * mm).build([table])
+        with fitz.open('pdf', buffer.getvalue()) as doc:
+            return [page.get_text().split() for page in doc]
+
+    def test_a_kept_header_before_a_blank_row_split_is_the_kept_header(self):
+        """
+        The split falls after a blank row, which the first part drops. The kept header was then
+        looked up one row too far down, so the data row r1 was repeated in its place.
+        """
+        table = self.blank_table(['data', 'data', 'data', 'BLANK', 'data', 'data'], [20, 100, 100, 5, 100, 100],
+                                 keep_header_rows=['true', None, None, None, None, None])
+
+        self.assertEqual([['r0', 'r1', 'r2'], ['r0', 'r4', 'r5']], self.build_pages(table))
+
+    def test_a_table_without_kept_header_markers_still_splits(self):
+        """keep_header_rows=None, as a table built directly may have, raised TypeError at any split."""
+        table = self.blank_table(['data'] * 4, [100] * 4, keep_header_rows=None)
+
+        self.assertEqual([['r0', 'r1'], ['r2', 'r3']], self.build_pages(table))
 
     def test_a_blank_row_after_repeated_rows_still_becomes_a_page_break(self):
         """Only a blank first row is kept at a split; after repeated rows it is dropped as before."""
