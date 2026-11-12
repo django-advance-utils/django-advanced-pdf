@@ -92,6 +92,10 @@ class DocTemplate(SimpleDocTemplate):
 
         self.heading = heading
 
+    def following_page_templates(self):
+        """The page templates any page after this one may use: always the continuation one."""
+        return [self.pageTemplates[1]]
+
     def handle_pageEnd(self):
         #  The _nextPageTemplateIndex setting is cleared on each page so we need to
         #  force it back to one so all pages after the first get the second page

@@ -104,6 +104,10 @@ class EnhancedTable(Table):
         self.pos_y = pos_y
         self._colpositions = colpositions
         self.keep_header_rows = keep_header_rows
+        # Set on a remainder that starts with a kept header put back by the split that made it, and
+        # how many rows it starts with that are not data: repeated rows, header and kept header
+        self._kept_header_inserted = False
+        self._leading_rows = 0
         self.check_break = check_break
         no_split_cmds = self._calc_nosplit_positions(_calc_row_splits)
 
@@ -144,8 +148,9 @@ class EnhancedTable(Table):
 
         split_at = 0  # from this point of view 0 is the first position where the table may *always* be split
         # forced_split tracks the largest position whose rows physically fit in availHeight,
-        # ignoring keep-with-next/span constraints. It is used by _splitRows as a last resort
-        # to guarantee forward progress when the constrained split_at would not shrink the table.
+        # ignoring keep-with-next/span constraints. _splitRows takes it where the constrained
+        # split_at would not shrink the table, or where no split_at exists and refusing cannot
+        # help (the last resort).
         forced_split = 0
         use_middle = True
         for i, (rh, header_index, footer_index, keep_with_next) in enumerate(zip(self._rowHeights,
@@ -257,14 +262,77 @@ class EnhancedTable(Table):
             er += n
             self._addCommand((c[0],) + ((sc, sr), (ec, er)) + c[3:])
 
+    def _moving_on_cannot_help(self, availHeight, doInRowSplit):
+        """
+        True when this table is at the top of a frame and no frame it could move on to would let
+        it fit or split: even in the tallest, the table does not fit whole and gives no split
+        position past the repeated rows. Moving it on would then only leave this frame empty before
+        forcing the split anyway. Part way down a frame, the table is left to move on: it is often
+        the rest of a split that just ended above it, and forcing it there would repeat that
+        split's kept header straight under itself. ReportLab sets ``_frame`` and ``canv`` on a
+        flowable while splitting it, and ``canv._doctemplate`` while building; without them, assume
+        moving on may help.
+        """
+        frame = getattr(self, '_frame', None)
+        doc = getattr(getattr(self, 'canv', None), '_doctemplate', None)
+        if frame is None or doc is None or not frame._atTop:
+            return False
+        # With every column a fixed width (as from XML) the row heights are the same in any frame.
+        # Otherwise a wider frame may wrap rows shorter, and these heights say nothing about it.
+        fixed_widths = all(isinstance(width, (int, float)) for width in self._argW)
+        width = frame._width - frame._leftPadding - frame._rightPadding
+        # The current page's template, and those of the pages to come. A doc can say which those
+        # are (DocTemplate's first page template never recurs); otherwise assume any of them.
+        following = getattr(doc, 'following_page_templates', None)
+        templates = [doc.pageTemplate] + (following() if following else doc.pageTemplates)
+        tallest = availHeight
+        for template in templates:
+            for other in template.frames:
+                other_width = other._width - other._leftPadding - other._rightPadding
+                if not fixed_widths and other_width > width + rl_config._FUZZ:
+                    return False
+                tallest = max(tallest, other._height - other._topPadding - other._bottomPadding)
+        if tallest <= availHeight + rl_config._FUZZ:
+            return True
+        height = 0
+        for row_height in self._rowHeights:
+            if row_height < 0:
+                # OVERFLOW_ROW / UNDEFINED_ROW: ReportLab's long table optimisation stopped working
+                # out heights here, so nothing can be said about the taller frame
+                return False
+            height += row_height
+            if height > tallest + rl_config._FUZZ:
+                break
+        else:
+            return False  # it fits whole there
+        n = self._getFirstPossibleSplitRowPosition(tallest, ignoreSpans=doInRowSplit)[0]
+        return n <= self.repeatRows
+
     # noinspection DuplicatedCode
     def _splitRows(self, availHeight, doInRowSplit=0):
 
         n, header_index, footer_index, forced_split = self._getFirstPossibleSplitRowPosition(
             availHeight, ignoreSpans=doInRowSplit)
-        if n <= self.repeatRows:
-            return []
         lim = len(self._rowHeights)
+        if n <= self.repeatRows:
+            # Last resort: take the largest position that physically fits, where refusing
+            # cannot help. That is either
+            # - a table ReportLab has already moved to a fresh frame once (``_postponed``,
+            #   private to ReportLab: doctemplate.handle_flowable sets it, and raises LayoutError
+            #   "too large" if the table still won't split), or
+            # - a table at the top of a frame where no frame to come would let it fit or split
+            #   either (_moving_on_cannot_help), so moving on would only leave this one empty.
+            # The usual case: a continuation table (not ``initial``) with no repeating header
+            # may not split after its first row, so it needs its first two rows to fit
+            # together; when each fits a page but no two do, nothing else can place it.
+            # Elsewhere, refusing lets ReportLab try the next frame, where the table may fit
+            # better. Forcing a split may cut through a row span (as the no-progress guard
+            # below can), which beats raising.
+            if ((getattr(self, '_postponed', False) or self._moving_on_cannot_help(availHeight, doInRowSplit))
+                    and self.repeatRows < forced_split < lim):
+                n = forced_split
+            else:
+                return []
         if n == lim:  # No splitting required
             return [self]
 
@@ -279,8 +347,12 @@ class EnhancedTable(Table):
         # land on a page alongside the repeated header.
         # In that case fall back to forced_split - the largest position that physically fits -
         # which guarantees r1 strictly shrinks (even though it may break the span group).
+        # A remainder that starts with a put-back kept header knows how many of its rows lead the
+        # data (repeated rows, its header, the kept header), even when the header to come is a
+        # different length; placing no more than those is no progress.
         header_rows = self.headers[header_index].row_length if header_index is not None else 0
-        if n <= self.repeatRows + header_rows:
+        leading_rows = self._leading_rows if self._kept_header_inserted else self.repeatRows + header_rows
+        if n <= leading_rows:
             if self.repeatRows < forced_split < lim and forced_split > n:
                 n = forced_split
             else:
@@ -295,9 +367,11 @@ class EnhancedTable(Table):
         # If it is then we can actually ignore it - i.e. end the first split section (RO) one row earlier.
         # This will probably have adverse side effects if the row had commands associated with it
 
+        # Not for the first row: a forced split after a blank first row would otherwise leave r0
+        # with no rows at all, which ReportLab refuses to build.
         insert_pagebreak = False
         try:
-            if n > 0 and self.properties[n - 1]['row_type'].upper() == 'BLANK':
+            if n > 1 and self.properties[n - 1]['row_type'].upper() == 'BLANK':
                 insert_pagebreak = True  # Otherwise reportlab can squeeze in more stuff afterwards, which is bad
                 r0_end = n - 1
         except KeyError:  # row_type not specified
@@ -481,26 +555,40 @@ class EnhancedTable(Table):
         addition_len = 0
         repeat_rows = self.repeatRows
         inserted_row = False
-        if self.keep_header_rows and 'true' in self.keep_header_rows[:r0_end] and (n > (len(self.keep_header_rows)+1) or
-                                                                                   self.keep_header_rows[n] != 'true'):
+        keep_header = bool(self.keep_header_rows and 'true' in self.keep_header_rows[:r0_end] and
+                           (n >= len(self.keep_header_rows) or self.keep_header_rows[n] != 'true'))
+
+        # Progress guard, checked before anything below mutates this table. A remainder that starts
+        # with a kept header put back by the split that made it gets that kept header back again.
+        # If this split places none of its data rows (only its leading repeated, header and kept
+        # header rows), r1 is this table again and ReportLab would split it forever, e.g. when a
+        # row is too tall to sit under a kept header. Refuse, so ReportLab raises its "too large"
+        # error instead. Counting rows is not enough: r1 may be as long yet differ, as when the
+        # header changes to a longer one, or a kept header that was an original row (perhaps with
+        # break="true") is replaced by a plain copy.
+        if keep_header and self._kept_header_inserted and n <= self._leading_rows:
+            return []
+
+        if keep_header:
             for i, value in enumerate(reversed(self.keep_header_rows[:r0_end])):
                 if value == 'true':
                     inserted_row = True
-                    header_row = data[n - (i + 1)]
+                    header_row = data[r0_end - (i + 1)]
                     inserted_header_data.append(header_row)
-                    inserted_header_heights.append(self._argH[n - (i + 1)])
+                    inserted_header_heights.append(self._argH[r0_end - (i + 1)])
                     inserted_row_headers.append('true')
-                    cell_styles = self._cellStyles[n - (i + 1)]
+                    cell_styles = self._cellStyles[r0_end - (i + 1)]
                     for cell_style in cell_styles:
                         cell_style.name = "(%s, %s)" % (str(n), cell_style.name.split(',')[1].lstrip(' ').rstrip(')'))
                     inserted_cell_styles.append(cell_styles)
                     addition_len += 1
                     
                     new_colspans = []
-                    for col_span in self._colSpanCells:
+                    # ReportLab only sets _colSpanCells when the table has spans
+                    for col_span in getattr(self, '_colSpanCells', []):
                         if col_span[1] >= n:
                             col_span = (col_span[0], col_span[1] + 1)
-                        elif col_span[1] == n - (i + 1):
+                        elif col_span[1] == r0_end - (i + 1):
                             new_colspans.append(col_span)
                             col_span = (col_span[0], n)
                         new_colspans.append(col_span)
@@ -508,11 +596,14 @@ class EnhancedTable(Table):
                     
                     new_span_commands = []
                     for span_cmd in self._spanCmds:
-                        if span_cmd[1][1] >= n:
+                        if span_cmd[1][1] < n <= span_cmd[2][1]:
+                            # a row span cut by this split: what is left starts below the kept header
+                            span_cmd = (span_cmd[0], (span_cmd[1][0], n + 1), (span_cmd[2][0], span_cmd[2][1] + 1))
+                        elif span_cmd[1][1] >= n:
                             span_cmd = (span_cmd[0],
                                         (span_cmd[1][0], span_cmd[1][1] + 1),
                                         (span_cmd[2][0], span_cmd[2][1] + 1))
-                        elif span_cmd[1][1] == n - (i + 1):
+                        elif span_cmd[1][1] == r0_end - (i + 1):
                             new_span_commands.append(span_cmd)
                             span_cmd = (span_cmd[0], (span_cmd[1][0], n), (span_cmd[2][0], n))
                         new_span_commands.append(span_cmd)
@@ -525,7 +616,7 @@ class EnhancedTable(Table):
                                           (bckgrd_cmd[1][0], bckgrd_cmd[1][1] + 1),
                                           (bckgrd_cmd[2][0], bckgrd_cmd[2][1] + 1),
                                           bckgrd_cmd[3])
-                        elif bckgrd_cmd[1][1] == n - (i + 1):
+                        elif bckgrd_cmd[1][1] == r0_end - (i + 1):
                             new_bckgrd_commands.append(bckgrd_cmd)
                             bckgrd_cmd = (bckgrd_cmd[0],
                                           (bckgrd_cmd[1][0], n),
@@ -567,25 +658,32 @@ class EnhancedTable(Table):
         # Construct the R1 row data, heights and cell styles.
         # NB. this should work even if repeatRows is 0 (resulting in empty lists, which collapse to nothing)
         r1_table_data = {
-            'row_data': inserted_header_data + data[:repeat_rows] + header_row_data + data[n:],
-            'row_variables': ([{} for _ in range(0, len(data[:repeat_rows]) + addition_len)] +
-                              header_row_variables + self.variables[n:]),
-            'row_properties': ([{} for _ in range(0, len(data[:repeat_rows]) + addition_len)] +
-                               header_row_properties + self.properties[n:]),
-            'keep_with_next': ([{} for _ in range(0, len(data[:repeat_rows]) + addition_len)] +
-                               header_keep_with_next + self.keep_with_next[n:]),
-            'headers_index': ([None for _ in range(0, len(data[:repeat_rows]) + addition_len)] +
-                              blank_header_data + self.headers_index[n:]),
-            'footers_index': ([None for _ in range(0, len(data[:repeat_rows]) + addition_len)] +
-                              blank_header_data + self.footers_index[n:]),
+            'row_data': data[:repeat_rows] + header_row_data + inserted_header_data + data[n:],
+            'row_variables': ([{} for _ in data[:repeat_rows]] + header_row_variables +
+                              [{} for _ in range(addition_len)] + self.variables[n:]),
+            'row_properties': ([{} for _ in data[:repeat_rows]] + header_row_properties +
+                               [{} for _ in range(addition_len)] + self.properties[n:]),
+            'keep_with_next': ([{} for _ in data[:repeat_rows]] + header_keep_with_next +
+                               [{} for _ in range(addition_len)] + self.keep_with_next[n:]),
+            'headers_index': ([None for _ in data[:repeat_rows]] + blank_header_data +
+                              [None for _ in range(addition_len)] + self.headers_index[n:]),
+            'footers_index': ([None for _ in data[:repeat_rows]] + blank_header_data +
+                              [None for _ in range(addition_len)] + self.footers_index[n:]),
         }
         
+        # In the order of r1_table_data['row_data']: repeated rows, header, kept header, the rest.
+        # That is the order the style commands below are moved into, so each row keeps its own.
         r1_row_heights = self._argH[:repeat_rows] + header_row_heights + inserted_header_heights + self._argH[n:]
-        r1_cell_styles = inserted_cell_styles + self._merge_cell_styles(first=self._cellStyles[:repeat_rows],
-                                                                        headers=header_cell_styles,
-                                                                        last=self._cellStyles[n:],
-                                                                        inserted_row=inserted_row)
-        r1_keep_header_rows = inserted_row_headers + self.keep_header_rows[n:]
+        r1_cell_styles = self._merge_cell_styles(first=self._cellStyles[:repeat_rows],
+                                                 headers=header_cell_styles,
+                                                 last=self._cellStyles[n:],
+                                                 inserted_row=inserted_row)
+        at = repeat_rows + len(header_row_data)
+        r1_cell_styles[at:at] = inserted_cell_styles
+        # One entry per r1 row, in the order of r1_table_data['row_data'], so that later splits of r1
+        # index the right rows. The repeated and header rows are never kept headers themselves.
+        r1_keep_header_rows = ([None] * (repeat_rows + len(header_row_data)) + inserted_row_headers +
+                               (self.keep_header_rows or [])[n:])
         
         r1 = EnhancedTable(r1_table_data,
                            col_widths=self._colWidths,
@@ -601,6 +699,8 @@ class EnhancedTable(Table):
                            _calc_row_splits=False,
                            colpositions=self._colpositions,
                            keep_header_rows=r1_keep_header_rows)
+        r1._kept_header_inserted = inserted_row
+        r1._leading_rows = repeat_rows + len(header_row_data) + addition_len
 
         # Need to account for any header rows added when we call the following otherwise the row
         # styles will get out of step
@@ -631,6 +731,8 @@ class EnhancedTable(Table):
         self.onSplit(r1)
 
         if insert_pagebreak:
+            # The remainder starts at the top of a fresh frame. Not marked as postponed: in a page
+            # of several frames ReportLab may still move it on to a taller one.
             return [r0, PageBreak(), r1]
         else:
             return [r0, r1]
