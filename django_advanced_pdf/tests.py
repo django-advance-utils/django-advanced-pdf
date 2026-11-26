@@ -6,6 +6,7 @@ import re
 import signal
 import threading
 import unittest
+import unittest.mock
 from pathlib import Path
 import fitz
 from lxml import etree
@@ -487,6 +488,31 @@ class TableSplitTests(unittest.TestCase):
                                   before=f'<table>{self.row(80, "r0")}</table>')
 
         self.assertEqual([['r0'], ['r1'], ['r2'], ['r3']], pages)
+
+    def test_under_a_header_a_continuation_that_cannot_place_a_row_still_raises(self):
+        """
+        Only the first table may split off nothing but data under the header it repeats. The rest's
+        second row is too tall to sit under that header on a fresh page, so the rest cannot be placed,
+        and the build says so rather than splitting off the header alone, page after page.
+        """
+        with self.assertRaises(LayoutError):
+            self.pages(self.HEADER + self.rows(170, 270, 170))
+
+    def test_a_first_split_under_a_header_is_taken_once_the_table_has_moved_on(self):
+        """
+        Moving on again cannot help a table ReportLab has already moved on, even where a frame to come
+        is taller: the first split is taken there. In a ReportXML document every page after the first
+        is the continuation page, so a moved-on table is already at the top of a frame as tall as any
+        to come; this arm decides only for a table without fixed column widths or a document that
+        does not say which pages follow, so the condition is checked here directly.
+        """
+        table = EnhancedTable.__new__(EnhancedTable)
+        table.initial, table._kept_header_inserted, table.repeatRows = True, False, 1
+        with unittest.mock.patch.object(EnhancedTable, '_moving_on_cannot_help', return_value=False):
+            table._postponed = True
+            self.assertTrue(table._first_split_places_data(2, 500, 0))
+            table._postponed = False
+            self.assertFalse(table._first_split_places_data(2, 500, 0))
 
     def test_a_row_span_taller_than_a_page_is_split_across_pages(self):
         """
