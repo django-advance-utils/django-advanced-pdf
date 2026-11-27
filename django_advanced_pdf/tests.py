@@ -18,7 +18,7 @@ from reportlab.platypus.doctemplate import LayoutError
 from django_advanced_pdf.engine.enhanced_table.enhanced_tables import (EnhancedTable, KEEP_TYPE_END, KEEP_TYPE_NA,
                                                                      KEEP_TYPE_START)
 from django_advanced_pdf.engine.report_xml import ReportXML
-from django_advanced_pdf.engine.utils import ColumnWidthPercentage
+from django_advanced_pdf.engine.utils import ColumnWidthPercentage, intcomma_currency
 from django_advanced_pdf.pagers.base import BasePager
 from PIL import ImageChops, Image
 
@@ -1047,3 +1047,112 @@ class ContinuationPageUsedTests(unittest.TestCase):
             self.assertGreater(len(document), 1)
             first_line_top = [min(block[1] for block in page.get_text('blocks')) / mm for page in document]
         self.assertAlmostEqual(40, first_line_top[1] - first_line_top[0], delta=0.5)
+
+
+class CurrencyFormatTests(unittest.TestCase):
+
+    def test_default_format(self):
+        self.assertEqual('1,234,567.89', intcomma_currency(1234567.891))
+
+    def test_default_symbol_goes_in_front(self):
+        self.assertEqual('£1,234.50', intcomma_currency('1234.5', symbol='£'))
+
+    def test_eu_swaps_separators_and_puts_symbol_after(self):
+        self.assertEqual('1.234.567,89 €', intcomma_currency(1234567.891, symbol='€', region='eu'))
+
+    def test_eu_without_symbol_has_no_trailing_space(self):
+        self.assertEqual('1.234,50', intcomma_currency(1234.5, region='eu'))
+
+    def test_negative_eu(self):
+        self.assertEqual('-1.234,50 €', intcomma_currency(-1234.5, symbol='€', region='eu'))
+
+    def test_unknown_or_empty_region_uses_default(self):
+        for region in (None, '', 'us'):
+            self.assertEqual('$1,234.50', intcomma_currency(1234.5, symbol='$', region=region))
+
+    def test_extra_decimal_places_are_not_converted(self):
+        self.assertEqual('1.234,56<span class="currency_extra_digits">7</span> €',
+                         intcomma_currency(1234.567, show_more_decimal_places=True, symbol='€', region='eu'))
+        self.assertEqual('£1,234.56<span class="currency_extra_digits">7</span>',
+                         intcomma_currency(1234.567, show_more_decimal_places=True, symbol='£'))
+
+
+class CurrencyRegionPdfTests(unittest.TestCase):
+    """The region on a currency tag, or on the currency variable it uses, reaches the finished pdf."""
+
+    @staticmethod
+    def pdf_text(body):
+        report_xml = ReportXML(test_mode=True)
+        result = report_xml.load_xml_and_make_pdf(
+            f'<document page_size="A4" page_orientation="portrait">{body}</document>')
+        with fitz.open('pdf', result.getvalue()) as document:
+            return document[0].get_text()
+
+    def test_currency_value(self):
+        text = self.pdf_text('<table>'
+                             '<tr><td><currency value="123456" symbol="€" region="eu"/></td></tr>'
+                             '<tr><td><currency value="123456" symbol="£"/></td></tr>'
+                             '</table>')
+        self.assertIn('1.234,56 €', text)
+        self.assertIn('£1,234.56', text)
+
+    def test_currency_qty(self):
+        text = self.pdf_text('<table><tr>'
+                             '<td><currency_qty qty="3" value="370370" symbol="€" region="eu"/></td>'
+                             '</tr></table>')
+        self.assertIn('1.234,56', text)
+        self.assertIn('€', text)
+
+    def test_running_total_uses_the_variable_region(self):
+        text = self.pdf_text('<table>'
+                             '<tr><currency_variables total="0" symbol="€" region="eu"/>'
+                             '<td><currency value="100000" add_to="total"/></td></tr>'
+                             '<tr><td><currency value="50050" add_to="total"/></td></tr>'
+                             '<tr><td>Total <currency variable="total"/></td></tr>'
+                             '</table>')
+        self.assertIn('1.000,00 €', text)
+        self.assertIn('500,50 €', text)
+        self.assertIn('1.500,50 €', text)
+
+    def test_currency_variable_without_region_is_unchanged(self):
+        text = self.pdf_text('<table>'
+                             '<tr><currency_variables total="0" symbol="£"/>'
+                             '<td><currency value="100000" add_to="total"/></td></tr>'
+                             '<tr><td><currency value="50050" add_to="total"/></td></tr>'
+                             '<tr><td><currency variable="total"/></td></tr>'
+                             '</table>')
+        self.assertIn('£1,000.00', text)
+        self.assertIn('£500.50', text)
+        self.assertIn('£1,500.50', text)
+
+
+class CurrencyVariableTests(unittest.TestCase):
+    """Currency variables hold their values in cents (hundredths of the currency unit)."""
+
+    def test_starting_value_is_shown_in_currency_units(self):
+        """
+        The page 1 footer and page 2 header show the total before anything is added to it,
+        so they show the starting value. The symbol is "$" because PyMuPDF cannot read back
+        a pound sign drawn in the standard fonts.
+        """
+        footer = '<footer><tr row_height="10"><td>Carried</td><td><currency variable="total"/></td></tr></footer>'
+        header = '<header><tr row_height="10"><td>Brought</td><td><currency variable="total"/></td></tr></header>'
+        xml = f"""
+        <document page_size="A4" page_orientation="portrait">
+            <table>{header}{footer}
+                <tr row_height="100"><currency_variables total="12345" symbol="$"/><td>Start</td><td>x</td></tr>
+                <tr row_height="100"><td>Middle</td><td>x</td></tr>
+                <tr row_height="100"><td>Item</td><td><currency value="100" add_to="total"/></td></tr>
+                <tr row_height="10"><td>End</td><td><currency variable="total"/></td></tr>
+            </table>
+        </document>
+        """
+        result = ReportXML(test_mode=True).load_xml_and_make_pdf(xml=xml)
+        with fitz.open("pdf", result) as doc:
+            pages = [page.get_text().split() for page in doc]
+
+        self.assertEqual(2, len(pages))
+        self.assertEqual(['Carried', '$123.45'], pages[0][-2:])
+        self.assertEqual(['Brought', '$123.45'], pages[1][:2])
+        self.assertEqual(['End', '$124.45'], pages[1][-2:])
+        self.assertNotIn('$12,345.00', pages[0] + pages[1])

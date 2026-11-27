@@ -190,6 +190,18 @@ Inherit from `django_advanced_pdf.views.standard.DatabasePDFView` and set the mo
 - `<obj ...>`: inject Python objects from `object_lookup`
 - `<pagers><pager ...>...</pager></pagers>`: page-level fixed blocks
 
+### Currency
+
+Amounts are given in cents/pence and written to two decimal places with thousand separators.
+
+- `<currency value="123456" symbol="£"/>` → `£1,234.56`
+- `<currency_qty qty="3" value="370370" symbol="£"/>`: unit price, keeping up to three extra decimal places
+- `<currency_variables total="0" symbol="£"/>` inside a `<tr>` declares a running total; `<currency value="..." add_to="total"/>`
+  adds to it and `<currency variable="total"/>` shows it (in a table `<header>`/`<footer>` too)
+
+Add `region="eu"` to any of these to write the amount as `1.234,56 €` instead. A region set on `<currency_variables>`
+is used by every tag that refers to that variable (`variable`, `add_to`, `symbol_from`) unless the tag sets its own.
+
 ### Styling
 
 Styles are CSS-like but mapped to ReportLab table/paragraph options.
