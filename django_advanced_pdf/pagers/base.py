@@ -38,6 +38,13 @@ class BasePager(canvas.Canvas):
                                   right=border_right_continuation,
                                   top=border_top_continuation,
                                   bottom=border_bottom_continuation)
+        # The continuation borders are the floor for an explicit *_continuation value, and the sides
+        # given one are no longer overwritten by first-page values (see set_page_used).
+        self._continuation_borders = {'left': border_left_continuation,
+                                      'right': border_right_continuation,
+                                      'top': border_top_continuation,
+                                      'bottom': border_bottom_continuation}
+        self._continuation_set = set()
         self.program_name = program_name
 
         self.background_image_first = background_image_first
@@ -124,19 +131,36 @@ class BasePager(canvas.Canvas):
 
         self.drawmethods.append(method)
 
-    def set_page_used(self, left=0, right=0, top=0, bottom=0):
-        if left > self.pageused.left:
-            self.pageused.left = left
-            self.pageused2.left = left
-        if right > self.pageused.right:
-            self.pageused.right = right
-            self.pageused2.right = right
-        if top > self.pageused.top:
-            self.pageused.top = top
-            self.pageused2.top = top
-        if bottom > self.pageused.bottom:
-            self.pageused.bottom = bottom
-            self.pageused2.bottom = bottom
+    def set_page_used(self, left=0, right=0, top=0, bottom=0,
+                      left_continuation=None, right_continuation=None,
+                      top_continuation=None, bottom_continuation=None):
+        """
+        Reserves space at the edges of the page, e.g. for a pager's header and footer.
+
+        left/right/top/bottom are for the first page and only ever grow the space reserved there.  Until a
+        side is given a *_continuation value, its first-page value is copied to the continuation pages too.
+
+        Passing a *_continuation value sets that side of the continuation pages separately from then on:
+        - the first call for a side replaces whatever was copied there, so it can be smaller than the
+          first page (but never less than the pager's border_*_continuation);
+        - later *_continuation values for that side only grow it;
+        - later first-page values no longer change it.
+        """
+        for side, first, continuation in (('left', left, left_continuation),
+                                          ('right', right, right_continuation),
+                                          ('top', top, top_continuation),
+                                          ('bottom', bottom, bottom_continuation)):
+            if first > getattr(self.pageused, side):
+                setattr(self.pageused, side, first)
+                if continuation is None and side not in self._continuation_set:
+                    setattr(self.pageused2, side, first)
+            if continuation is not None:
+                if side in self._continuation_set:
+                    floor = getattr(self.pageused2, side)
+                else:
+                    floor = self._continuation_borders[side]
+                    self._continuation_set.add(side)
+                setattr(self.pageused2, side, max(continuation, floor))
 
     def get_page_used(self, first_page=True):
         if first_page:
