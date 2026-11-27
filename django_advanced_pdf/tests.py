@@ -1124,3 +1124,35 @@ class CurrencyRegionPdfTests(unittest.TestCase):
         self.assertIn('£1,000.00', text)
         self.assertIn('£500.50', text)
         self.assertIn('£1,500.50', text)
+
+
+class CurrencyVariableTests(unittest.TestCase):
+    """Currency variables hold their values in cents (hundredths of the currency unit)."""
+
+    def test_starting_value_is_shown_in_currency_units(self):
+        """
+        The page 1 footer and page 2 header show the total before anything is added to it,
+        so they show the starting value. The symbol is "$" because PyMuPDF cannot read back
+        a pound sign drawn in the standard fonts.
+        """
+        footer = '<footer><tr row_height="10"><td>Carried</td><td><currency variable="total"/></td></tr></footer>'
+        header = '<header><tr row_height="10"><td>Brought</td><td><currency variable="total"/></td></tr></header>'
+        xml = f"""
+        <document page_size="A4" page_orientation="portrait">
+            <table>{header}{footer}
+                <tr row_height="100"><currency_variables total="12345" symbol="$"/><td>Start</td><td>x</td></tr>
+                <tr row_height="100"><td>Middle</td><td>x</td></tr>
+                <tr row_height="100"><td>Item</td><td><currency value="100" add_to="total"/></td></tr>
+                <tr row_height="10"><td>End</td><td><currency variable="total"/></td></tr>
+            </table>
+        </document>
+        """
+        result = ReportXML(test_mode=True).load_xml_and_make_pdf(xml=xml)
+        with fitz.open("pdf", result) as doc:
+            pages = [page.get_text().split() for page in doc]
+
+        self.assertEqual(2, len(pages))
+        self.assertEqual(['Carried', '$123.45'], pages[0][-2:])
+        self.assertEqual(['Brought', '$123.45'], pages[1][:2])
+        self.assertEqual(['End', '$124.45'], pages[1][-2:])
+        self.assertNotIn('$12,345.00', pages[0] + pages[1])
