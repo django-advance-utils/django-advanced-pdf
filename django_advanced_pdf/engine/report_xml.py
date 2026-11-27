@@ -654,7 +654,7 @@ class ReportXML(object):
                 row_variables[symbol_name] = symbol
 
                 currency_variable = variable + '__currency'
-                currency_value = symbol + intcomma_currency(value)
+                currency_value = symbol + intcomma_currency(value / 100.0)
 
                 variables[currency_variable] = currency_value
                 row_variables[currency_variable] = currency_value
