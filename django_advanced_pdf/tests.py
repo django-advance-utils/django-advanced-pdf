@@ -6,6 +6,7 @@ import re
 import signal
 import threading
 import unittest
+import unittest.mock
 from pathlib import Path
 import fitz
 from lxml import etree
@@ -453,16 +454,66 @@ class TableSplitTests(unittest.TestCase):
                               for page in pdf]
                 self.assertEqual([[('r0', 'short')], [('r2', 'tall'), ('r3', 'tall')]], frames)
 
-    def test_under_a_header_tall_rows_still_raise(self):
+    def test_under_a_header_each_tall_row_still_gets_a_page_of_its_own(self):
         """
-        Not covered yet: under a <header> the same rows still raise LayoutError. The first
-        table's no-progress guard counts the header the rest will repeat and refuses to split
-        after one row. Letting it would also leave one row at the foot of a part-filled page
-        where today the whole table moves on, so it needs its own change. When it lands, this
-        should give each row a page of its own.
+        The first table's no-progress guard counted the header the rest will repeat as rows carried
+        over, and refused to split after one row: LayoutError. The first table never held that
+        header, so placing a row of it is progress.
+        """
+        self.assertEqual([['r1'], ['r2'], ['r3'], ['r4']],
+                         self.rows_by_page(self.HEADER + self.rows(170, 170, 170, 170)))
+
+    def test_under_a_header_a_heading_kept_with_a_tall_first_row_still_builds(self):
+        """
+        A heading kept with the first row, and a header of two rows the rest repeats in its place: a
+        table's own heading and Brought Forward line. Only the heading and the first row fit a page,
+        which the guard took for no progress, as the rest is as long as the table.
+        """
+        header = self.HEADER.replace('</header>', '<tr row_height="10"><td>Brought</td><td>b</td></tr></header>')
+        heading = '<tr row_height="10"><td>Heading</td><td>h</td></tr>'
+        rows = '<keep>' + heading + self.row(200, 'r1') + '</keep>' + self.row(200, 'r2') + self.row(200, 'r3')
+
+        pages = self.pages(header + rows)
+
+        self.assertEqual([['r1'], ['r2'], ['r3']], [self.row_names(page) for page in pages])
+        self.assertIn('Heading', pages[0])
+        self.assertEqual([['Head', 'Brought']] * 2, [[word for word in page if word in ('Head', 'Brought')]
+                                                      for page in pages[1:]])
+
+    def test_under_a_header_a_table_part_way_down_a_page_still_moves_on_whole(self):
+        """
+        Only the first row fits the room left on the page. The table moves on whole, as it always did,
+        rather than leaving that row at the foot of the page.
+        """
+        pages = self.rows_by_page(self.HEADER + self.rows(170, 170, 170),
+                                  before=f'<table>{self.row(80, "r0")}</table>')
+
+        self.assertEqual([['r0'], ['r1'], ['r2'], ['r3']], pages)
+
+    def test_under_a_header_a_continuation_that_cannot_place_a_row_still_raises(self):
+        """
+        Only the first table may split off nothing but data under the header it repeats. The rest's
+        second row is too tall to sit under that header on a fresh page, so the rest cannot be placed,
+        and the build says so rather than splitting off the header alone, page after page.
         """
         with self.assertRaises(LayoutError):
-            self.pages(self.HEADER + self.rows(170, 170, 170, 170))
+            self.pages(self.HEADER + self.rows(170, 270, 170))
+
+    def test_a_first_split_under_a_header_is_taken_once_the_table_has_moved_on(self):
+        """
+        Moving on again cannot help a table ReportLab has already moved on, even where a frame to come
+        is taller: the first split is taken there. In a ReportXML document every page after the first
+        is the continuation page, so a moved-on table is already at the top of a frame as tall as any
+        to come; this arm decides only for a table without fixed column widths or a document that
+        does not say which pages follow, so the condition is checked here directly.
+        """
+        table = EnhancedTable.__new__(EnhancedTable)
+        table.initial, table._kept_header_inserted, table.repeatRows = True, False, 1
+        with unittest.mock.patch.object(EnhancedTable, '_moving_on_cannot_help', return_value=False):
+            table._postponed = True
+            self.assertTrue(table._first_split_places_data(2, 500, 0))
+            table._postponed = False
+            self.assertFalse(table._first_split_places_data(2, 500, 0))
 
     def test_a_row_span_taller_than_a_page_is_split_across_pages(self):
         """

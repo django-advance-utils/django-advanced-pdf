@@ -308,6 +308,21 @@ class EnhancedTable(Table):
         n = self._getFirstPossibleSplitRowPosition(tallest, ignoreSpans=doInRowSplit)[0]
         return n <= self.repeatRows
 
+    def _first_split_places_data(self, n, availHeight, doInRowSplit):
+        """
+        True when splitting the first table after its first n rows makes progress though the guard
+        below counts it as none. The guard counts the header the rest will repeat as rows carried
+        over, but the first table never held that header: the rest gains it as new rows, and every
+        row placed past the repeated ones is data. So a first table whose rows are each tall enough
+        to fill a page with the next one can be split after one of them, as it can without a
+        header. The rest is not the first table, so its own splits must still place a row of data.
+        Only where refusing cannot help, as for the last resort: at the top of a frame no frame to
+        come would improve on, or after ReportLab has already moved the table on. Part way down a
+        page the table still moves on whole, as it always did.
+        """
+        return (self.initial and not self._kept_header_inserted and self.repeatRows < n and
+                (getattr(self, '_postponed', False) or self._moving_on_cannot_help(availHeight, doInRowSplit)))
+
     # noinspection DuplicatedCode
     def _splitRows(self, availHeight, doInRowSplit=0):
 
@@ -355,7 +370,7 @@ class EnhancedTable(Table):
         if n <= leading_rows:
             if self.repeatRows < forced_split < lim and forced_split > n:
                 n = forced_split
-            else:
+            elif not self._first_split_places_data(n, availHeight, doInRowSplit):
                 # Even the single following row cannot be made to fit. Refuse the split and
                 # let ReportLab postpone the table / raise a clear "too large" error rather
                 # than spinning. Returning [] avoids an infinite loop.
